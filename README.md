@@ -11,7 +11,7 @@ Desarrollado por **Desarrollos de Ideas Mexicanas** como material de apoyo para 
 Una vez publicada con GitHub Pages (ver guía más abajo), la app queda disponible en:
 
 ```
-https://<tu-usuario-o-organizacion>.github.io/<nombre-del-repositorio>/
+https://<cesar687>.github.io/<laboratorio-virtual>/
 ```
 
 ## Experimentos incluidos
