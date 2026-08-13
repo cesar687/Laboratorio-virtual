@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Virtual · Ciencia: de la Teoría a la Práctica</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<meta name="description" content="Seis experimentos de ciencia interactivos con el ciclo Predice-Observa-Explica (POE). Desarrollado por Desarrollos de Ideas Mexicanas para el aprendizaje.">
+<meta name="author" content="Desarrollos de Ideas Mexicanas">
+<meta name="theme-color" content="#0F2A43">
+<meta property="og:title" content="Laboratorio Virtual · Ciencia: de la Teoría a la Práctica">
+<meta property="og:description" content="Seis experimentos de ciencia interactivos con el ciclo Predice-Observa-Explica (POE). Desarrollado para el aprendizaje por Desarrollos de Ideas Mexicanas.">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --navy:#0F2A43; --navy2:#16405F; --teal:#0E7C86; --teal-l:#EAF3F4;
+    --amber:#F5A524; --ink:#1B2A38; --muted:#5A6B7A; --bg:#F4F8F9; --card:#FFFFFF;
+    --ok:#2b8a3e; --bad:#c92a2a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; background:var(--bg); color:var(--ink);}
+  header{background:var(--navy); color:#fff; padding:26px 20px 30px; position:relative; overflow:hidden;}
+  header::after{content:""; position:absolute; right:-90px; top:-140px; width:320px; height:320px; border-radius:50%; background:rgba(14,124,134,.35);}
+  header::before{content:""; position:absolute; left:-70px; bottom:-160px; width:260px; height:260px; border-radius:50%; background:rgba(14,124,134,.22);}
+  .wrap{max-width:980px; margin:0 auto; position:relative; z-index:2;}
+  .kicker{color:var(--amber); font-weight:700; letter-spacing:2.5px; font-size:.72rem; text-transform:uppercase;}
+  header h1{font-size:1.9rem; margin-top:6px; font-family:Cambria, Georgia, serif;}
+  header p{color:#BFD9DC; margin-top:8px; max-width:640px; font-size:.95rem;}
+  main{max-width:980px; margin:0 auto; padding:26px 20px 60px;}
+  /* ---------- home cards ---------- */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-top:8px;}
+  .card{background:var(--card); border-radius:14px; padding:20px; cursor:pointer; border:2px solid transparent;
+        box-shadow:0 1px 4px rgba(15,42,67,.08); transition:transform .15s, border-color .15s;}
+  .card:hover{transform:translateY(-3px); border-color:var(--teal);}
+  .card .icon{width:52px; height:52px; border-radius:50%; background:var(--teal-l); display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin-bottom:12px;}
+  .card h3{font-size:1.05rem; color:var(--navy); margin-bottom:6px;}
+  .card p{font-size:.85rem; color:var(--muted); line-height:1.45;}
+  .tags{margin-top:12px; display:flex; gap:6px; flex-wrap:wrap;}
+  .tag{font-size:.68rem; font-weight:700; color:var(--teal); background:var(--teal-l); padding:3px 9px; border-radius:20px;}
+  .tag.amber{color:#8a5a00; background:#FDEBC8;}
+  /* ---------- experiment view ---------- */
+  .back{background:none; border:none; color:var(--teal); font-weight:700; font-size:.9rem; cursor:pointer; padding:6px 0; margin-bottom:6px;}
+  .exp-title{font-family:Cambria, Georgia, serif; color:var(--navy); font-size:1.6rem;}
+  .exp-sub{color:var(--muted); font-size:.9rem; margin:4px 0 18px;}
+  .steps{display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
+  .step{font-size:.78rem; font-weight:700; padding:7px 14px; border-radius:20px; background:#E3EBEE; color:var(--muted);}
+  .step.active{background:var(--navy); color:#fff;}
+  .step.done{background:var(--teal); color:#fff;}
+  section.panel{background:var(--card); border-radius:14px; padding:22px; margin-bottom:18px; box-shadow:0 1px 4px rgba(15,42,67,.08);}
+  .panel h4{color:var(--teal); font-size:.78rem; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px;}
+  .predq{font-family:Cambria, Georgia, serif; font-size:1.15rem; color:var(--navy); margin-bottom:14px;}
+  .opts{display:grid; gap:10px;}
+  .opt{display:flex; gap:12px; align-items:flex-start; background:var(--bg); border:2px solid transparent; border-radius:10px; padding:12px 14px; cursor:pointer; font-size:.93rem;}
+  .opt:hover{border-color:#B9D4D8;}
+  .opt.sel{border-color:var(--teal); background:var(--teal-l);}
+  .opt .letter{font-weight:800; color:var(--teal); font-family:Cambria, serif; font-size:1.05rem;}
+  .btn{background:var(--teal); color:#fff; border:none; border-radius:10px; padding:11px 20px; font-size:.92rem; font-weight:700; cursor:pointer; transition:opacity .15s;}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btn.amber{background:var(--amber); color:var(--navy);}
+  .btn.ghost{background:#E3EBEE; color:var(--navy);}
+  .btn.small{padding:8px 14px; font-size:.83rem;}
+  .mt{margin-top:14px;}
+  /* observa */
+  .obs-wrap{position:relative;}
+  .locked-overlay{position:absolute; inset:0; background:rgba(244,248,249,.93); border-radius:10px; display:flex; align-items:center; justify-content:center; z-index:5; text-align:center; padding:20px;}
+  .locked-overlay p{color:var(--muted); font-weight:600; max-width:380px;}
+  canvas{width:100%; max-width:660px; display:block; margin:0 auto; background:#FDFEFE; border:1px solid #DCE7EA; border-radius:10px; touch-action:manipulation;}
+  .controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; align-items:center;}
+  .controls label{font-size:.82rem; color:var(--muted); font-weight:600;}
+  input[type=range]{accent-color:var(--teal); vertical-align:middle;}
+  .readout{background:var(--teal-l); border-radius:10px; padding:10px 14px; font-size:.88rem; margin-top:12px; color:var(--navy);}
+  .readout b{color:var(--teal);}
+  #simdom{margin-top:4px;}
+  /* explica */
+  .verdict{border-radius:10px; padding:14px 16px; font-size:.95rem; margin-bottom:14px; font-weight:600;}
+  .verdict.ok{background:#E6F4EA; color:var(--ok);}
+  .verdict.miss{background:#FDEBC8; color:#8a5a00;}
+  .explica-body{font-size:.94rem; line-height:1.6;}
+  .explica-body h5{color:var(--navy); margin:14px 0 6px; font-size:1rem;}
+  .clase{background:var(--navy); color:#DCE9EB; border-radius:10px; padding:16px 18px; margin-top:16px; font-size:.9rem; line-height:1.55;}
+  .clase b{color:var(--amber);}
+  .reveal-btn{animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,165,36,.55);} 50%{box-shadow:0 0 0 10px rgba(245,165,36,0);}}
+  footer{max-width:980px; margin:0 auto; padding:0 20px 50px; color:var(--muted); font-size:.82rem; line-height:1.6;}
+  footer b{color:var(--navy);}
+  /* pH DOM sim */
+  .ph-area{display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start;}
+  .ph-glass{width:150px; height:190px; border:3px solid #9FB6BC; border-top:none; border-radius:0 0 22px 22px; position:relative; overflow:hidden; flex-shrink:0; background:#fff;}
+  .ph-liquid{position:absolute; bottom:0; left:0; right:0; height:78%; background:#6f42c1; transition:background 1s;}
+  .ph-label{position:absolute; bottom:8px; left:0; right:0; text-align:center; color:#fff; font-weight:800; font-size:.8rem; text-shadow:0 1px 3px rgba(0,0,0,.45); padding:0 6px;}
+  .ph-subs{display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; flex:1; min-width:260px;}
+  .ph-sub{border:2px solid #DCE7EA; background:#fff; border-radius:10px; padding:9px 8px; font-size:.8rem; font-weight:700; color:var(--navy); cursor:pointer;}
+  .ph-sub:hover{border-color:var(--teal);}
+  .ph-sub.used{border-color:var(--teal); background:var(--teal-l);}
+  .ph-sub small{display:block; font-weight:600; color:var(--muted); margin-top:2px;}
+  .ph-scale{margin-top:18px; width:100%;}
+  .ph-bar{height:16px; border-radius:8px; background:linear-gradient(90deg,#d6336c 0%,#e8618c 18%,#8e5aa8 40%,#6f42c1 50%,#4263eb 60%,#2b8a3e 78%,#94c11f 90%,#e6c619 100%); position:relative;}
+  .ph-mark{position:absolute; top:-26px; transform:translateX(-50%); font-size:.68rem; font-weight:700; color:var(--navy); white-space:nowrap;}
+  .ph-mark::after{content:""; position:absolute; left:50%; top:15px; width:2px; height:18px; background:var(--navy);}
+  .ph-mark.hi{top:-46px;}
+  .ph-mark.hi::after{height:38px;}
+  .ph-mark.hi2{top:-66px;}
+  .ph-mark.hi2::after{height:58px;}
+  .ph-nums{display:flex; justify-content:space-between; font-size:.7rem; color:var(--muted); margin-top:4px;}
+  @media (max-width:560px){ header h1{font-size:1.4rem;} .exp-title{font-size:1.25rem;} }
+  /* ---------- brand ---------- */
+  .brandbar{display:flex; align-items:center; gap:12px; margin-bottom:22px;}
+  .monogram{width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,.25); background:#fff;}
+  .monogram img{width:100%; height:100%; display:block; border-radius:50%;}
+  .brand-text{line-height:1.25;}
+  .brand-name{font-weight:800; font-size:.92rem; color:#fff; letter-spacing:.2px;}
+  .brand-tag{font-size:.72rem; color:var(--amber); font-weight:700; letter-spacing:1px; text-transform:uppercase;}
+  footer .brandbar{margin:0 0 14px;}
+  footer .brand-name{color:var(--navy);}
+  footer .monogram{width:38px; height:38px;}
+  footer .monogram svg{width:30px; height:30px;}
+  .footer-credit{font-size:.8rem; color:var(--muted); margin-top:16px; padding-top:14px; border-top:1px solid #DCE7EA;}
+  .footer-credit b{color:var(--navy);}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brandbar">
+      <div class="monogram" aria-hidden="true">
+        <img src="data:image/png;base64,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" alt="Logo de Desarrollos de Ideas Mexicanas">
+      </div>
+      <div class="brand-text">
+        <div class="brand-name">Desarrollos de Ideas Mexicanas</div>
+        <div class="brand-tag">Desarrollado para el aprendizaje</div>
+      </div>
+    </div>
+    <div class="kicker">Ciencia: de la Teoría a la Práctica</div>
+    <h1 id="hTitle">Laboratorio Virtual</h1>
+    <p id="hSub">Seis experimentos para hacer en pantalla cuando no hay materiales a la mano. La regla es la misma que en la mesa: <b style="color:#fff">primero predices, luego experimentas, y al final explicas.</b></p>
+  </div>
+</header>
+
+<main id="home">
+  <div class="grid" id="cardGrid"></div>
+</main>
+
+<main id="exp" hidden>
+  <button class="back" id="backBtn">← Todos los experimentos</button>
+  <div class="exp-title" id="eTitle"></div>
+  <div class="exp-sub" id="eSub"></div>
+  <div class="steps">
+    <div class="step active" id="st1">1 · PREDICE</div>
+    <div class="step" id="st2">2 · OBSERVA</div>
+    <div class="step" id="st3">3 · EXPLICA</div>
+  </div>
+
+  <section class="panel" id="predPanel">
+    <h4>Paso 1 · Predice</h4>
+    <div class="predq" id="predQ"></div>
+    <div class="opts" id="predOpts"></div>
+    <button class="btn mt" id="predConfirm" disabled>Confirmar mi predicción</button>
+  </section>
+
+  <section class="panel">
+    <h4>Paso 2 · Observa (experimenta)</h4>
+    <div class="obs-wrap">
+      <div class="locked-overlay" id="lock"><p>🔒 Primero confirma tu predicción arriba.<br>En ciencia, quien no apuesta, no aprende.</p></div>
+      <canvas id="cv" width="660" height="430"></canvas>
+      <div id="simdom"></div>
+      <div class="controls" id="controls"></div>
+      <div class="readout" id="readout" hidden></div>
+    </div>
+    <button class="btn amber mt reveal-btn" id="revealBtn" hidden>Ver la explicación →</button>
+  </section>
+
+  <section class="panel" id="explicaPanel" hidden>
+    <h4>Paso 3 · Explica</h4>
+    <div id="verdict"></div>
+    <div class="explica-body" id="explicaBody"></div>
+    <div class="clase" id="claseBody"></div>
+    <button class="btn ghost mt" id="otherBtn">Probar otro experimento</button>
+  </section>
+</main>
+
+<footer>
+  <div class="brandbar">
+    <div class="monogram" aria-hidden="true">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACgCAYAAACLz2ctAAAKMWlDQ1BJQ0MgUHJvZmlsZQAAeJydlndUU9kWh8+9N71QkhCKlNBraFICSA29SJEuKjEJEErAkAAiNkRUcERRkaYIMijggKNDkbEiioUBUbHrBBlE1HFwFBuWSWStGd+8ee/Nm98f935rn73P3Wfvfda6AJD8gwXCTFgJgAyhWBTh58WIjYtnYAcBDPAAA2wA4HCzs0IW+EYCmQJ82IxsmRP4F726DiD5+yrTP4zBAP+flLlZIjEAUJiM5/L42VwZF8k4PVecJbdPyZi2NE3OMErOIlmCMlaTc/IsW3z2mWUPOfMyhDwZy3PO4mXw5Nwn4405Er6MkWAZF+cI+LkyviZjg3RJhkDGb+SxGXxONgAoktwu5nNTZGwtY5IoMoIt43kA4EjJX/DSL1jMzxPLD8XOzFouEiSniBkmXFOGjZMTi+HPz03ni8XMMA43jSPiMdiZGVkc4XIAZs/8WRR5bRmyIjvYODk4MG0tbb4o1H9d/JuS93aWXoR/7hlEH/jD9ld+mQ0AsKZltdn6h21pFQBd6wFQu/2HzWAvAIqyvnUOfXEeunxeUsTiLGcrq9zcXEsBn2spL+jv+p8Of0NffM9Svt3v5WF485M4knQxQ143bmZ6pkTEyM7icPkM5p+H+B8H/nUeFhH8JL6IL5RFRMumTCBMlrVbyBOIBZlChkD4n5r4D8P+pNm5lona+BHQllgCpSEaQH4eACgqESAJe2Qr0O99C8ZHA/nNi9GZmJ37z4L+fVe4TP7IFiR/jmNHRDK4ElHO7Jr8WgI0IABFQAPqQBvoAxPABLbAEbgAD+ADAkEoiARxYDHgghSQAUQgFxSAtaAYlIKtYCeoBnWgETSDNnAYdIFj4DQ4By6By2AE3AFSMA6egCnwCsxAEISFyBAVUod0IEPIHLKFWJAb5AMFQxFQHJQIJUNCSAIVQOugUqgcqobqoWboW+godBq6AA1Dt6BRaBL6FXoHIzAJpsFasBFsBbNgTzgIjoQXwcnwMjgfLoK3wJVwA3wQ7oRPw5fgEVgKP4GnEYAQETqiizARFsJGQpF4JAkRIauQEqQCaUDakB6kH7mKSJGnyFsUBkVFMVBMlAvKHxWF4qKWoVahNqOqUQdQnag+1FXUKGoK9RFNRmuizdHO6AB0LDoZnYsuRlegm9Ad6LPoEfQ4+hUGg6FjjDGOGH9MHCYVswKzGbMb0445hRnGjGGmsVisOtYc64oNxXKwYmwxtgp7EHsSewU7jn2DI+J0cLY4X1w8TogrxFXgWnAncFdwE7gZvBLeEO+MD8Xz8MvxZfhGfA9+CD+OnyEoE4wJroRIQiphLaGS0EY4S7hLeEEkEvWITsRwooC4hlhJPEQ8TxwlviVRSGYkNimBJCFtIe0nnSLdIr0gk8lGZA9yPFlM3kJuJp8h3ye/UaAqWCoEKPAUVivUKHQqXFF4pohXNFT0VFysmK9YoXhEcUjxqRJeyUiJrcRRWqVUo3RU6YbStDJV2UY5VDlDebNyi/IF5UcULMWI4kPhUYoo+yhnKGNUhKpPZVO51HXURupZ6jgNQzOmBdBSaaW0b2iDtCkVioqdSrRKnkqNynEVKR2hG9ED6On0Mvph+nX6O1UtVU9Vvuom1TbVK6qv1eaoeajx1UrU2tVG1N6pM9R91NPUt6l3qd/TQGmYaYRr5Grs0Tir8XQObY7LHO6ckjmH59zWhDXNNCM0V2ju0xzQnNbS1vLTytKq0jqj9VSbru2hnaq9Q/uE9qQOVcdNR6CzQ+ekzmOGCsOTkc6oZPQxpnQ1df11Jbr1uoO6M3rGelF6hXrtevf0Cfos/ST9Hfq9+lMGOgYhBgUGrQa3DfGGLMMUw12G/YavjYyNYow2GHUZPTJWMw4wzjduNb5rQjZxN1lm0mByzRRjyjJNM91tetkMNrM3SzGrMRsyh80dzAXmu82HLdAWThZCiwaLG0wS05OZw2xljlrSLYMtCy27LJ9ZGVjFW22z6rf6aG1vnW7daH3HhmITaFNo02Pzq62ZLde2xvbaXPJc37mr53bPfW5nbse322N3055qH2K/wb7X/oODo4PIoc1h0tHAMdGx1vEGi8YKY21mnXdCO3k5rXY65vTW2cFZ7HzY+RcXpkuaS4vLo3nG8/jzGueNueq5clzrXaVuDLdEt71uUnddd457g/sDD30PnkeTx4SnqWeq50HPZ17WXiKvDq/XbGf2SvYpb8Tbz7vEe9CH4hPlU+1z31fPN9m31XfKz95vhd8pf7R/kP82/xsBWgHcgOaAqUDHwJWBfUGkoAVB1UEPgs2CRcE9IXBIYMj2kLvzDecL53eFgtCA0O2h98KMw5aFfR+OCQ8Lrwl/GGETURDRv4C6YMmClgWvIr0iyyLvRJlESaJ6oxWjE6Kbo1/HeMeUx0hjrWJXxl6K04gTxHXHY+Oj45vipxf6LNy5cDzBPqE44foi40V5iy4s1licvvj4EsUlnCVHEtGJMYktie85oZwGzvTSgKW1S6e4bO4u7hOeB28Hb5Lvyi/nTyS5JpUnPUp2Td6ePJninlKR8lTAFlQLnqf6p9alvk4LTduf9ik9Jr09A5eRmHFUSBGmCfsytTPzMoezzLOKs6TLnJftXDYlChI1ZUPZi7K7xTTZz9SAxESyXjKa45ZTk/MmNzr3SJ5ynjBvYLnZ8k3LJ/J9879egVrBXdFboFuwtmB0pefK+lXQqqWrelfrry5aPb7Gb82BtYS1aWt/KLQuLC98uS5mXU+RVtGaorH1futbixWKRcU3NrhsqNuI2ijYOLhp7qaqTR9LeCUXS61LK0rfb+ZuvviVzVeVX33akrRlsMyhbM9WzFbh1uvb3LcdKFcuzy8f2x6yvXMHY0fJjpc7l+y8UGFXUbeLsEuyS1oZXNldZVC1tep9dUr1SI1XTXutZu2m2te7ebuv7PHY01anVVda926vYO/Ner/6zgajhop9mH05+x42Rjf2f836urlJo6m06cN+4X7pgYgDfc2Ozc0tmi1lrXCrpHXyYMLBy994f9Pdxmyrb6e3lx4ChySHHn+b+O31w0GHe4+wjrR9Z/hdbQe1o6QT6lzeOdWV0iXtjusePhp4tLfHpafje8vv9x/TPVZzXOV42QnCiaITn07mn5w+lXXq6enk02O9S3rvnIk9c60vvG/wbNDZ8+d8z53p9+w/ed71/LELzheOXmRd7LrkcKlzwH6g4wf7HzoGHQY7hxyHui87Xe4Znjd84or7ldNXva+euxZw7dLI/JHh61HXb95IuCG9ybv56Fb6ree3c27P3FlzF3235J7SvYr7mvcbfjT9sV3qID0+6j068GDBgztj3LEnP2X/9H686CH5YcWEzkTzI9tHxyZ9Jy8/Xvh4/EnWk5mnxT8r/1z7zOTZd794/DIwFTs1/lz0/NOvm1+ov9j/0u5l73TY9P1XGa9mXpe8UX9z4C3rbf+7mHcTM7nvse8rP5h+6PkY9PHup4xPn34D94Tz+6TMXDkAAB0hSURBVHic7Z1rkBzVke9/1V3dMz3To5E8GkCgFSEsC3klZARCElqW15Ux2KzRemHtADtCfgAOWOEQBOZiSx9sGdbsjXCADEY3bAO2AsL4sTjiarEDhPeCLgiB1+bllcJeIS0PIWk0o3lpZrq7us79cCqrq3v6UdXzqJ6Z+kdkSNNd1XXq5L/yZObJc8pgZsBwBEA5Uop2YB5wCjAXOBM4y/m7A+gE5gBtQBJoAuLOuXkgA2SBAeAE0AV0A8eAt4H/Bo47f38A9NXZzmkFo/YhUxpx9D1aZb77MLAaOAdNtAWOzGPi+kWhyfeOI28DbwJ7gQNljjedc/IT1J7QMd0I6LUgtufzJmAhcB6wDrgQOB2YVeF3LM/vVPq3ElSVf80K5/QDh4E9wC7gD8BBtFUVxDy/M20s43QhYMyRUkt3GZpwq4C1QEuZc/NohRolMhFQJWJQGMa9GAJeAl5BE/LfS7430Q+YTYRQUarAJLACuBc9tA1TrHALTTjbI6WkmGzxtiXvtNH7/bBzL/c695b03K+4GBEmEeWsxnzgZuBZRis4h1ZqI5AtCCktp+2l3z3r3Ov8kj6IyDgJiFHcyUuBh9H+kld5eQqWLmwyjQcZy93PQefel3r6w6DgK0YYR5QS73LgCXTao9TShU2YiZZSy5h1+uJyT/9ERBwnlHbk5cBOihUi1iFsYky2lLvvnRQTsfTBjeATpcRbBTxF8ZM/E6ydX/H2Rc7pq1We/ouIGADeAGMB8AN0Pszb2dPBtxtvkcBF/s44fbegQt9GKIE3uk0Bm4CjFDp0Jg6z9Yq3r446fZly+jaKlsvA+2SuBX5HoQNzRBavHrEpdll+B/xNhT6f0ZDpqSZgK3oyXxENteNJRBmaB5w+birp+xkJr2O8AniBQqdFAcb4i7dPX3D6HGZoysZ7w7egy5YU0yd53KgiSW3l9PktFXQyrSE3Oht4jELnREHG5Im3rx9zdOHVzbSFOL7LgVcZ/VRGMrkklNHmVUcnXh1NKxgUHN6rKaRXIl8vfBEdHAP+ztGRyTRK1Xjr625C17opyld6RBKOiC6GHB2V6m3KwnsT36Zww1Gg0Xji1cm3y+hvysFbXbyNwk1G/l7jitcv3FaiwykF7/qJh9E3FM1oTA3xzqA8XKLLKQFJbCaAn1AgX9gdG0kwEZ39xNHllKio8TZwO/oGokh36orobrtHrw1LQm+q5QGKn6JIpq6IDh9wdNuwKRpJYEq0GwUb00dElxIdN1yyWizfV9ENjSpZppd4K2q+6ui6YSpp5Gn4FDqR2SjrbSMZfxLajo4/5eg8dEsok9dL0VM5imjonc4iuj1GYTloaAUMsh1GO/B7dMOiiHf6i+j4947uhQeTDjG/P6X46Yhk+ovo+qdoTPpQLIy/heKnIpKZI6JzKWqtywrWk8+Jo5+A5cBuID2WBkSYspCduQaBvwXeoMAN3whKGgPN+hR6nlD214vIN/MgOp+F5kIKzY1ARi0ocWJo5m9GL5/M1/EbEaYPYmgOrEVzwmYC+SCO5hrgJNECoki0SIndSTQ3IEBQ4petMvQ2Af8LvdOookHnBCNMKoQbLWhuNBOAG0EIaKOnYS5y/h96FjxCwyCO5sRFaI7Y+CSgn4NiaEafDryGfmWBIvL9IhRDSNcNnIvedF0MV0XUIpH3nRWb0e/PmFBHM8KUhQSoc9FcUc7nVY1cLQsopnUlejuHJFN0jUCESYEEJlngYvR0nUTKZVHLkkmUuxntXEJEvgiVIdxopmAFqw7B1cgkJvVi9NZeQtaIgBGqQYZeG/gfwPMUuDQKlSygkCwJ3EVhKI7IF6EWJPCIA1+n8F6TstypREAh3Frg40SBR4RgEIv3cTSHKqbtKpFKnMab0UvyoqRzhCCQ5HQCzSGoEIiUI5Xk/f4a/dK8ZJljIkTwiyz6JZH/SZm8YDkLKOz9JzT5ohfiRagXNppD/0SFUbSUgDJ2n47eRg0KUU2ECEEh3LkazalRsUQ5Air0PnFnoMftaM43Qr2QAtUz0JwaNYVburbTQle8/COTHHTEYjFisfoCbaUU+Xzwl4obhkE8Xt/zZds2th15Jz5hoDn1GMUv4S4imQy/5wL/QTTlFmH8IFN056MLWtzEdLnV7dd5Dpg0Ai5atIjFixeTy+UwDP+XjcViDAwMsHfvXiyr9IXp1TFnzhwuuOCCQOcopUgkEuzbt4+DBw9iGAZKRW5yDcjQ+49oAo6CaDwOvOWcMCnLLGOxmALUnXfeqWzbVplMRuVyOV+SzWZVPp9Xhw4dUrNnz1aAMgzD9zUvvvhilc1mlWVZvq+ZyWSUbdtqy5YtClCmaYZdkTwVRLj0FoWYwoCCBZSKhYuAs7wHTBZ6enowDAPTNAP7gqeeeiqJRCLwNQ3DCHyebdsYhkF7e7v7GxFqQjrpLPTrwl7A4ZxZcsDH0aubLCZ585ljx46hlHIVHATNzc20tLQQi8V8DYlCcMMwAl8vn89jGAbNzc0YhjGm4MkP5F6m+DBvoDmVAq5AE9C1gPJlE7B60lvmKP/48eMopVwJira2Nt9RqRwXj8cD+3BybnNzM0opMplMjTPGB4ZhFD0o9fZTA2ANmmsZwDApDL8LnC8VIeT+hoaGxmRNVq5cSSaTIZFI1CRiLBYjm82yaNGiUYqthaYm/Z6/U089lYULF9La2hoo+InH4zQ1NbnkrdZWy7IYHh6mu7ubkZGRUYST/goafIWEOJpbq9Fc+wsQk/2cbeB64HEmOfkci8WwbZuFCxeyc+dO0ul0zWFR8neGYZDL5ejo6MAwDDKZjG8C27ZNMqmnuXt6ejBNs6ZFkSHbNE06Ojro7+8PlEdUShU9ZLVyl7Ztk8/nyWQy9PT08Je//IW9e/eyZ88e/vznP3Ps2DG3XdK2Bodw6wbgCUoI+GPgi5TJVk8GYrEY6XS6JoGUUq4VMU2TgYEBtm3bxhe+8IW6rvvwww+zefNmWlpaahLCMAwsy+K0007jtddeCzUAOXDgAM888ww7d+7k6aefdj+Px+N1JeUnCZLaexT4MiU82wduCXXYYbsvkZTLj370IzeFY9u2L7EsS9m2rb773e8Gvm5HR4caGRnxfa3xkHw+XyQCy7LUiy++qK699lo3vRSPx0PXTQURbu0T0gkDFwHzmWIQayl+WT0QKxbE9xRLCGOLTmXo9CMydIvYto1lWcTjcdauXcsvfvELnnrqKZYtW0Y+n5/QyHwcMB/NOTfVsgpoRbMztHElkUj4CiIEMtw0NTW5OT2/w6L4bslkkpaWFkzTLOvMe6NNiZibmprcdMxYhuF8Pl/3XLQQ0du+T3/601x44YXccccd7NixwyVqA0FK/VrRnPsv6b1/Bv4nIeT/QBMvl8vxzW9+k2984xv09fUFShC3tbWRy+UqBi9KKUzTHKVspRSGYVT1mbLZ7ChiSh5QSBgUEoyk0+naBweAZVmYplbfli1b+M53vtOIPqFw7LvA3UK2Dzv/hppYyufztLS00NLSEvjc9evX093dXZGAiUSibKS7efNmrrjiioq/W64tuVyOL33pS+zfv594PF7XMGwYBpdccgn33HOP266xBjWmaboWb+vWrRiGwdatW4nH49i23Sh5Q2mEcI5ZwMvOF6HsdCrzqTfeeKPrWAdx0JVSau7cuXVd+4knnnCvWQ6lgYBt22pgYEAtWbJkXO79scceq3r9eiBBllJK3XjjjY0WmAjHXgZmxdDFgn/lkDFUz7Wvr083wjNV5kdAJ4ar+WSVzp01a5b7fZDzUqlUUT7STxu9kHs8fPjw2DqtQpvFP/ze977HypUrGykwkUb8FXCGid5s6LTw2lOIJE+cOMHw8DDJZNLXkCQOeDwep6Ojg+bmZrfj/VzTMAzS6TSWZWHbtq8cpAQipmm6fmUtR79S4evy5cv54he/CASLwv1AfNt0Os2DDz7IJZdcQjabbaTysdOAuSbQiWZlKAGIF/39/SQSiboiw+9///v09fUFTqd87GMfcx13v0in02zbto2+vj5fPmA8HnfnjmXGIh6Ps2LFiqLPxxuxWIx8Ps/q1av5yle+wkMPPdQIQYnUHphApwFsAr5HA6z/aGlpYdmyZSSTSV9VKhKJfv3rX+eqq66q65rvvvsuGzdupK+vr6Z1kLTG1772NdavX1/X9UoxUeQTSD8ePHiQ888/n97e3kawgsK1201gYZgt8WJoaIhXXnkl8HnXXnsttm2Ty+V8p28kZdHT08POnTsDWYWrr77anaf1a3HLkWyseUQ/kIfmrLPO4jOf+QyPPPJIIxBQsNCk4P+FXlkpvlKpUit1ViKRwLIs1+kud24lyLFKKdLpNENDQzUV4/X35DoN4tjXhFKKm2++mUcffbTIlw0JwrXTTOBDYbWiFEqpQKVFuVwOgMHBQXeVWpCaQKmgkejb7/VGRkZCXxUXxHrKsUuXLmXlypW8+uqrvoO1CcaHJAiBkC2gPJHXX389V155pUuQeDzulk2VO2d4eJg1a9YQi8UqHlcOYrnOPvtsfv7zn/s+L5fLcf755094JfR4QiLi1tZWrrjiCpeAIT5AwrVOE5gTViu8EAKuWLEicGnVW2+9xU033RT4evl8ng0bNnDdddcFOjebzbJp0ybfxyulGB4eHrPFkSKItrY2tm7dSltbW6A2AJx33nnu7zSALzjHBPzfxSTg0KFDbl6u1jAjQcD+/fv54Q9/WNf1Vq5cyZo1a3wVBojv1N3dzf3331/X9cYLH/nIR7j11luL5n+rQaz10qVLOeWUUzh69OhEN9EP2kx0fT40QBACOhktc5q1hjgZolOpFM3NzS5pgzzV7e3t7ko8v4noRCLBnDlzOHny5KRbEana+e1vf8utt97q5iFr+YPSzkWLFtHZ2cnRo0fDtIDS2CaTBtt+rbu727eDL4QbGRlhZGSk7msGCShE0f39/aEkdLPZLAC7du1i//79LFmyxJf1FpcjHo8zd+5c97OQkTRpsM2HTpw44dvBl2MuuOACHnroobqut3bt2sABRTqd5oEHHuDkyZM0NTW5U4djgVKKZDIZKJD60Id0AiNoMLRgwQL3miEjLgWCoUOGg87OTu6+++6aW3TI8el0mhtuuMEtKgiKkZERHn/8cbq7uyumJmT67KqrruKcc86p6zqNALGAmzZt4v777w87Egb0fFzoU3BQeBq7urq4/fbbfZ+XTqe59NJLaW1t9eU3CuTYDz74gLvuuovu7m5f1zrnnHNGKS0sSyIL8f1Cjm1tbZ2oJgVF3kRvoZoKuyUCw9Dbc9TqWHl6Z8+eXVQWFWRqTBQ4e/ZsBgYGKlqEcp9PlRxgOTQ3N9c+aHKQNdEr1Ot62fBEQCnlzjj4QU9PDydPnsSyrIrOeDkLJRZQFn6Lc18NQ0NDRdcJ24fy86B6Ie31c68TDOFaxgQGgNmhNseB+HWXXnopq1atYmRkpKKlkaiura2NxYsXu/V5QTF//nxuu+02ent7K5LKMPQC+DVr1tR9nUbC8PBw2E0QDJjACQoV0aFC6tc++clPcuedd/o+b/fu3bzzzjvulhcCpRTZbLZiaZfUyn3rW9/ydZ1MJsOTTz5JJpOZ1BSG3If33vL5PNdccw3z5s0LXNI1MDAwEc2sBydMoMv5I/QhWAjY1dVVs7zKW9GxZcsWnn/++bquec8993D22WdXzaXJcP3ee+/xuc99rq7rTARWr17NvHnz3AJXv3j33XcnsFW+IFzrMoGekBszChIQVMvPiTWIxWK0t7eTTCZHbdRTa42IUor29nY3/VItsIjFYpimSWdnp6/i1fGG3Ec8HseyLNauXcuSJUtqtrvcbxw5cqTo7xDRYwJHnD9CzweKQr2zDJVmG+TYeDzO0NBQ3Y51Pp93Z0IqLekUJSul6O3tDRQkTRQuu+wyUqmU77lgseJdXV309GibE2IQJRc+YgIHw2pFJQwPDxOPx30PK+vWraO5udndWUuQyWSqJrTz+TxLlizxPRPS1tbGZz/7WY4fP+6rbUopmpubxyVoUc6ODLK+5Mtf/jKA7z4Ssv3pT39yCxHCjuKBgwbw98C/0gCLkmTBzLnnnsu9997rbtNRqZzdsiwWLVrEokWLxnTd/fv3Mzg46EbBmUzGrbTJZrOkUilWrVrVCENW3RB/+sEHH2Tjxo1hL04Srv2DBCG280GogYh0yOuvv84111xTVeESsNx2223cd9995HK5QJZGhqTDhw9z3XXXcejQIbfkPp/Pu8s9Lcviox/9KLt37w68GeVEQPokyCyILCO1bZvdu3cX/U4IUGiu2ThBSDfaDzw9rBaVQpLRlSwfFKxlJpNxLVc9BLQsi76+PgYHB90ZD6+SJRov3dZ3KkEyBocPH+a5554Dam+OOQk4Ahw3gfeBdym8yyv0eWFBOR9FPhNCyNa1IkF+W4bbEydOFP2m/I4oqbe3183DjaffNJlENgyDX//6127RRYhFCMKxd4H3TaAfeAe9d2/oBJT0huzBLDtQiYVLJBJuVGpZFsuWLXOLRINAnPf29nauvPJKent7RylG/p4/f767K/54k2ai1wXL74+MjLB9+/ZGsN7CsXeAfhmzDjj/ht46Idu6devYvn17UZVz6RZr4q8dOnQocHGAWLOWlhaefPJJ99qVjuvq6uL48eN1KTCXyxXNniilSKVSnHnmmRNe1CBJ6p/97Gfs27fPLS0LEdKBB7wfXo9mZujb88o2s+vXr6+4+5NSyt2m9rnnnlPJZFKlUimVTCZ9ixz/+c9/XimlVC6XG3UN2Xmrv79fXXTRRXVdp6mpSSWTSZVIJFyR79atW6d6enqq3udYINv5dnV1ubt5Sf+GKMKz66GQdnkFOAmkaYApOdBVLqqKvyVDs2VZZLPZwGkFOV4CGFXGv5O/xepms9lx858Mw2DXrl088sgj3HHHHWPaLbUSlBPJb9myhf3794ft+0GBW4NozrlbZf0X8F5IjSqCKN3vYnFVEjD4hRxfjeRQmM5TJcHPWCG/J6/8Gk8oZ4F/PB7nxz/+Mdu3b28E8nnxHppzyItqbOAl4GwaxALKJjqVIEHHrFmzWLx4MU1NTWU72LKsslNnsViMTCbDmWeeWTGIkeubpsm8efPo6OgglUpVnR6ULeJqIR6P84lPfIIbbrjBtVTjAaX0u5NN0+Tpp59m06ZNjVQ8K0/7S86/4b+ophRibWbPns2+ffsq5vZs26a1tZVkMunW8lU6rtKTL/vnyRYdMiyLdZJ2JBIJuru7GRoaqlmI6qdIVDlRfGdnZ9XjgsK7b80vf/lLNmzYEMrS0Soo+6Iaea36R4A/oHcwhwYozTrjjDPKPr2xWIyRkRE2btzI3XffPabr2LbNhg0beOmll0ilUgwODroEyWaz7Nixg8suu2xM16gEIcVYUyPiD0tf3XfffWzevBnLshpp6JUn4CRwHvpVXXGZEgGdl3kZWEcDzAvbtl2zbk0m1f3sJVju9w3DoL+/nzfeeIMDBw6UPU580Vwu53uYrGehUFAopYpmZwDefPNN7rrrLn7zm98A5deyhIg8mlN70VwDsGX+V9aG7EUTsCFQSTkyVOZyuTENLYZhMDQ0RC6XcytixL+THQi8w9dEJHGrtd/7nbcNMg8sxHvttdfYsWMH27dvd1/66CVog+FlNNdMwBIrJ3f6LHA7DbJIqZJyJGUiEWo9xPCmVvr7+0dNw3nTMl6lTyaqXa+np4dnnnmGX/3qV+zatYve3l6g4ayeQIzcMPCM5zN3mJUW/z/gbWApDUDAWshkMgwMDBTNlvitI8zn825wMTg4OOp7Ub4s4AlqbS3LGpN1Fgufy+Xo7++nv7+fI0eO8Mc//pE9e/awZ88et7AUCha7AckHBS69DbzofGZDMcEkGr4H+Ibz/4aJ370Qsp1yyiksXLiwyGrJfHEtyLG9vb28/vrrZdf92rbN8uXLWbBgQeCFSPIu4HqtpkzfjYyM0NPTw9GjR8sSWsqsGpR4AuHSP6O5JVwrS8Bzgf9wvmtoCzjTIG9UqjRz08CQabjzgdfwENAb6cojtA/4v8DlNMi2HZUQZCeEaqg2i+J9KWA9i8DHCq91D7sYtk4Ih/6dwmtaXXNdmmqRaPjnwMQkv8YRkvWfSEyB4W0qQKE55Ua/8kWp+ZA3Wv8fdKGqJKkjRKgHYv3eR3PKwGP9oDwBY8BhYKfzWeQHRqgXwp2daE65vl/pAV7E0Cbzr9FTcw21g2qEKYcseurtP/FhAfEc8Cf0ck2IhuEIwSGc+Vc0l6CEfFA5zyeR7/8GchRetR4hgh9I4jmH5hBUyKZUImDe+e4l9PTcqLE7QoQqkFjiWTSHYlQYRSsRUKxdFriPAiEjKxihFhQFwv0LmkPy+ShUy+JKSuYF4N+IhuEI/iDD778Bz1Mm8PCiVool7py8Ek3EJNEUXYTKkCm3LHAx8HuqDL9Qu9hArOCrwKNEvmCE6hDf7zE0Z6paP/BnycT3Ox09kdxBYZyPEEEgxqobXdByGB8E9EMi+eH3ge8QDb8RKsNAc+R9fJAv6A/H0C823I22gBYh76IQScOIcGE3miMxfBoqv8Oocn4wA9wJDBFFxRE0hBtDaG5kCMCNIH6cVDa8DNxPFJBE0JDA4340Nya0gkqG4hS6tl85Fwt7CIgkHBHdv4jmhO+hV1BPQCEMX44e89PO51FUPLMgo98g8LfAG0xi/aiQ7Rb0ExAFJDNPROe3oDHpBkiqG35KsTmOZPqL6PqnaISybijmSDt6ysX7VEQyfUV0/HtH98KDUCAXXgoco/jpiGT6iej2mKNzaADfX8zvJ9E7HzXEVr+RjLuIXoeATzk6b5glu7K886voxlpEJJxOYlMYer/q6LrhXposT8O30Q2NhuLpI6LLbzs6bhjL54VB4al4AN3gHOF3XiRjE9HhA45uTRq4IMXbsO3ohkeR8dQV0d12j14blnwCma5LAD+h+CmKZOqI6Ownji4DT7OFCcPz78MUbigKTBpfbArke7hEl1MKhke2Ubi5KDhpXMlTMBLbSnQ4JeFtvETHQsSwOzuSYvHqRKLdKU0+gfcmbkInMhWRX9hIIroYcnRUqrcpD2+K5mrgKPqGowg5fBEdHHV0Aw2eahkLJIG5HL1sTxH5hWGJ19971dGJV0fTFjJ5PRu9ftTbIWErZaaIt68fc3Th1c20h/dGb0GvJS19KiMZf/GONt0UiklLdTIj4E1srkBv/SEdFfmG4y/ePn3B6XMoTBzMWEhw0gRsBQYodFhkDccu3kqWAaePm0r6fsbD6/iuBX5HoQOjGZT6iedNdf3O6dtyfR4BPRRIp6SATRTSNYooSAki3r466vRlyunbONM0xTJe8D6ZC4AfoFfbS4dGQ3N58Q61yumzHzh9WK5vI1RBqWO8CniK4iElClTK90XO6atVnv6bUpUsjYRSIl6OfueEt/PzzMzhudx973T6SBARb5xQ2pGXA4+jd+L0PvkzwSpaFI8EWacvvMSb8amViUIpEZeia9YOUlCIJFunS1K70v0cdO5dlkdCRLxJgTdaFswHbka/FqBUgWIZpxIZJaAoVzH0rHOv80v6YEpGt1OuwSWQJ142xEmiLcJ1wN8BH6aQfsA5rrTMKOw+UCX/VxQ/YMPAAfTL/n6BfuuQvPpANpH3/saUQtidP16Q7SFKX6h7KbAOHRH+DdBS5lxx5I0SmQiUWrNy1hx0Xd6LwCvALvT7m70wKSwUn9KYLgQUeMnjVU4TsBD90rx1wIXoTddnVfgdy/M7lf6tBFXl30pTX/3oTb33oAn3B7SPl/EcI76dkHdaYLoRsBTiF5V71fiHgdXAOcBZ6ITtAmAeE2sBPwDeceRt4E1gL3qYLYXpnDNtXxY53Qko8FrGShakHU2+U4C5wJloq3kq+tUUncAcoA3tazZRGD7zaGuVRU/4nwC60CVPR9HW7L+B4+iNfT4A+ups57TC/we7fh3ewrrAzwAAAABJRU5ErkJggg==" alt="Logo de Desarrollos de Ideas Mexicanas">
+    </div>
+    <div class="brand-text">
+      <div class="brand-name">Desarrollos de Ideas Mexicanas</div>
+      <div class="brand-tag" style="color:var(--teal)">Desarrollado para el aprendizaje</div>
+    </div>
+  </div>
+  <b>Nota para el docente:</b> este laboratorio virtual complementa —no sustituye— la experimentación real. Úsalo cuando no haya materiales, como tarea previa a la sesión presencial, o para que el alumno repita en casa lo que vivió en el club. El ciclo POE (Predice–Observa–Explica) está integrado: el simulador no se desbloquea hasta que el alumno confirma una predicción. Parte del paquete de la capacitación <b>“Ciencia: de la Teoría a la Práctica”</b>.
+  <div class="footer-credit">© <span id="yr"></span> <b>Desarrollos de Ideas Mexicanas</b> · Proyecto educativo de código abierto, desarrollado para el aprendizaje.</div>
+</footer>
+<script>document.getElementById("yr").textContent = new Date().getFullYear();</script>
+
+<script>
+"use strict";
+/* ================= framework ================= */
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const COL = {navy:"#0F2A43", teal:"#0E7C86", amber:"#F5A524", muted:"#5A6B7A", tint:"#EAF3F4"};
+let current = null, raf = null, ran = false, chosen = -1;
+let uiScale = 1; // compensa el achicamiento del texto cuando el canvas se muestra más pequeño que su resolución lógica (660px)
+function F(px, weight){ return `${weight||600} ${Math.max(1,Math.round(px*uiScale))}px Segoe UI`; }
+// dibuja texto centrado que se envuelve en varias líneas si no cabe en maxWidth (evita que se corte en pantallas chicas)
+function wrapCenterText(c, text, cx, y, maxWidth, lineHeight){
+  const words = String(text).split(" ");
+  const lines = []; let line = "";
+  for(const w of words){
+    const test = line ? line+" "+w : w;
+    if(c.measureText(test).width > maxWidth && line){ lines.push(line); line = w; } else line = test;
+  }
+  if(line) lines.push(line);
+  const startY = y - (lines.length-1)*lineHeight/2;
+  lines.forEach((l,i)=> c.fillText(l, cx, startY + i*lineHeight));
+}
+
+function loop(fn){ let last = performance.now();
+  function frame(now){
+    const dt = Math.min(0.05,(now-last)/1000); last = now;
+    const cw = cv.clientWidth; if(cw) uiScale = Math.min(1.7, Math.max(1, 660/cw));
+    fn(dt); raf = requestAnimationFrame(frame);
+  }
+  raf = requestAnimationFrame(frame);
+}
+function stopLoop(){ if(raf) cancelAnimationFrame(raf); raf = null; }
+function markRan(){ if(!ran){ ran = true; $("revealBtn").hidden = false; } }
+function setReadout(html){ const r=$("readout"); r.hidden=false; r.innerHTML=html; }
+
+function roundRect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+
+function goHome(){
+  if(current && current.unmount) current.unmount();
+  stopLoop(); current = null;
+  $("exp").hidden = true; $("home").hidden = false;
+  window.scrollTo({top:0});
+}
+$("backBtn").onclick = goHome;
+$("otherBtn").onclick = goHome;
+
+function openExp(e){
+  current = e; ran = false; chosen = -1;
+  $("home").hidden = true; $("exp").hidden = false;
+  $("eTitle").textContent = e.name;
+  $("eSub").textContent = e.sub;
+  $("st1").className = "step active"; $("st2").className="step"; $("st3").className="step";
+  $("predQ").textContent = e.pred.q;
+  const opts = $("predOpts"); opts.innerHTML = "";
+  e.pred.options.forEach((o,i)=>{
+    const d = document.createElement("div"); d.className="opt";
+    d.innerHTML = `<span class="letter">${"ABCDE"[i]}</span><span>${o}</span>`;
+    d.onclick = ()=>{ [...opts.children].forEach(c=>c.classList.remove("sel")); d.classList.add("sel"); chosen=i; $("predConfirm").disabled=false; };
+    opts.appendChild(d);
+  });
+  $("predConfirm").disabled = true;
+  $("predPanel").style.opacity = 1;
+  $("lock").style.display = "flex";
+  $("revealBtn").hidden = true;
+  $("explicaPanel").hidden = true;
+  $("readout").hidden = true; $("readout").innerHTML="";
+  $("controls").innerHTML = "";
+  $("simdom").innerHTML = "";
+  cv.style.display = e.dom ? "none" : "block";
+  ctx.clearRect(0,0,cv.width,cv.height);
+  e.mount();
+  window.scrollTo({top:0});
+}
+$("predConfirm").onclick = ()=>{
+  $("lock").style.display = "none";
+  $("predPanel").style.opacity = .55;
+  $("st1").className="step done"; $("st2").className="step active";
+  $("predConfirm").disabled = true;
+};
+$("revealBtn").onclick = ()=>{
+  const e = current;
+  $("st2").className="step done"; $("st3").className="step active";
+  $("explicaPanel").hidden = false;
+  const v = $("verdict");
+  if(e.pred.correct === null){
+    v.className = "verdict ok"; v.textContent = e.pred.verdict(chosen);
+  } else if(chosen === e.pred.correct){
+    v.className = "verdict ok"; v.textContent = "✔ ¡Tu predicción fue correcta! " + e.pred.okText;
+  } else {
+    v.className = "verdict miss"; v.textContent = "✦ Tu predicción no coincidió con lo observado… y eso es una excelente noticia: la sorpresa es donde empieza el aprendizaje. " + e.pred.okText;
+  }
+  $("explicaBody").innerHTML = e.ciencia;
+  $("claseBody").innerHTML = "<b>En tu clase (con material real):</b> " + e.clase;
+  $("revealBtn").hidden = true;
+  $("explicaPanel").scrollIntoView({behavior:"smooth"});
+};
+function ctrlBtn(txt, cls, fn){ const b=document.createElement("button"); b.className="btn small "+(cls||""); b.textContent=txt; b.onclick=fn; $("controls").appendChild(b); return b; }
+function ctrlSlider(labelTxt, min, max, step, val, fn){
+  const l=document.createElement("label"); l.textContent=labelTxt+" ";
+  const s=document.createElement("input"); s.type="range"; s.min=min; s.max=max; s.step=step; s.value=val;
+  s.oninput=()=>fn(parseFloat(s.value));
+  l.appendChild(s); $("controls").appendChild(l); return s;
+}
+
+/* ================= 1 · Torre de densidades ================= */
+const expDens = {
+  id:"dens", name:"Torre de densidades", icon:"🥛",
+  sub:"Química · Física — Densidad, flotación, miscibilidad",
+  cardDesc:"Vierte cuatro líquidos en el orden que quieras y suelta una uva, una moneda y un corcho. ¿Dónde quedará cada cosa?",
+  time:"10 min",
+  pred:{ q:"Si viertes miel, agua, aceite y alcohol en el mismo vaso (en cualquier orden), ¿qué líquido quedará hasta ARRIBA?",
+    options:["La miel","El agua","El aceite","El alcohol","Se mezclarán todos"],
+    correct:3, okText:"El alcohol, el menos denso de los cuatro, siempre termina arriba — sin importar el orden en que viertas." },
+  liquids:{ miel:{rho:1.42,color:"#C98A1B",label:"Miel"}, agua:{rho:1.10,color:"#3B7DD8",label:"Agua c/colorante"},
+            aceite:{rho:0.92,color:"#E8C84A",label:"Aceite"}, alcohol:{rho:0.79,color:"#BFE3EE",label:"Alcohol"} },
+  objects:{ moneda:{rho:7.5,color:"#B9B9B9",r:9,label:"Moneda"}, uva:{rho:1.05,color:"#7B2D8B",r:11,label:"Uva"},
+            corcho:{rho:0.24,color:"#C7A574",r:10,label:"Corcho"} },
+  st:null, showRho:false,
+  mount(){
+    const s = this.st = {layers:[], objs:[], poured:new Set(), dropped:new Set()};
+    this.showRho = false;
+    Object.keys(this.liquids).forEach(k=>{
+      const b = ctrlBtn("Verter "+this.liquids[k].label.toLowerCase(), "", ()=>{
+        if(s.poured.has(k)) return; s.poured.add(k); b.disabled = true;
+        s.layers.push({key:k, ...this.liquids[k], h:0});
+        this.check();
+      });
+    });
+    Object.keys(this.objects).forEach(k=>{
+      const b = ctrlBtn("Soltar "+this.objects[k].label.toLowerCase(), "ghost", ()=>{
+        if(s.dropped.has(k) || s.layers.length===0) return; s.dropped.add(k); b.disabled=true;
+        s.objs.push({key:k, ...this.objects[k], x:330+(Math.random()*60-30), y:52, vy:0});
+        this.check();
+      });
+    });
+    ctrlBtn("Mostrar densidades","ghost",()=>{ this.showRho = !this.showRho; });
+    ctrlBtn("Reiniciar","ghost",()=>{ this.unmount(); $("controls").innerHTML=""; this.mount(); });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ stopLoop(); },
+  check(){ const s=this.st; if(s.poured.size>=2 && s.dropped.size>=1) markRan(); },
+  tick(dt){
+    const s = this.st, GL={x:230,y:80,w:200,h:300,bot:380};
+    // sort: densest at bottom
+    const sorted = [...s.layers].sort((a,b)=>b.rho-a.rho);
+    sorted.forEach(L=>{ L.h += (62-L.h)*Math.min(1,dt*2.2); });
+    // geometry bottom-up
+    let y = GL.bot; const spans = [];
+    sorted.forEach(L=>{ y -= L.h; spans.push({...L, top:y, bottom:y+L.h}); });
+    const topSurface = spans.length ? spans[spans.length-1].top : GL.bot;
+    // objects target
+    s.objs.forEach(o=>{
+      let target;
+      const denser = spans.filter(L=>L.rho > o.rho);
+      if(spans.length===0) target = GL.bot - o.r;
+      else if(denser.length===0) target = topSurface - o.r*0.4;           // floats on top
+      else {
+        const rest = denser[denser.length-1];                              // topmost denser layer
+        target = (rest.top===undefined? GL.bot : rest.top) - o.r*0.5;
+      }
+      if(o.rho > Math.max(...spans.map(L=>L.rho), 0)) target = GL.bot - o.r; // heavier than all -> bottom
+      o.vy += 500*dt; o.y += o.vy*dt;
+      if(o.y >= target){ o.y = target; o.vy = 0; }
+    });
+    // draw
+    ctx.clearRect(0,0,660,430);
+    ctx.fillStyle = "#FDFEFE"; ctx.fillRect(0,0,660,430);
+    // layers
+    spans.forEach(L=>{ ctx.fillStyle=L.color; ctx.globalAlpha=.9; ctx.fillRect(GL.x, L.top, GL.w, L.bottom-L.top); ctx.globalAlpha=1; });
+    // glass
+    ctx.strokeStyle="#8FA9B0"; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(GL.x-2,GL.y-14); ctx.lineTo(GL.x-2,GL.bot+2); ctx.lineTo(GL.x+GL.w+2,GL.bot+2); ctx.lineTo(GL.x+GL.w+2,GL.y-14); ctx.stroke();
+    // objects
+    s.objs.forEach(o=>{
+      ctx.fillStyle=o.color; ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,7); ctx.fill();
+      ctx.fillStyle=COL.navy; ctx.font=F(11); ctx.textAlign="center";
+      ctx.fillText(o.label, o.x, o.y - o.r - 5);
+    });
+    // labels
+    ctx.textAlign="left"; ctx.font=F(12);
+    spans.forEach(L=>{
+      const cy=(L.top+L.bottom)/2+4;
+      ctx.fillStyle=COL.navy; ctx.fillText(L.label + (this.showRho? `  ·  ${L.rho.toFixed(2)} g/mL`:""), GL.x+GL.w+14, cy);
+    });
+    if(spans.length===0){ ctx.fillStyle=COL.muted; ctx.font=F(14); ctx.textAlign="center";
+      wrapCenterText(ctx, "Usa los botones de abajo para verter líquidos ↓", 330, 220, 560, Math.round(18*uiScale)); ctx.textAlign="left"; }
+  },
+  ciencia:`<h5>La ciencia detrás</h5><p>Cada líquido tiene una <b>densidad</b> distinta (masa entre volumen). No importa el orden en que viertas: el más denso «gana» el fondo y el menos denso flota hasta arriba. La miel (≈1.42 g/mL) siempre termina abajo y el alcohol (≈0.79 g/mL) siempre arriba.</p>
+  <p>Los sólidos siguen la misma regla: cada objeto se hunde hasta encontrar una capa <b>más densa que él</b>, y ahí se detiene. La moneda (≈7.5 g/mL) atraviesa todo; el corcho (≈0.24 g/mL) flota sobre todo; y la uva (≈1.05 g/mL) queda «levitando» a media torre. Bonus: el agua y el aceite tampoco se mezclan por <b>polaridad</b> — activa «Mostrar densidades» y verifica los números.</p>`,
+  clase:`El experimento real cuesta menos de $40: miel, agua con colorante, aceite y (opcional) alcohol. Pide la predicción exactamente igual que aquí — ANTES de verter. Reto extra: que midan la densidad real de cada líquido con una báscula de cocina y una taza medidora, y comparen con los valores del simulador.`
+};
+
+/* ================= 2 · Inercia ================= */
+const expInercia = {
+  id:"inercia", name:"La moneda que no vuela", icon:"🪙",
+  sub:"Física — Inercia, primera ley de Newton",
+  cardDesc:"Una moneda sobre una tarjeta, sobre un vaso. Ajusta la velocidad del tirón y descubre cuándo cae al vaso… y cuándo no.",
+  time:"5 min",
+  pred:{ q:"Si jalas MUY RÁPIDO la tarjeta que sostiene la moneda, ¿qué pasa con la moneda?",
+    options:["Sale volando junto con la tarjeta","Cae dentro del vaso","Se queda flotando un instante y cae fuera del vaso"],
+    correct:1, okText:"Con un tirón rápido, la moneda cae al vaso: su inercia la mantiene en su lugar mientras la tarjeta escapa." },
+  st:null, speed:8,
+  mount(){
+    const s = this.st = {phase:"ready", t:0, cardX:0, coinX:0, coinY:0, coinVX:0, coinVY:0, msg:"", trials:0};
+    this.speed = 8;
+    ctrlSlider("Velocidad del tirón", 1, 10, 1, 8, v=>{ this.speed=v; });
+    ctrlBtn("¡Jalar la tarjeta!", "amber", ()=>{ if(s.phase==="ready"){ s.phase="pull"; s.t=0; } });
+    ctrlBtn("Reiniciar","ghost",()=>{ Object.assign(s,{phase:"ready",t:0,cardX:0,coinX:0,coinY:0,coinVX:0,coinVY:0,msg:""}); });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ stopLoop(); },
+  tick(dt){
+    const s=this.st, G={cupX:280, cupW:100, cupTop:250, floorY:250};
+    const fast = this.speed >= 6;
+    if(s.phase==="pull"){
+      s.t += dt;
+      const v = 90 + this.speed*85;                 // px/s card speed
+      s.cardX += v*dt;
+      if(fast){ /* coin stays */ }
+      else { s.coinX += v*0.82*dt; }                // friction drags coin
+      if(s.cardX > 340){
+        s.phase = "fall";
+        s.coinVX = fast ? 0 : (90+this.speed*85)*0.55;
+        s.coinVY = 0;
+      }
+    } else if(s.phase==="fall"){
+      s.coinVY += 900*dt;
+      s.coinY += s.coinVY*dt; s.coinX += s.coinVX*dt;
+      const coinAbs = G.cupX + G.cupW/2 + s.coinX;
+      if(fast && s.coinY >= 95){ s.coinY = 95; s.phase="done"; s.msg="¡PLOP! La moneda cayó al vaso 💧"; s.trials++; markRan(); }
+      if(!fast && s.coinY >= 200){ s.coinY = 200; s.phase="done"; s.msg="La moneda se arrastró con la tarjeta y cayó FUERA del vaso"; s.trials++; markRan(); }
+    }
+    // draw
+    ctx.clearRect(0,0,660,430); ctx.fillStyle="#FDFEFE"; ctx.fillRect(0,0,660,430);
+    const cupX=G.cupX, cupW=G.cupW, cupTop=G.cupTop, cupH=120;
+    // table
+    ctx.fillStyle="#D7C4A3"; ctx.fillRect(80, cupTop+cupH, 500, 14);
+    // cup with water
+    ctx.fillStyle="rgba(59,125,216,.35)"; ctx.fillRect(cupX+6, cupTop+34, cupW-12, cupH-40);
+    ctx.strokeStyle="#8FA9B0"; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(cupX,cupTop); ctx.lineTo(cupX+8,cupTop+cupH); ctx.lineTo(cupX+cupW-8,cupTop+cupH); ctx.lineTo(cupX+cupW,cupTop); ctx.stroke();
+    // card
+    const cardY = cupTop-10;
+    if(s.phase!=="fall" && s.phase!=="done" || s.cardX<520){
+      ctx.fillStyle="#EF8FA6"; roundRect(ctx, cupX-30+s.cardX, cardY-6, cupW+60, 8, 3); ctx.fill();
+    }
+    // coin
+    let coinCX, coinCY;
+    if(s.phase==="ready"||s.phase==="pull"){ coinCX = cupX+cupW/2 + s.coinX; coinCY = cardY-16; }
+    else { coinCX = cupX+cupW/2 + s.coinX; coinCY = cardY-16 + s.coinY; }
+    ctx.fillStyle="#C9A227"; ctx.beginPath(); ctx.arc(coinCX, coinCY, 12, 0, 7); ctx.fill();
+    ctx.strokeStyle="#8a6d0d"; ctx.lineWidth=2; ctx.stroke();
+    // labels
+    ctx.fillStyle=COL.muted; ctx.font=F(13); ctx.textAlign="center";
+    ctx.fillText(`Velocidad del tirón: ${this.speed} ${this.speed>=6?"(rápido ⚡)":"(lento 🐢)"}`, 330, 22);
+    if(s.msg){ ctx.fillStyle=COL.navy; ctx.font=F(16,700); ctx.textAlign="center"; wrapCenterText(ctx, s.msg, 330, 55+ (uiScale>1?10:0), 560, Math.round(20*uiScale)); }
+    ctx.textAlign="left";
+    if(s.trials>0) setReadout(`Intentos: <b>${s.trials}</b>. Prueba con tirón lento (1–5) y rápido (6–10) y compara qué pasa.`);
+  },
+  ciencia:`<h5>La ciencia detrás</h5><p><b>Primera ley de Newton:</b> un cuerpo en reposo permanece en reposo mientras la fuerza neta sobre él sea (casi) cero. La única fuerza horizontal que la tarjeta puede transmitirle a la moneda es la <b>fricción</b> entre ambas.</p>
+  <p>En el tirón rápido, esa fricción actúa durante tan poco tiempo que apenas mueve la moneda: la tarjeta escapa, el soporte desaparece y la gravedad la deja caer directo al vaso. En el tirón lento, la fricción tiene tiempo de arrastrarla. Es el mismo principio del pasajero que «se va de lado» cuando el camión frena: su cuerpo intenta conservar su movimiento. Por eso existe el cinturón de seguridad.</p>`,
+  clase:`Cuesta $0: vaso, tarjeta rígida y moneda. Pide el voto A/B antes del primer intento. Luego el reto inverso: «¿quién logra jalar TAN lento que la moneda se vaya con la tarjeta?» — comprobarán que la velocidad del tirón es la variable clave, que es exactamente lo que hace un científico: aislar variables.`
+};
+
+/* ================= 3 · Péndulo ================= */
+const expPend = {
+  id:"pend", name:"Péndulo: mide la gravedad", icon:"🕰️",
+  sub:"Física · Matemáticas — Movimiento armónico, medición",
+  cardDesc:"Cambia el largo y la masa, cronometra 10 oscilaciones y calcula la gravedad de la Tierra tú mismo.",
+  time:"10 min",
+  pred:{ q:"¿Qué determina el tiempo de cada oscilación (el periodo) de un péndulo?",
+    options:["El peso: más pesado, más lento","El largo del hilo","Ambos: peso y largo","La fuerza con la que lo empujas"],
+    correct:1, okText:"Solo el largo del hilo importa (en ángulos pequeños). La masa, contra toda intuición, no cambia nada." },
+  st:null, L:1.0, m:100,
+  mount(){
+    const s = this.st = {t:0, running:true, measuring:false, m0:0, count:0, lastSign:1, results:[]};
+    this.L = 1.0; this.m = 100;
+    ctrlSlider("Largo del hilo (m)", 0.3, 1.2, 0.05, 1.0, v=>{ this.L=v; s.t=0; if(s.measuring){s.measuring=false; s.count=0;} });
+    ctrlSlider("Masa (g)", 50, 500, 25, 100, v=>{ this.m=v; });
+    ctrlBtn("⏱ Cronometrar 10 oscilaciones", "amber", ()=>{
+      if(s.measuring) return;
+      s.measuring = true; s.m0 = s.t; s.count = 0; s.lastSign = Math.sign(Math.cos(0)||1);
+    });
+    ctrlBtn("Reiniciar","ghost",()=>{ s.t=0; s.measuring=false; s.count=0; s.results=[]; $("readout").hidden=true; });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ stopLoop(); },
+  tick(dt){
+    const s=this.st, g=9.81, L=this.L;
+    s.t += dt;
+    const w = Math.sqrt(g/L), th0 = 0.26;
+    const th = th0*Math.cos(w*s.t);
+    // count completed oscillations while measuring: detect cos crossing +1 phase i.e. w*t multiples of 2π since m0
+    if(s.measuring){
+      const periods = (s.t - s.m0) / (2*Math.PI/w);
+      s.count = Math.floor(periods);
+      if(s.count >= 10){
+        s.measuring = false;
+        const T_true = 2*Math.PI/w;
+        const human = (Math.random()*0.30 - 0.15);          // tu dedo no es perfecto
+        const T_med = (10*T_true + human)/10;
+        const g_calc = 4*Math.PI*Math.PI*L/(T_med*T_med);
+        s.results.push({L, T:T_med, g:g_calc});
+        const rows = s.results.map(r=>`L = <b>${r.L.toFixed(2)} m</b> → T = <b>${r.T.toFixed(2)} s</b> → g = <b>${r.g.toFixed(2)} m/s²</b>`).join("<br>");
+        setReadout(rows + `<br><span style="color:var(--muted)">Fórmula: g = 4π²L / T². El valor real es 9.81 m/s² — la diferencia es tu “error de cronómetro”.</span>`);
+        if(s.results.length>=2) markRan(); else if(s.results.length>=1) markRan();
+      }
+    }
+    // draw
+    ctx.clearRect(0,0,660,430); ctx.fillStyle="#FDFEFE"; ctx.fillRect(0,0,660,430);
+    const px = 330, py = 60, lenPx = L*240;
+    const bx = px + Math.sin(th)*lenPx, by = py + Math.cos(th)*lenPx;
+    // ceiling
+    ctx.fillStyle="#D7C4A3"; ctx.fillRect(230,py-16,200,10);
+    ctx.strokeStyle=COL.navy; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(bx,by); ctx.stroke();
+    const r = 10 + (this.m-50)/450*14;
+    ctx.fillStyle=COL.teal; ctx.beginPath(); ctx.arc(bx,by,r,0,7); ctx.fill();
+    ctx.fillStyle=COL.muted; ctx.font=F(13); ctx.textAlign="center";
+    ctx.fillText(`L = ${L.toFixed(2)} m   ·   masa = ${this.m} g`, 330, 400);
+    if(s.measuring){
+      ctx.fillStyle=COL.amber; ctx.font=F(22,800);
+      ctx.fillText(`Oscilaciones: ${s.count} / 10`, 330, 40);
+    }
+    ctx.textAlign="left";
+  },
+  ciencia:`<h5>La ciencia detrás</h5><p>En ángulos pequeños, el péndulo cumple <b>T = 2π√(L/g)</b>. Fíjate: la masa <b>no aparece</b> en la fórmula — por eso cambiar el peso no cambió el ritmo, igual que en la caída libre de Galileo todos los cuerpos caen igual.</p>
+  <p>Despejando: <b>g = 4π²L / T²</b>. Al cronometrar 10 oscilaciones y dividir entre 10, reduces el error de tu «dedo humano» — el simulador te mete ese error a propósito, porque medir bien es una habilidad científica. Prueba con L = 1.2 m y L = 0.3 m: el periodo cambia con la <b>raíz cuadrada</b> del largo (mitad de largo NO es mitad de tiempo).</p>`,
+  clase:`Con hilo, una tuerca y el cronómetro del celular ($20), tus alumnos miden la gravedad real con ~3% de error. Reto para el club: graficar T² contra L — sale una recta cuya pendiente es 4π²/g. Y la pregunta estrella: ¿el columpio del parque cumple la fórmula?`
+};
+
+/* ================= 4 · Lámpara de lava ================= */
+const expLava = {
+  id:"lava", name:"Lámpara de lava efervescente", icon:"🌋",
+  sub:"Química · Física — Densidad, reacciones, gases",
+  cardDesc:"Suelta una pastilla efervescente en un frasco con agua y aceite, y descubre por qué la 'lava' sube y baja sola.",
+  time:"5 min",
+  pred:{ q:"El frasco tiene aceite arriba y agua coloreada abajo. Al soltar la pastilla efervescente, ¿qué pasará?",
+    options:["Burbujeará arriba, en el aceite","Bajará hasta el agua y desde ahí subirán 'gotas' de agua con las burbujas","Todo se mezclará en un líquido rosa"],
+    correct:1, okText:"La pastilla solo reacciona al tocar el AGUA; el CO₂ que genera sube arrastrando gotas coloreadas que luego vuelven a caer." },
+  st:null,
+  mount(){
+    const s = this.st = {tabs:[], bubbles:[], drops:[], labels:false, count:0};
+    ctrlBtn("Soltar media pastilla", "amber", ()=>{ s.tabs.push({y:60, life:6, emitT:0}); s.count++; if(s.count>=1) setTimeout(markRan, 4000); });
+    ctrlBtn("Etiquetas de densidad","ghost",()=>{ s.labels=!s.labels; });
+    ctrlBtn("Reiniciar","ghost",()=>{ s.tabs=[]; s.bubbles=[]; s.drops=[]; });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ stopLoop(); },
+  tick(dt){
+    const s=this.st, B={x:250,y:60,w:160,bot:390}, waterTop=290, oilTop=80;
+    // tabs fall to bottom, then emit bubbles
+    s.tabs.forEach(t=>{
+      if(t.y < B.bot-16) t.y += 220*dt;
+      else if(t.life>0){
+        t.life -= dt; t.emitT -= dt;
+        if(t.emitT<=0){ t.emitT = 0.12;
+          s.bubbles.push({x:B.x+20+Math.random()*(B.w-40), y:B.bot-20, vy:-(60+Math.random()*50), r:4+Math.random()*4, drop:Math.random()<0.75});
+        }
+      }
+    });
+    s.tabs = s.tabs.filter(t=>t.life>0 || t.y < B.bot-16);
+    s.bubbles.forEach(b=>{
+      b.y += b.vy*dt;
+      if(b.y <= oilTop+14){ // pop at surface
+        if(b.drop) s.drops.push({x:b.x, y:b.y+6, vy:0});
+        b.dead = true;
+      }
+    });
+    s.bubbles = s.bubbles.filter(b=>!b.dead);
+    s.drops.forEach(d=>{
+      d.vy += 140*dt; d.y += d.vy*dt;
+      if(d.y >= waterTop+8) d.dead = true;   // rejoins water
+    });
+    s.drops = s.drops.filter(d=>!d.dead);
+    // draw
+    ctx.clearRect(0,0,660,430); ctx.fillStyle="#FDFEFE"; ctx.fillRect(0,0,660,430);
+    // oil
+    ctx.fillStyle="rgba(232,200,74,.55)"; ctx.fillRect(B.x, oilTop, B.w, waterTop-oilTop);
+    // water
+    ctx.fillStyle="#D6336C"; ctx.globalAlpha=.85; ctx.fillRect(B.x, waterTop, B.w, B.bot-waterTop); ctx.globalAlpha=1;
+    // bubbles & drops
+    s.bubbles.forEach(b=>{
+      ctx.fillStyle = b.y>waterTop ? "rgba(255,255,255,.85)" : "rgba(255,255,255,.6)";
+      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,7); ctx.fill();
+      if(b.drop && b.y < waterTop){ ctx.fillStyle="rgba(214,51,108,.9)"; ctx.beginPath(); ctx.arc(b.x, b.y+b.r+3, b.r*0.9,0,7); ctx.fill(); }
+    });
+    s.drops.forEach(d=>{ ctx.fillStyle="rgba(214,51,108,.9)"; ctx.beginPath(); ctx.arc(d.x,d.y,4.5,0,7); ctx.fill(); });
+    // tabs
+    s.tabs.forEach(t=>{ ctx.fillStyle="#F1F3F5"; roundRect(ctx, B.x+B.w/2-14, t.y, 28, 10, 4); ctx.fill(); ctx.strokeStyle="#ADB5BD"; ctx.lineWidth=1; ctx.stroke(); });
+    // bottle
+    ctx.strokeStyle="#8FA9B0"; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(B.x-2,B.y); ctx.lineTo(B.x-2,B.bot+2); ctx.lineTo(B.x+B.w+2,B.bot+2); ctx.lineTo(B.x+B.w+2,B.y); ctx.stroke();
+    if(s.labels){
+      ctx.fillStyle=COL.navy; ctx.font=F(12);
+      ctx.fillText("Aceite · ρ ≈ 0.92 g/mL", B.x+B.w+14, 180);
+      ctx.fillText("Agua coloreada · ρ ≈ 1.00 g/mL", B.x+B.w+14, 330);
+      ctx.fillText("Burbuja CO₂ + gota = menos densa que el aceite → sube", B.x+B.w+14, 210);
+    }
+  },
+  ciencia:`<h5>La ciencia detrás</h5><p>Tres fenómenos en un frasco: <b>(1)</b> el agua y el aceite no se mezclan, y el agua —más densa— vive abajo; <b>(2)</b> la pastilla (ácido cítrico + bicarbonato) solo reacciona al tocar el <b>agua</b>, liberando burbujas de CO₂; <b>(3)</b> cada burbuja pegada a una gota de agua forma un «paquete» menos denso que el aceite, así que sube. Arriba, el gas escapa, la gota vuelve a ser más densa que el aceite… y cae. Un motor de densidades que se apaga solo cuando la pastilla se agota.</p>`,
+  clase:`Frasco, aceite, agua con colorante y pastillas efervescentes (~$45). Pregunta de oro antes de empezar: «¿el colorante teñirá el aceite o el agua?» (spoiler: atraviesa el aceite sin tocarlo). Reto medible: ¿media pastilla burbujea la mitad de tiempo que una entera? Cronométrenlo y grafiquen.`
+};
+
+/* ================= 5 · pH col morada ================= */
+const expPH = {
+  id:"ph", name:"Col morada: detector de ácidos", icon:"🧪",
+  sub:"Química — Ácidos, bases y escala de pH",
+  cardDesc:"El 'té' de col morada cambia de color con cada sustancia. Pon a prueba 10 líquidos de tu casa y construye tu escala de pH.",
+  time:"10 min", dom:true,
+  pred:{ q:"De estas tres sustancias de tu cocina, ¿cuál crees que es la MÁS ácida?",
+    options:["El jugo de limón","El refresco de cola","El vinagre"],
+    correct:0, okText:"El limón (pH ≈ 2.0) gana por poco… pero la sorpresa es que el refresco (pH ≈ 2.5) casi empata con el vinagre. Y nos lo tomamos.",
+  },
+  subs:[
+    {n:"Jugo de limón", short:"limón", ph:2.0}, {n:"Vinagre", short:"vinagre", ph:2.5}, {n:"Refresco de cola", short:"refresco", ph:2.5},
+    {n:"Jugo de tomate", short:"tomate", ph:4.1}, {n:"Café negro", short:"café", ph:5.0}, {n:"Leche", short:"leche", ph:6.6},
+    {n:"Agua pura", short:"agua", ph:7.0}, {n:"Bicarbonato disuelto", short:"bicarb.", ph:8.5}, {n:"Jabón de manos", short:"jabón", ph:10.0}, {n:"Limpiador con amoniaco", short:"amoniaco", ph:11.5},
+  ],
+  tested:null,
+  phColor(ph){
+    const stops=[[1.5,[214,51,108]],[4,[232,97,140]],[6,[142,90,168]],[7,[111,66,193]],[8,[66,99,235]],[10,[43,138,62]],[12,[148,193,31]],[13.5,[230,198,25]]];
+    if(ph<=stops[0][0]) return `rgb(${stops[0][1]})`;
+    for(let i=0;i<stops.length-1;i++){
+      const [p1,c1]=stops[i],[p2,c2]=stops[i+1];
+      if(ph<=p2){ const f=(ph-p1)/(p2-p1);
+        return `rgb(${Math.round(c1[0]+f*(c2[0]-c1[0]))},${Math.round(c1[1]+f*(c2[1]-c1[1]))},${Math.round(c1[2]+f*(c2[2]-c1[2]))})`; }
+    }
+    return `rgb(${stops[stops.length-1][1]})`;
+  },
+  mount(){
+    this.tested = new Map();
+    this._marks = [];
+    const wrap = document.createElement("div"); wrap.className="ph-area";
+    wrap.innerHTML = `
+      <div>
+        <div class="ph-glass"><div class="ph-liquid" id="phLiq"><div class="ph-label" id="phLbl">Té de col morada (neutro)</div></div></div>
+        <button class="btn ghost small mt" id="phClear" style="width:150px">Vaciar el vaso</button>
+      </div>
+      <div style="flex:1;min-width:260px">
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Toca una sustancia para agregarla al té de col morada:</p>
+        <div class="ph-subs" id="phSubs"></div>
+        <div class="ph-scale">
+          <div style="height:72px"></div>
+          <div class="ph-bar" id="phBar"></div>
+          <div class="ph-nums"><span>pH 1 · muy ácido</span><span>7 · neutro</span><span>14 · muy básico</span></div>
+        </div>
+      </div>`;
+    $("simdom").appendChild(wrap);
+    const subsEl = $("phSubs");
+    this.subs.forEach(sub=>{
+      const b=document.createElement("button"); b.className="ph-sub";
+      b.innerHTML = `${sub.n}<small>pH: ¿?</small>`;
+      b.onclick = ()=>{
+        $("phLiq").style.background = this.phColor(sub.ph);
+        $("phLbl").textContent = `${sub.n} · pH ≈ ${sub.ph}`;
+        b.classList.add("used"); b.querySelector("small").textContent = `pH ≈ ${sub.ph} · ${sub.ph<6.5?"ácido":sub.ph<=7.5?"neutro":"básico"}`;
+        if(!this.tested.has(sub.n)){
+          this.tested.set(sub.n, sub.ph);
+          const m=document.createElement("div"); m.className="ph-mark";
+          m.style.left = ((sub.ph-1)/13*100)+"%"; m.textContent = sub.short;
+          // elige la fila (baja/media/alta) donde no se encime con otra etiqueta cercana
+          this._marks = this._marks || [];
+          const near = row => this._marks.some(k=>k.row===row && Math.abs(k.ph-sub.ph)<1.5);
+          const row = !near(0) ? 0 : (!near(1) ? 1 : 2);
+          if(row===1) m.classList.add("hi");
+          if(row===2) m.classList.add("hi2");
+          this._marks.push({ph:sub.ph, row});
+          $("phBar").appendChild(m);
+        }
+        if(this.tested.size>=4) markRan();
+        setReadout(`Sustancias probadas: <b>${this.tested.size} / ${this.subs.length}</b>. Cada una queda marcada en la escala de abajo.`);
+      };
+      subsEl.appendChild(b);
+    });
+    $("phClear").onclick = ()=>{ $("phLiq").style.background="#6f42c1"; $("phLbl").textContent="Té de col morada (neutro)"; };
+  },
+  unmount(){},
+  ciencia:`<h5>La ciencia detrás</h5><p>La col morada contiene <b>antocianinas</b>, moléculas que cambian de estructura según la cantidad de iones H⁺ del medio — y cada estructura absorbe la luz de forma distinta. Por eso el mismo té se ve <b>rosa/rojo con ácidos</b> (pH bajo), <b>morado en neutro</b> y <b>azul → verde → amarillo con bases</b> (pH alto). Es un indicador de pH natural, igual de honesto que el papel tornasol del laboratorio.</p>
+  <p>La gran sorpresa de la tabla: el refresco de cola es casi tan ácido como el vinagre. La diferencia es que el azúcar nos esconde el sabor.</p>`,
+  clase:`Hierve ¼ de col morada 10 minutos y tienes indicador para todo el grupo (~$50). Pide que ORDENEN las sustancias de más ácida a más básica antes de probar — ese es el momento POE. Reto: neutralización en vivo (bicarbonato gota a gota sobre el vasito con vinagre hasta regresar al morado) y fabricar papel indicador secando servilletas empapadas en el té.`
+};
+
+/* ================= 6 · Tiempo de reacción ================= */
+const expReac = {
+  id:"reac", name:"La regla que cae: tu tiempo de reacción", icon:"⚡",
+  sub:"Biología · Física · Matemáticas — Sistema nervioso, caída libre",
+  cardDesc:"Atrapa la regla en cuanto empiece a caer. La física convierte los centímetros en milisegundos de tu sistema nervioso.",
+  time:"5 min",
+  pred:{ q:"Usaremos una regla virtual GIGANTE de 50 cm. Cuando empiece a caer sin aviso, ¿en cuántos centímetros lograrás atraparla (con clic o toque)?",
+    options:["En menos de 15 cm — soy rapidísimo","Entre 15 y 30 cm","Entre 30 y 45 cm","Se me caerá completa (más de 50 cm)"],
+    correct:null,
+    verdict(c){ return "Veredicto según tus datos: en pantalla, la mayoría atrapa entre 30 y 42 cm (≈ 0.25–0.29 s). Atraparla en menos de 15 cm (0.17 s) es casi imposible con un mouse: tu sistema nervioso no reacciona tan rápido… y el clic añade retraso extra. Compara con lo que predijiste — y con los ~18 cm típicos del experimento real con la mano."; }
+  },
+  st:null,
+  mount(){
+    const s = this.st = {phase:"idle", t0:0, waitT:0, d:0, results:[], msg:"Presiona «Preparar» y atrapa la regla en cuanto caiga."};
+    ctrlBtn("Preparar intento", "amber", ()=>{
+      if(s.phase!=="idle" && s.phase!=="done") return;
+      s.phase="wait"; s.waitT = 1 + Math.random()*2.5; s.d=0; s.msg="Espera… no toques todavía…";
+    });
+    ctrlBtn("Reiniciar todo","ghost",()=>{ Object.assign(s,{phase:"idle",d:0,results:[],msg:"Presiona «Preparar» y atrapa la regla en cuanto caiga."}); $("readout").hidden=true; });
+    cv.addEventListener("pointerdown", this._h = ()=>{
+      if(s.phase==="wait"){ s.phase="idle"; s.msg="⚠️ ¡Te adelantaste! La regla aún no caía. Prepara otro intento."; }
+      else if(s.phase==="fall"){
+        const t = (performance.now()-s.t0)/1000;
+        s.d = Math.min(50, 490.5*t*t);
+        s.phase="done";
+        s.results.push({d:s.d, ms:Math.round(t*1000)});
+        s.msg = `La atrapaste en ${s.d.toFixed(1)} cm → tiempo de reacción ≈ ${Math.round(t*1000)} ms`;
+        this.report();
+        if(s.results.length>=3) markRan();
+      }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ stopLoop(); cv.removeEventListener("pointerdown", this._h); },
+  report(){
+    const s=this.st;
+    const caught = s.results.filter(r=>r.ms!==null);
+    const list = s.results.map(r=>r.ms===null?"se cayó":r.d.toFixed(1)+" cm").join(" · ");
+    let stats = "";
+    if(caught.length){
+      const avg = caught.reduce((a,r)=>a+r.ms,0)/caught.length;
+      const best = Math.min(...caught.map(r=>r.ms));
+      stats = `Promedio: <b>${Math.round(avg)} ms</b> · Mejor: <b>${best} ms</b>`;
+    }
+    setReadout(`Intentos: <b>${s.results.length}</b> — ${list}<br>${stats} ${s.results.length<3?"<br>Haz al menos 3 intentos para un promedio confiable.":""}`);
+  },
+  tick(dt){
+    const s=this.st;
+    if(s.phase==="wait"){ s.waitT -= dt; if(s.waitT<=0){ s.phase="fall"; s.t0=performance.now(); s.msg="¡AHORA! ¡Atrápala (toca la pantalla)!"; } }
+    if(s.phase==="fall"){
+      const t=(performance.now()-s.t0)/1000; s.d = 490.5*t*t;
+      if(s.d>=50){ s.phase="done"; s.d=50; s.msg="💨 Se te fue completa (más de 50 cm). ¡Prepara otro intento!"; s.results.push({d:50, ms:null}); this.report(); if(s.results.length>=3) markRan(); }
+    }
+    // draw
+    ctx.clearRect(0,0,660,430); ctx.fillStyle = s.phase==="fall" ? "#E6F4EA" : (s.phase==="wait" ? "#FDECEC" : "#FDFEFE");
+    ctx.fillRect(0,0,660,430);
+    // hand marker (fixed)
+    const handY = 330;
+    ctx.fillStyle="#D7C4A3"; roundRect(ctx, 380, handY-14, 90, 28, 8); ctx.fill();
+    ctx.fillStyle=COL.muted; ctx.font=F(12); ctx.fillText("tus dedos", 385, handY+4);
+    // ruler: 50cm = 250px, top aligned so 0cm starts at hand
+    const pxpercm = 5, drop = s.d*pxpercm;
+    const rTop = handY - 250 + drop;
+    ctx.fillStyle="#F5D77F"; ctx.fillRect(300, rTop, 46, 250);
+    ctx.strokeStyle="#B08D2E"; ctx.lineWidth=2; ctx.strokeRect(300, rTop, 46, 250);
+    ctx.fillStyle=COL.navy; ctx.font=F(10);
+    for(let cm=0; cm<=50; cm+=5){
+      const y = rTop + 250 - cm*pxpercm;
+      ctx.fillRect(300, y, cm%10===0?18:10, 2);
+      if(cm%10===0) ctx.fillText(cm+"", 322, y+4);
+    }
+    ctx.fillStyle=COL.muted; ctx.font=F(11);
+    ctx.fillText("regla virtual de 50 cm", 380, handY+42);
+    ctx.fillStyle=COL.navy; ctx.font=F(16,700); ctx.textAlign="center";
+    wrapCenterText(ctx, s.msg, 330, 38, 600, Math.round(20*uiScale)); ctx.textAlign="left";
+  },
+  ciencia:`<h5>La ciencia detrás</h5><p>La regla cae con aceleración conocida (g), así que la distancia delata el tiempo: <b>d = ½gt²</b>. Atraparla a 31 cm significa que pasaron ≈ 0.25 s — el tiempo que tarda la señal en recorrer tu cadena <b>ojo → cerebro → médula → músculo</b>: detección visual (~40 ms), procesamiento (~80 ms), viaje del impulso nervioso al brazo (~20 ms, a unos 100 m/s) y contracción muscular (~30 ms).</p>
+  <p>¿Por qué aquí usamos una regla de 50 cm y en la vida real basta una de 30? Porque hacer clic es más lento que cerrar los dedos: el mouse o la pantalla añaden ~60–100 ms. Comparar ambos números — pantalla vs. mano — es en sí un experimento. Con los datos de todo un grupo aparece la estadística viva: promedio, dispersión, valores atípicos. Y la conexión que salva vidas: a 80 km/h, tu coche recorre <b>~4.5 metros</b> antes de que tu pie llegue al freno.</p>`,
+  clase:`Con una regla de 30 cm por pareja ($15) tienes el laboratorio de estadística más barato del mundo: 5 intentos por alumno, histograma grupal en el pizarrón. Reto del club: ¿el estímulo auditivo (soltar al decir «ya») es más rápido que el visual? Que diseñen el experimento para averiguarlo.`
+};
+
+/* ================= home ================= */
+const EXPS = [expDens, expInercia, expPend, expLava, expPH, expReac];
+const grid = $("cardGrid");
+EXPS.forEach(e=>{
+  const c = document.createElement("div"); c.className="card";
+  c.innerHTML = `<div class="icon">${e.icon}</div><h3>${e.name}</h3><p>${e.cardDesc}</p>
+    <div class="tags"><span class="tag">${e.sub.split("—")[0].trim()}</span><span class="tag amber">${e.time}</span></div>`;
+  c.onclick = ()=>openExp(e);
+  grid.appendChild(c);
+});
+</script>
+</body>
+</html>
