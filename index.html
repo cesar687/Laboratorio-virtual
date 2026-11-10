@@ -156,6 +156,14 @@
   .teacher-form-card textarea{resize:vertical; min-height:70px;}
   .teacher-form-actions{display:flex; gap:10px; margin-top:20px;}
   .teacher-form-msg{font-size:.85rem; margin-top:10px; min-height:1.2em;}
+  /* ---------- ciclo POE: código de clase y explicación con tus palabras ---------- */
+  .user-badge .class-btn{color:#fff; background:rgba(255,255,255,.15); border-radius:12px; padding:3px 9px; text-decoration:none; font-size:.7rem;}
+  .words-box{width:100%; min-height:110px; padding:12px; border:2px solid #DCE7EA; border-radius:10px; font-size:16px; font-family:inherit; resize:vertical; color:var(--ink);}
+  .words-box:focus{outline:none; border-color:var(--teal);}
+  .words-count{font-size:.8rem; color:var(--muted); margin-top:6px;}
+  .words-count.ok{color:var(--ok); font-weight:700;}
+  .class-card input{width:100%; padding:12px; border:2px solid #DCE7EA; border-radius:10px; font-size:16px; font-family:inherit; margin:6px 0 4px; text-transform:uppercase;}
+  .class-card .row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:14px;}
   .teacher-close-x{position:absolute; top:14px; right:16px; background:none; border:none; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--muted); padding:4px;}
 </style>
 </head>
@@ -168,15 +176,27 @@
     <h2>Laboratorio Virtual</h2>
     <p>Inicia sesión con tu cuenta de Google para entrar al laboratorio. Solo se usa para saber quién lo está usando — no se pide contraseña y no se comparte con nadie más.</p>
     <div id="gsiButton"></div>
-    <p class="login-privacy">Al continuar aceptas que tu nombre y correo se registren para este fin. <a href="#" id="privacyLink">Ver aviso de privacidad</a>.</p>
+    <p class="login-privacy">Al continuar aceptas que se registren tu nombre, correo, predicciones, explicaciones y código de clase con fines educativos. <a href="#" id="privacyLink">Ver aviso de privacidad</a>.</p>
   </div>
 </div>
 <div id="privacyModal" class="login-gate" style="display:none; z-index:1001;">
   <div class="login-card" style="max-width:520px; text-align:left;">
     <h2 style="text-align:center">Aviso de privacidad</h2>
-    <p style="text-align:left">Desarrollos de Ideas Mexicanas ("Dimex") usa el nombre y correo electrónico de tu cuenta de Google únicamente para llevar un registro de quién utiliza el Laboratorio Virtual y qué experimentos realiza. Esta información no se vende ni se comparte con terceros, y se usa solo con fines internos de seguimiento educativo. Si eres menor de edad, pide a tu maestro/a o a tu mamá, papá o tutor que te acompañe antes de iniciar sesión. Si quieres conocer, corregir o eliminar tus datos, escribe a <a href="mailto:cesar@dimexideas.com">cesar@dimexideas.com</a>.</p>
+    <p style="text-align:left">Desarrollos de Ideas Mexicanas ("Dimex") usa el nombre y correo electrónico de tu cuenta de Google para llevar un registro de quién utiliza el Laboratorio Virtual y qué experimentos realiza. También guardamos lo que respondes en cada experimento: tus predicciones, las explicaciones que escribes con tus propias palabras, el tiempo que tardas y, si lo escribes, el código de tu clase. Todo se usa con fines educativos, para que tu maestro/a pueda acompañar tu aprendizaje. Esta información no se vende ni se comparte con terceros, y se usa solo con fines de seguimiento educativo. No escribas datos personales (teléfono, domicilio, etc.) en tus explicaciones. Si eres menor de edad, pide a tu maestro/a o a tu mamá, papá o tutor que te acompañe antes de iniciar sesión. Si quieres conocer, corregir o eliminar tus datos, escribe a <a href="mailto:cesar@dimexideas.com">cesar@dimexideas.com</a>.</p>
     <div class="mt" style="text-align:center; margin-top:16px;">
       <button class="btn small" id="closePrivacy">Cerrar</button>
+    </div>
+  </div>
+</div>
+<div id="classModal" class="login-gate" style="display:none; z-index:1003;">
+  <div class="login-card class-card">
+    <h2>Código de tu clase</h2>
+    <p>Si tu maestro/a te dio un código de clase, escríbelo aquí. Es opcional: puedes omitirlo y cambiarlo después con el botón «Clase» de arriba.</p>
+    <label for="classInput" style="display:block; font-weight:700; font-size:.85rem; margin-top:12px;">Código de tu clase (te lo da tu maestro)</label>
+    <input type="text" id="classInput" maxlength="30" placeholder="Escribe tu código" autocomplete="off">
+    <div class="row">
+      <button class="btn" id="classSave">Guardar</button>
+      <button class="btn ghost" id="classSkip">Omitir</button>
     </div>
   </div>
 </div>
@@ -184,6 +204,7 @@
   <div class="user-badge" id="userBadge">
     <img id="userAvatar" src="" alt="">
     <span id="userName"></span>
+    <button id="classBtn" class="class-btn" title="Cambiar el código de tu clase">Clase</button>
     <button id="logoutBtn" title="Cerrar sesión">Salir</button>
   </div>
   <div class="wrap">
@@ -235,6 +256,14 @@
       <div class="readout" id="readout" hidden></div>
     </div>
     <button class="btn amber mt reveal-btn" id="revealBtn" hidden>Ver la explicación →</button>
+  </section>
+
+  <section class="panel" id="wordsPanel" hidden>
+    <h4>Antes de la explicación · Con tus palabras</h4>
+    <label class="predq" for="wordsBox">Con tus palabras: ¿qué observaste y por qué crees que pasó?</label>
+    <textarea class="words-box" id="wordsBox" placeholder="Escribe aquí lo que observaste y tu mejor explicación…"></textarea>
+    <div class="words-count" id="wordsCount">Escribe al menos 15 caracteres para continuar.</div>
+    <button class="btn amber mt" id="wordsSend" disabled>Enviar y ver la explicación →</button>
   </section>
 
   <section class="panel" id="explicaPanel" hidden>
@@ -305,7 +334,42 @@ const SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxyAGw5XRebSU
 
 let currentUser = null;
 
-function logEvent(tipo, exp){
+/* ---- código de clase (opcional): se guarda en localStorage y viaja en cada evento ---- */
+const CLASS_KEY = "labCodigoClase", CLASS_ASKED_KEY = "labCodigoClasePreguntado";
+function getClassCode(){ try{ return localStorage.getItem(CLASS_KEY) || ""; }catch(err){ return ""; } }
+function setClassCode(c){ try{ if(c) localStorage.setItem(CLASS_KEY, c); else localStorage.removeItem(CLASS_KEY); }catch(err){} }
+function classAsked(){ try{ return localStorage.getItem(CLASS_ASKED_KEY) === "1"; }catch(err){ return false; } }
+function markClassAsked(){ try{ localStorage.setItem(CLASS_ASKED_KEY, "1"); }catch(err){} }
+function refreshClassBtn(){
+  const c = getClassCode(), b = document.getElementById("classBtn");
+  b.textContent = c ? "Clase: " + c : "Clase";
+}
+let askedThisSession = false;
+function openClassModal(){
+  document.getElementById("classInput").value = getClassCode();
+  document.getElementById("classModal").style.display = "flex";
+}
+function closeClassModal(){
+  document.getElementById("classModal").style.display = "none";
+  markClassAsked(); refreshClassBtn();
+}
+function askClassIfNeeded(){
+  if(askedThisSession || classAsked()) return;
+  askedThisSession = true;
+  openClassModal();
+}
+document.getElementById("classBtn").onclick = openClassModal;
+document.getElementById("classSave").onclick = function(){
+  setClassCode(document.getElementById("classInput").value.trim().toUpperCase().slice(0,30));
+  closeClassModal();
+};
+document.getElementById("classSkip").onclick = closeClassModal;
+document.getElementById("classInput").addEventListener("keydown", function(ev){
+  if(ev.key === "Enter") document.getElementById("classSave").click();
+});
+
+// extra (opcional): prediccion_letra, prediccion_texto, correcta, explicacion, segundos
+function logEvent(tipo, exp, extra){
   if(!currentUser) return;
   if(!SHEET_WEBHOOK_URL || SHEET_WEBHOOK_URL.indexOf("REEMPLAZA") !== -1) return;
   fetch(SHEET_WEBHOOK_URL, {
@@ -319,6 +383,8 @@ function logEvent(tipo, exp){
       categoria: exp ? exp.cat : "",
       experimento_id: exp ? exp.id : "",
       experimento_nombre: exp ? exp.name : "",
+      codigo_clase: getClassCode(),
+      ...(extra || {}),
       fecha: new Date().toISOString()
     })
   }).catch(()=>{});
@@ -341,6 +407,8 @@ function unlockLab(user){
   document.getElementById("loginGate").style.display = "none";
   document.body.classList.remove("locked");
   showUserBadge(user);
+  refreshClassBtn();
+  askClassIfNeeded();
 }
 
 function handleCredentialResponse(response){
@@ -439,7 +507,7 @@ window.addEventListener("load", function(){
 const $ = id => document.getElementById(id);
 const cv = $("cv"), ctx = cv.getContext("2d");
 const COL = {navy:"#000000", teal:"#1863DC", amber:"#C1FF00", muted:"#666666", tint:"#EAF1FD"};
-let current = null, raf = null, ran = false, chosen = -1;
+let current = null, raf = null, ran = false, chosen = -1, expStart = 0, predCorrect = null;
 let uiScale = 1; // compensa el achicamiento del texto cuando el canvas se muestra más pequeño que su resolución lógica (660px)
 function F(px, weight){ return `${weight||600} ${Math.max(1,Math.round(px*uiScale))}px 'Roboto', sans-serif`; }
 // dibuja texto centrado que se envuelve en varias líneas si no cabe en maxWidth (evita que se corte en pantallas chicas)
@@ -479,7 +547,7 @@ $("backBtn").onclick = goHome;
 $("otherBtn").onclick = goHome;
 
 function openExp(e){
-  current = e; ran = false; chosen = -1;
+  current = e; ran = false; chosen = -1; expStart = Date.now(); predCorrect = null;
   logEvent("experimento", e);
   $("home").hidden = true; $("exp").hidden = false;
   $("eTitle").textContent = e.name;
@@ -498,6 +566,9 @@ function openExp(e){
   $("lock").style.display = "flex";
   $("revealBtn").hidden = true;
   $("explicaPanel").hidden = true;
+  $("wordsPanel").hidden = true; $("wordsBox").value = "";
+  $("wordsCount").textContent = "Escribe al menos 15 caracteres para continuar."; $("wordsCount").className = "words-count";
+  $("wordsSend").disabled = true;
   $("readout").hidden = true; $("readout").innerHTML="";
   $("controls").innerHTML = "";
   $("simdom").innerHTML = "";
@@ -506,13 +577,46 @@ function openExp(e){
   e.mount();
   window.scrollTo({top:0});
 }
+const secondsSinceOpen = ()=> Math.round((Date.now() - expStart) / 1000);
 $("predConfirm").onclick = ()=>{
+  if(chosen < 0) return;
+  const e = current;
+  // texto de la opción sin etiquetas HTML (las opciones se pintan con innerHTML)
+  const tmp = document.createElement("div"); tmp.innerHTML = e.pred.options[chosen];
+  predCorrect = (e.pred.correct === null || e.pred.correct === undefined) ? null : (chosen === e.pred.correct);
+  logEvent("prediccion", e, {
+    prediccion_letra: "ABCDE"[chosen],
+    prediccion_texto: tmp.textContent.trim(),
+    correcta: predCorrect,
+    segundos: secondsSinceOpen()
+  });
   $("lock").style.display = "none";
   $("predPanel").style.opacity = .55;
   $("st1").className="step done"; $("st2").className="step active";
   $("predConfirm").disabled = true;
 };
+// Paso nuevo: el alumno explica con sus palabras antes de ver la explicación científica
 $("revealBtn").onclick = ()=>{
+  $("revealBtn").hidden = true;
+  $("wordsPanel").hidden = false;
+  $("wordsPanel").scrollIntoView({behavior:"smooth", block:"center"});
+  $("wordsBox").focus({preventScroll:true});
+};
+$("wordsBox").oninput = ()=>{
+  const n = $("wordsBox").value.trim().length, ok = n >= 15;
+  $("wordsSend").disabled = !ok;
+  $("wordsCount").className = "words-count" + (ok ? " ok" : "");
+  $("wordsCount").textContent = ok ? "✔ ¡Listo! Ya puedes continuar." : "Escribe al menos 15 caracteres para continuar (" + n + "/15).";
+};
+$("wordsSend").onclick = ()=>{
+  const txt = $("wordsBox").value.trim();
+  if(txt.length < 15) return;
+  $("wordsSend").disabled = true;
+  logEvent("explicacion", current, { explicacion: txt, segundos: secondsSinceOpen() });
+  $("wordsPanel").hidden = true;
+  showExplanation();
+};
+function showExplanation(){
   const e = current;
   $("st2").className="step done"; $("st3").className="step active";
   $("explicaPanel").hidden = false;
@@ -528,7 +632,8 @@ $("revealBtn").onclick = ()=>{
   $("claseBody").innerHTML = "<b>En tu clase (con material real):</b> " + e.clase;
   $("revealBtn").hidden = true;
   $("explicaPanel").scrollIntoView({behavior:"smooth"});
-};
+  logEvent("ciclo_completo", e, { correcta: predCorrect, segundos: secondsSinceOpen() });
+}
 function ctrlBtn(txt, cls, fn){ const b=document.createElement("button"); b.className="btn small "+(cls||""); b.textContent=txt; b.onclick=fn; $("controls").appendChild(b); return b; }
 function ctrlSlider(labelTxt, min, max, step, val, fn){
   const l=document.createElement("label"); l.textContent=labelTxt+" ";
