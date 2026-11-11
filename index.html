@@ -5695,7 +5695,140 @@ const expLuzV3 = {...expLuz, ...RetosMix, ...JuegoMix,
   }
 };
 
-const FISICA_EXPS = [expTiroV3, PILOTO ? expRampaV3 : expRampa, PILOTO ? expResorteV3 : expResorte, PILOTO ? expChoqueV3 : expChoque, PILOTO ? expPresionV3 : expPresion, PILOTO ? expPalancaV3 : expPalanca, PILOTO ? expLuzV3 : expLuz, expOnda];
+/* ---------- Cuerda que vibra (resonancia) · look de juego y retos (piloto) ---------- */
+const expOndaV3 = {...expOnda, ...RetosMix, ...JuegoMix,
+  name:"Cuerda que vibra: encuentra la resonancia (piloto 2)",
+  cardDesc:"Sintoniza la frecuencia arrastrando la perilla hasta que la cuerda entre en resonancia. Cumple tres retos con estrellas.",
+  X0:40, X1:620, MY:190, KX0:90, KX1:570, KY:372,
+  RETOS:[
+    {id:"n1", txt:"Encuentra la resonancia fundamental (1 panza)", ok:"Encontraste la resonancia fundamental", pista:"Empieza con frecuencias bajas y súbela despacio."},
+    {id:"n2", txt:"Encuentra el 2.º armónico (2 panzas)", ok:"Encontraste el 2.º armónico", pista:"Sigue subiendo la frecuencia hasta que la cuerda vuelva a «crecer»."},
+    {id:"n3", txt:"Encuentra el 3.er armónico (3 panzas)", ok:"Encontraste el 3.er armónico", pista:"Sube un poco más; la resonancia dura solo un instante."}
+  ],
+  mount(){
+    const s = this.st = {freq:1.0, t:0, ph:0, amp:22, tested:new Set(), res:{}, enRes:0, mov:false};
+    s.sl = ctrlSlider("Frecuencia (Hz, relativa)", 0.5, 6, 0.1, s.freq, v=>{ this.poner(v); });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const k = this.perilla(); return Math.hypot(p.x-k.x, p.y-k.y) <= Math.max(24, 28*sc) ? {} : null; },
+      down:()=>{ s.mov = true; },
+      move:(o, p)=>{ const f = 0.5 + (Math.max(this.KX0, Math.min(this.KX1, p.x)) - this.KX0)/(this.KX1 - this.KX0)*5.5; this.poner(Math.round(f*10)/10); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  perilla(){ const s = this.st; return {x:this.KX0 + (s.freq - 0.5)/5.5*(this.KX1 - this.KX0), y:this.KY}; },
+  poner(f){ const s = this.st; s.freq = f; s.sl.value = f; s.mov = true; s.tested.add(Math.round(f)); if(s.tested.size >= 3) markRan(); },
+  tick(dt){
+    const s = this.st, d = Math.min(dt, .05), fx = this.fotograma(dt); s.t += d;
+    const n = Math.max(1, Math.round(s.freq)), res = Math.abs(s.freq - n) < 0.15;
+    s.amp += ((res ? 90 : 22) - s.amp)*Math.min(1, d/.45); s.ph += 2*Math.PI*s.freq*.55*d;
+    if(res && s.amp > 70){
+      if(s.enRes !== n){ s.enRes = n; FX.pop(fx, 330, this.MY - 120, "¡Resonancia! n = " + n); FX.sound("ding"); }
+      s.res[n] = (s.res[n] || 0) + d;
+      if(s.res[n] > 1.2 && n <= 3) this.ganar(["n" + n], 330, this.MY);
+    } else if(!res) s.enRes = 0;
+    Juego.fondo(404);
+    const X0 = this.X0, X1 = this.X1, MY = this.MY, amp = s.amp, big = res && s.amp > 70;
+    // base y vibrador
+    ctx.fillStyle = "#3A3A3A"; roundRect(ctx, 8, MY-40, 26, 80, 6); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillRect(30, MY-40, 3, 80);
+    const hand = Math.sin(s.ph)*(big ? 7 : 4); ctx.fillStyle = "#1863DC"; roundRect(ctx, 30, MY-12+hand, 16, 24, 4); ctx.fill();
+    ctx.fillStyle = "#3A3A3A"; roundRect(ctx, X1+6, MY-40, 26, 80, 6); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillRect(X1+6, MY-40, 3, 80);
+    // cuerda
+    const y = u => MY + (Math.sin(n*Math.PI*u)*amp*Math.sin(s.ph) + (res ? 0 : Math.sin(Math.PI*s.freq*2.3*u + 1.1)*amp*.5*Math.sin(s.ph*1.37 + 1.3)));
+    if(big){ ctx.strokeStyle = "rgba(193,255,0,.35)"; ctx.lineWidth = 14; ctx.lineJoin = "round"; ctx.beginPath(); for(let x = X0; x <= X1; x += 4){ const yy = y((x-X0)/(X1-X0)); x === X0 ? ctx.moveTo(x,yy) : ctx.lineTo(x,yy); } ctx.stroke(); }
+    ctx.strokeStyle = big ? "#1863DC" : "#6F8A92"; ctx.lineWidth = big ? 5 : 3; ctx.beginPath(); for(let x = X0; x <= X1; x += 4){ const yy = y((x-X0)/(X1-X0)); x === X0 ? ctx.moveTo(x,yy) : ctx.lineTo(x,yy); } ctx.stroke();
+    ctx.fillStyle = "#1A1A1A"; ctx.beginPath(); ctx.arc(X0, MY, 6, 0, 7); ctx.arc(X1, MY, 6, 0, 7); ctx.fill();
+    if(big){ for(let k = 0; k <= n; k++){ const x = X0 + (X1-X0)*(k/n); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(x, MY, 8, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke(); }
+      for(let k = 0; k < n; k++){ const x = X0 + (X1-X0)*((k+.5)/n); ctx.fillStyle = "rgba(24,99,220,.75)"; ctx.beginPath(); ctx.arc(x, MY - amp - 14, 4, 0, 7); ctx.fill(); } }
+    // dial de frecuencia
+    const KX0 = this.KX0, KX1 = this.KX1, KY = this.KY; ctx.fillStyle = "#E3EBEE"; roundRect(ctx, KX0-24, KY-24, KX1-KX0+48, 48, 24); ctx.fill();
+    ctx.strokeStyle = "#8FA9B0"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(KX0, KY); ctx.lineTo(KX1, KY); ctx.stroke(); ctx.font = F(10,800); ctx.fillStyle = COL.muted; ctx.textAlign = "center";
+    for(let f = 1; f <= 6; f++){ const x = KX0 + (f-.5)/5.5*(KX1-KX0); ctx.beginPath(); ctx.moveTo(x, KY-8); ctx.lineTo(x, KY+8); ctx.stroke(); ctx.fillText(f, x, KY+22); }
+    const k = this.perilla(); ctx.globalAlpha = .45 + .25*Math.sin(fx.t*5); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(k.x, k.y, 24, 0, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = big ? "#1863DC" : "#000"; ctx.beginPath(); ctx.arc(k.x, k.y, 14, 0, 7); ctx.fill(); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(k.x, k.y, 4, 0, 7); ctx.fill();
+    Juego.pastilla(`Frecuencia: ${s.freq.toFixed(1)} Hz`, 330, 24, {px:12, pad:22, h:26});
+    Juego.pastilla(big ? `¡Resonancia! Modo n=${n} (${n === 1 ? "fundamental" : "armónico " + n})` : "Vibración desordenada — sigue ajustando…", 330, 62, {px:12, pad:24, h:26, bg:big ? "#C1FF00" : "#000", fg:big ? "#000" : "#C1FF00"});
+    if(!s.mov) Juego.ayuda(fx, "👆 Arrastra la perilla para sintonizar la frecuencia", 330, 330);
+    this.finFotograma();
+  }
+};
+
+/* ---------- La moneda que no vuela (inercia) · look de juego y retos (piloto) ---------- */
+const expInerciaV3 = {...expInercia, ...RetosMix, ...JuegoMix,
+  name:"La moneda que no vuela (piloto 2)",
+  cardDesc:"Jala la tarjeta con el dedo (o con el botón) y descubre cuándo la moneda cae al vaso… y cuándo no. Cumple tres retos.",
+  CX:330, CUPW:100, CUPTOP:250, CUPH:120, TABLA:372, CARDY:240, MU:405,
+  RETOS:[
+    {id:"dentro", txt:"Haz que la moneda caiga dentro del vaso", ok:"La moneda cayó dentro del vaso", pista:"Prueba con tirones de distinta rapidez."},
+    {id:"fuera", txt:"Haz que la moneda se vaya con la tarjeta y caiga fuera", ok:"La moneda se fue con la tarjeta", pista:"¿Qué pasa si jalas muy despacio?"},
+    {id:"racha", txt:"Mete la moneda en el vaso 3 veces seguidas", ok:"¡Tres veces seguidas en el vaso!", pista:"Cuando encuentres la rapidez que funciona, repítela."}
+  ],
+  mount(){
+    const s = this.st = {phase:"ready", cardX:0, vCard:0, lastX:0, coinX:0, coinVX:0, cy:0, vy:0, held:false, auto:false, speed:8, trials:0, racha:0, msg:"", t:0, mov:false};
+    s.sl = ctrlSlider("Velocidad del tirón", 1, 10, 1, 8, v=>{ s.speed = v; });
+    ctrlBtn("¡Jalar la tarjeta!", "amber", ()=>{ if(s.phase === "ready"){ s.mov = true; s.auto = true; s.vCard = 90 + s.speed*85; } });
+    ctrlBtn("Reiniciar", "ghost", ()=>this.reiniciar());
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ if(s.phase !== "ready" || s.auto) return null; const cx = this.CX + s.cardX; return Math.abs(p.x - cx) <= 90 && Math.abs(p.y - this.CARDY) <= Math.max(20, 26*sc) ? {dx:cx - p.x} : null; },
+      down:(o)=>{ s.held = true; s.mov = true; s.dx = o.dx; s.lastX = s.cardX; },
+      move:(o, p)=>{ s.cardX = Math.max(0, Math.min(460, p.x + s.dx - this.CX)); },
+      up:()=>{ s.held = false; if(s.phase === "ready" && s.cardX > 6){ s.phase = "pull"; } }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  reiniciar(){ const s = this.st; Object.assign(s, {phase:"ready", cardX:0, vCard:0, lastX:0, coinX:0, coinVX:0, cy:0, vy:0, held:false, auto:false, msg:"", t:0}); },
+  resultado(dentro, x, y){
+    const s = this.st, fx = s.fx; s.trials++; markRan(); s.phase = "done"; s.t = 0;
+    if(dentro){ s.racha++; s.msg = "¡PLOP! La moneda cayó al vaso 💧"; FX.splash(fx, x, 284, "#8FC6FF", .7); FX.pop(fx, x, 260, "¡PLOP!"); FX.sound("splash"); this.ganar(s.racha >= 3 ? ["dentro", "racha"] : ["dentro"], x, 280); }
+    else { s.racha = 0; s.msg = "La moneda se arrastró con la tarjeta y cayó FUERA del vaso"; FX.dust(fx, x, this.TABLA); FX.sound("thud"); fx.shake = Math.max(fx.shake, 2); this.ganar(["fuera"], x, y - 20); }
+    setReadout(`Intentos: <b>${s.trials}</b>${s.racha > 1 ? " · racha en el vaso: <b>" + s.racha + "</b>" : ""}. Prueba tirones lentos y rápidos y compara qué pasa.`);
+  },
+  tick(dt){
+    const s = this.st, d = Math.min(dt, .05), fx = this.fotograma(dt), CX = this.CX, CARDY = this.CARDY;
+    if(s.phase === "ready" || s.phase === "pull"){
+      if(s.auto){ s.phase = "pull"; s.cardX += s.vCard*d; }
+      else if(s.held){ const v = (s.cardX - s.lastX)/d; s.vCard += (v - s.vCard)*Math.min(1, d*18); s.lastX = s.cardX; }
+      else if(s.phase === "pull"){ s.cardX += s.vCard*d; }
+      else s.vCard = 0;
+      // la fricción entre tarjeta y moneda
+      const rel = s.vCard - s.coinVX, dv = this.MU*d; if(Math.abs(rel) <= dv) s.coinVX = s.vCard; else s.coinVX += Math.sign(rel)*dv; s.coinX += s.coinVX*d;
+      if(Math.abs(s.coinX - s.cardX) > 80){ s.phase = "fall"; s.vy = 0; s.cy = 0; }
+      if(s.cardX > 250 && s.phase !== "fall"){ s.phase = "fall"; s.vy = 0; s.cy = 0; } // la tarjeta ya salió: la moneda cae
+      // tirón que se queda a medias: se vuelve a empezar sin contar el intento
+      if(!s.auto && !s.held && s.phase === "pull" && Math.abs(s.vCard) < 25){ s.idle = (s.idle || 0) + d; if(s.idle > 1.2){ this.reiniciar(); s.idle = 0; } } else s.idle = 0;
+    } else if(s.phase === "fall"){
+      s.card_gone = s.cardX > 340; if(s.held === false && s.cardX < 520) s.cardX += Math.max(s.vCard, 120)*d;
+      s.vy += 900*d; s.cy += s.vy*d; s.coinX += s.coinVX*d; const y = CARDY - 16 + s.cy, x = CX + s.coinX, topCup = this.CUPTOP;
+      if(!s.pasoBorde && y >= topCup - 12){ s.pasoBorde = true; s.dentro = Math.abs(x - CX) < this.CUPW/2 - 12; if(!s.dentro){ FX.sound("tick"); s.coinVX = (s.coinVX >= 0 ? 1 : -1)*Math.max(70, Math.abs(s.coinVX)); } }
+      const suelo = s.dentro ? 352 : this.TABLA - 12;
+      if(s.pasoBorde && s.dentro && y > 284 && !s.salpico){ s.salpico = true; FX.splash(fx, x, 284, "#8FC6FF", .5); }
+      if(y >= suelo){ s.pasoBorde = false; s.salpico = false; this.resultado(!!s.dentro, x, y); s.cy = suelo - (CARDY - 16); s.coinVX = 0; }
+    } else if(s.phase === "done"){
+      s.t += d; if(s.t > 2.4) this.reiniciar();
+    }
+    Juego.fondo(this.TABLA);
+    const cupX = CX - this.CUPW/2, cupTop = this.CUPTOP, cupH = this.CUPH, W = this.CUPW;
+    ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.beginPath(); ctx.ellipse(CX, this.TABLA + 6, 70, 5, 0, 0, 7); ctx.fill();
+    // vaso con agua
+    const wg = ctx.createLinearGradient(0, cupTop+34, 0, cupTop+cupH); wg.addColorStop(0, "#BFE6F5"); wg.addColorStop(1, "#5FB2D6"); ctx.fillStyle = wg; ctx.globalAlpha = .85; ctx.beginPath(); ctx.moveTo(cupX+5, cupTop+34); for(let x = cupX+5; x <= cupX+W-5; x += 6) ctx.lineTo(x, cupTop + 34 + (FX.rm ? 0 : Math.sin(x*.09 + fx.t*2.4)*1.4)); ctx.lineTo(cupX+W-9, cupTop+cupH-3); ctx.lineTo(cupX+9, cupTop+cupH-3); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = "rgba(95,125,135,.9)"; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(cupX, cupTop); ctx.lineTo(cupX+8, cupTop+cupH); ctx.lineTo(cupX+W-8, cupTop+cupH); ctx.lineTo(cupX+W, cupTop); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.45)"; roundRect(ctx, cupX+14, cupTop+8, 6, cupH-24, 3); ctx.fill();
+    // tarjeta y moneda
+    const cardC = CX + s.cardX; if(cardC - 80 < 700){ ctx.fillStyle = "rgba(0,0,0,.18)"; roundRect(ctx, cardC-80, CARDY-1, 160, 9, 3); ctx.fill(); const cg = ctx.createLinearGradient(0, CARDY-6, 0, CARDY+4); cg.addColorStop(0, "#FFB3C7"); cg.addColorStop(1, "#EF8FA6"); ctx.fillStyle = cg; roundRect(ctx, cardC-80, CARDY-6, 160, 10, 3); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 1.5; ctx.stroke();
+      if(s.held){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; roundRect(ctx, cardC-84, CARDY-10, 168, 18, 5); ctx.stroke(); } }
+    const coinY = (s.phase === "ready" || s.phase === "pull") ? CARDY - 16 : CARDY - 16 + s.cy, coinX = CX + s.coinX;
+    const gr = ctx.createRadialGradient(coinX - 4, coinY - 4, 1, coinX, coinY, 12); gr.addColorStop(0, "#FFF2A8"); gr.addColorStop(.6, "#D8B032"); gr.addColorStop(1, "#8A6D0D"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(coinX, coinY, 12, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.beginPath(); ctx.arc(coinX, coinY, 7.5, 0, 7); ctx.stroke();
+    const vi = Math.max(1, Math.min(10, (Math.abs(s.vCard) - 90)/85)), rap = s.held || s.auto || s.phase === "pull";
+    Juego.pastilla(rap ? `Rapidez del tirón: ${vi.toFixed(1)} ${vi >= 6 ? "(rápido ⚡)" : "(lento 🐢)"}` : `Velocidad del tirón: ${s.speed} ${s.speed >= 6 ? "(rápido ⚡)" : "(lento 🐢)"}`, 330, 24, {px:12, pad:22, h:26});
+    if(s.msg) Juego.pastilla(s.msg, 330, 60, {px:13, pad:28, h:28, bg:"#C1FF00", fg:"#000"});
+    if(!s.mov && s.phase === "ready") Juego.ayuda(fx, "👆 Jala la tarjeta con el dedo (rápido o lento)", 330, 110);
+    this.finFotograma();
+  }
+};
+
+const FISICA_EXPS = [expTiroV3, PILOTO ? expRampaV3 : expRampa, PILOTO ? expResorteV3 : expResorte, PILOTO ? expChoqueV3 : expChoque, PILOTO ? expPresionV3 : expPresion, PILOTO ? expPalancaV3 : expPalanca, PILOTO ? expLuzV3 : expLuz, PILOTO ? expOndaV3 : expOnda];
 /* ---------- QUÍMICA ---------- */
 const expReacterm = {
   id:"reacterm", name:"Caliente o frío: reacciones que cambian la temperatura", icon:"🌡️", cat:"quimica",
@@ -7154,7 +7287,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  expDensV3, expInercia, expPendV3, expLava, expPH, expReac,
+  expDensV3, PILOTO ? expInerciaV3 : expInercia, expPendV3, expLava, expPH, expReac,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
