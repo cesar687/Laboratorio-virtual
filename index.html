@@ -4480,7 +4480,7 @@ const expPendV2 = {...expPend,
     ctrlSlider("Largo del hilo (m)", 0.3, 1.2, 0.05, 1.0, v=>{ this.L = v; this.cancel(); });
     ctrlSlider("Masa (g)", 50, 500, 25, 100, v=>{ this.m = v; });
     this.btnSw = ctrlBtn("⏱ Iniciar cronómetro", "amber", ()=>this.toggleSw());
-    ctrlBtn("⏱ Automático: 10 oscilaciones", "", ()=>{ this.cancel(); s.sw.run = true; s.sw.auto = true; this.btnSw.textContent = "■ Detener cronómetro"; });
+    ctrlBtn("⏱ Automático: 10 oscilaciones", "", ()=>{ this.cancel(); s.sw.run = true; s.sw.auto = true; s.sw.arm = Math.abs(s.w) > 1e-6; this.btnSw.textContent = "■ Detener cronómetro"; });
     ctrlBtn("⏩ Más rápido", "ghost", function(){ s.speed = s.speed === 1 ? 3 : 1; this.textContent = s.speed === 1 ? "⏩ Más rápido" : "⏪ Velocidad normal"; });
     ctrlBtn("Reiniciar", "ghost", ()=>{ this.unmount(); $("controls").innerHTML = ""; $("readout").hidden = true; this.mount(); });
     const bob = ()=>({x:this.PX + Math.sin(s.th)*this.L*240, y:this.PY + Math.cos(s.th)*this.L*240, r:14 + (this.m-50)/450*14});
@@ -4518,9 +4518,13 @@ const expPendV2 = {...expPend,
       for(let i = 0; i < n; i++){
         s.w += (-(g/L)*Math.sin(s.th) - 0.02*s.w)*h; s.th += s.w*h;
         if(sw.run){
-          sw.t += h; sw.maxAbs = Math.max(sw.maxAbs, Math.abs(s.th));
           const d = s.w > 0 ? 1 : s.w < 0 ? -1 : 0;
-          if(d !== 0){ if(sw.dir !== 0 && d !== sw.dir) sw.changes++; sw.dir = d; }
+          if(sw.arm){ // espera al próximo extremo para empezar a contar
+            if(d !== 0){ if(sw.dir !== 0 && d !== sw.dir){ sw.arm = false; sw.t = 0; sw.changes = 0; sw.maxAbs = 0; } sw.dir = d; }
+          } else {
+            sw.t += h; sw.maxAbs = Math.max(sw.maxAbs, Math.abs(s.th));
+            if(d !== 0){ if(sw.dir !== 0 && d !== sw.dir) sw.changes++; sw.dir = d; }
+          }
         }
       }
       if(sw.run && sw.auto && Math.floor(sw.changes/2) >= 10){
@@ -4544,7 +4548,7 @@ const expPendV2 = {...expPend,
     if(s.atLimit){ ctx.fillStyle = "#c92a2a"; ctx.font = F(12,700); wrapCenterText(ctx, "Ángulo máximo 20°: la fórmula es para ángulos pequeños", 330, 420, 560, Math.round(16*uiScale)); }
     if(sw.run){
       ctx.fillStyle = COL.navy; ctx.font = F(20,800);
-      ctx.fillText(`⏱ ${sw.t.toFixed(1)} s · Oscilaciones: ${Math.floor(sw.changes/2)}${sw.auto ? " / 10" : ""}`, 330, 36);
+      ctx.fillText(sw.arm ? "⏱ Esperando el extremo…" : `⏱ ${sw.t.toFixed(1)} s · Oscilaciones: ${Math.floor(sw.changes/2)}${sw.auto ? " / 10" : ""}`, 330, 36);
     } else if(!s.moved){ ctx.fillStyle = COL.muted; ctx.font = F(13); wrapCenterText(ctx, "👆 Arrastra la masa para soltarla desde otro ángulo", 330, 36, 560, Math.round(18*uiScale)); }
     ctx.textAlign = "left";
   }
@@ -4678,6 +4682,8 @@ const FX = {
         const s = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(); s.buffer = b; g.gain.value = .2; f.type = "lowpass"; f.frequency.value = 1700; s.connect(f); f.connect(g); g.connect(a.destination); s.start(t); }
       else if(kind === "thud") tone(150, 55, .14, .35);
       else if(kind === "ding"){ tone(880, 880, .3, .16); tone(1320, 1320, .3, .09); }
+      else if(kind === "tick") tone(1400, 900, .05, .08);
+      else if(kind === "boom"){ tone(120, 40, .3, .4); const b = a.createBuffer(1, a.sampleRate*.3, a.sampleRate), d = b.getChannelData(0); for(let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/d.length, 2); const sr = a.createBufferSource(), g2 = a.createGain(), f2 = a.createBiquadFilter(); sr.buffer = b; g2.gain.value = .3; f2.type = "lowpass"; f2.frequency.value = 700; sr.connect(f2); f2.connect(g2); g2.connect(a.destination); sr.start(t); }
     }catch(err){}
   }
 };
@@ -4951,7 +4957,276 @@ const expDensV3 = {...expDensV2,
   }
 };
 
-const FISICA_EXPS = [expTiroV2, expRampa, expResorte, expChoque, expPresion, expPalanca, expLuz, expOnda];
+/* ===== Ayudante compartido de retos con estrellas (péndulo y tiro) ===== */
+const RetosMix = {
+  dibujarRetos(){
+    let box = $("retos"); if(box) box.remove();
+    box = pe("div","retos"); box.id = "retos";
+    const n = this.RETOS.filter(r=>this.rd.done[r.id]).length;
+    const h = pe("div","retos-h"), tt = pe("div"); tt.append(document.createTextNode("Retos"), pe("small","","Opcionales: te ayudan a observar mejor. No hace falta cumplirlos para ver la explicación."));
+    const cnt = pe("span","retos-n", "⭐".repeat(n) + "☆".repeat(this.RETOS.length - n)); cnt.setAttribute("aria-label", n + " de " + this.RETOS.length + " estrellas"); cnt.setAttribute("aria-live","polite");
+    h.append(tt, cnt); box.appendChild(h);
+    this.RETOS.forEach(r=>{
+      const ok = !!this.rd.done[r.id], fila = pe("div","reto" + (ok ? " ok" : "") + (this._nuevo === r.id ? " nuevo" : "")), tx = pe("div","tx");
+      if(ok){ tx.append(pe("b","",r.txt), pe("span","hint","✔ " + r.ok)); }
+      else {
+        tx.append(document.createTextNode(r.txt));
+        const hb = pe("button","hint-btn","Pista"), ph = pe("span","hint",r.pista); ph.hidden = true; hb.onclick = ()=>{ ph.hidden = !ph.hidden; };
+        tx.append(hb, ph);
+      }
+      fila.append(pe("div","st","⭐"), tx); box.appendChild(fila);
+    });
+    $("readout").after(box); this._nuevo = null;
+  },
+  // devuelve true la primera vez que se cumple; el efecto visual lo pone cada simulación
+  marcarReto(id){
+    if(!this.rd || this.rd.done[id]) return false;
+    this.rd.done[id] = true; this._nuevo = id; this.dibujarRetos(); return true;
+  },
+  cuantasEstrellas(){ return this.RETOS.filter(r=>this.rd.done[r.id]).length; },
+  quitarRetos(){ const b = $("retos"); if(b) b.remove(); if(!this._keep) this.rd = null; this._keep = false; }
+};
+
+/* ---------- Péndulo · look de juego y retos (piloto) ---------- */
+const expPendV3 = {...expPendV2, ...RetosMix,
+  name:"Péndulo: mide la gravedad (piloto 2)",
+  cardDesc:"Arrastra la masa y suéltala, cronometra tú mismo las oscilaciones y cumple tres retos con estrellas para medir la gravedad.",
+  RETOS:[
+    {id:"g", txt:"Mide la gravedad con menos de 3 % de error", ok:"Tu medición quedó a menos de 3 % de 9.81 m/s²", pista:"Cronometra más oscilaciones o usa el modo automático."},
+    {id:"masas", txt:"Mide con dos masas muy distintas y el mismo largo", ok:"Mediste con dos masas distintas y el mismo largo", pista:"Prueba con 50 g y con 500 g sin mover el largo, y mide cada una."},
+    {id:"T15", txt:"Ajusta el largo para medir una oscilación de 1.5 s (±0.05 s)", ok:"Lograste una oscilación de 1.5 s", pista:"Un hilo más corto oscila más rápido. Prueba, mide y ajusta."}
+  ],
+  mount(){
+    expPendV2.mount.call(this); // mismos controles, arrastre y cronómetro
+    const s = this.st; s.fx = FX.make(); s.fx.trail = []; s.lastN = 0;
+    ctrlBtn(FX.snd.on ? "🔊 Sonido activado" : "🔇 Sonido apagado", "ghost", function(){
+      FX.snd.on = !FX.snd.on; this.textContent = FX.snd.on ? "🔊 Sonido activado" : "🔇 Sonido apagado"; if(FX.snd.on) FX.sound("ding");
+    });
+    const rein = [...$("controls").querySelectorAll("button")].find(b=>b.textContent === "Reiniciar");
+    if(rein) rein.onclick = ()=>{ this._keep = true; this.unmount(); $("controls").innerHTML = ""; $("readout").hidden = true; this.mount(); };
+    this.rd = this.rd || {done:{}}; this.dibujarRetos();
+  },
+  unmount(){ expPendV2.unmount.call(this); this.quitarRetos(); },
+  finish(t, N, auto){
+    expPendV2.finish.call(this, t, N, auto);
+    const s = this.st, r = s.results[s.results.length-1], fx = s.fx, bx = this.PX + Math.sin(s.th)*this.L*240, by = this.PY + Math.cos(s.th)*this.L*240;
+    const gana = [];
+    if(Math.abs(r.g - 9.81)/9.81 < .03) gana.push("g");
+    if(s.results.some(a=>a !== r && Math.abs(a.L - r.L) < .001 && Math.abs(a.m - r.m) >= 200)) gana.push("masas");
+    if(r.T >= 1.45 && r.T <= 1.55) gana.push("T15");
+    let nuevo = false; gana.forEach(id=>{ if(this.marcarReto(id)) nuevo = true; });
+    if(nuevo){
+      FX.burst(fx, bx, by, ["#FFD54A", "#C1FF00", "#fff"]); FX.pop(fx, bx, by - 40, "⭐ ¡Reto cumplido!"); FX.sound("ding");
+      if(this.cuantasEstrellas() === this.RETOS.length){ FX.confetti(fx, ["#C1FF00", "#1863DC", "#FFD54A", "#fff"]); FX.pop(fx, 330, 84, "¡Tres estrellas! ⭐⭐⭐"); }
+    } else { FX.burst(fx, 330, 40, ["#C1FF00", "#fff"]); FX.sound("ding"); }
+  },
+  tick(dt){
+    const s = this.st, g = 9.81, L = this.L, sw = s.sw, PX = this.PX, PY = this.PY, fx = s.fx;
+    FX.step(fx, dt);
+    // ---- física: péndulo real (igual que la versión actual) ----
+    if(!s.held){
+      const total = Math.min(dt, 0.05)*s.speed, n = Math.max(1, Math.ceil(total/0.004)), h = total/n;
+      for(let i = 0; i < n; i++){
+        s.w += (-(g/L)*Math.sin(s.th) - 0.02*s.w)*h; s.th += s.w*h;
+        if(sw.run){
+          const d = s.w > 0 ? 1 : s.w < 0 ? -1 : 0;
+          if(sw.arm){ // espera al próximo extremo para empezar a contar
+            if(d !== 0){ if(sw.dir !== 0 && d !== sw.dir){ sw.arm = false; sw.t = 0; sw.changes = 0; sw.maxAbs = 0; } sw.dir = d; }
+          } else {
+            sw.t += h; sw.maxAbs = Math.max(sw.maxAbs, Math.abs(s.th));
+            if(d !== 0){ if(sw.dir !== 0 && d !== sw.dir) sw.changes++; sw.dir = d; }
+          }
+        }
+      }
+      if(sw.run && sw.auto && Math.floor(sw.changes/2) >= 10){ const human = Math.random()*0.30 - 0.15; this.finish(sw.t + human, 10, true); }
+    }
+    const sw2 = s.sw, nOsc = sw2.run ? Math.floor(sw2.changes/2) : 0;
+    if(nOsc > s.lastN){ FX.burst(fx, 330, 44, ["#C1FF00"]); FX.sound("tick"); }
+    s.lastN = nOsc;
+    const lenPx = L*240, bx = PX + Math.sin(s.th)*lenPx, by = PY + Math.cos(s.th)*lenPx, r = 14 + (this.m-50)/450*14;
+    if(!FX.rm){ fx.trail.push({x:bx, y:by}); if(fx.trail.length > 16) fx.trail.shift(); }
+    if(s.held && s.atLimit) fx.shake = Math.max(fx.shake, 1.2);
+    // ---- dibujo ----
+    ctx.clearRect(0,0,660,430); ctx.save();
+    if(!FX.rm && fx.shake > .05) ctx.translate((Math.random()-.5)*fx.shake*2, (Math.random()-.5)*fx.shake*2);
+    const bg = ctx.createLinearGradient(0,0,0,430); bg.addColorStop(0,"#EEF4FF"); bg.addColorStop(1,"#FFFFFF"); ctx.fillStyle = bg; ctx.fillRect(-10,-10,680,450);
+    ctx.fillStyle = "rgba(24,99,220,.07)"; ctx.beginPath(); ctx.arc(590,60,120,0,7); ctx.fill(); ctx.beginPath(); ctx.arc(50,340,90,0,7); ctx.fill();
+    // suelo oscuro con borde lima
+    const fl = ctx.createLinearGradient(0,404,0,430); fl.addColorStop(0,"#2A2A2A"); fl.addColorStop(1,"#000"); ctx.fillStyle = fl; ctx.fillRect(-10,404,680,30); ctx.fillStyle = "#C1FF00"; ctx.fillRect(-10,404,680,3);
+    // sombra bajo la masa
+    const k = Math.max(.3, 1 - (404 - by)/420); ctx.fillStyle = `rgba(0,0,0,${.28*k})`; ctx.beginPath(); ctx.ellipse(bx, 410, r*1.2*k, 3.5*k, 0, 0, 7); ctx.fill();
+    // soporte
+    ctx.fillStyle = "#3A3A3A"; roundRect(ctx, 200, PY-24, 260, 14, 5); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillRect(204, PY-12, 252, 2);
+    ctx.fillStyle = "#9AA5A8"; ctx.beginPath(); ctx.arc(PX, PY-6, 7, 0, 7); ctx.fill(); ctx.strokeStyle = "#555"; ctx.lineWidth = 2; ctx.stroke();
+    // zona segura (≈ 20°) y arco del ángulo
+    const lim = this.MAXTH, R0 = lenPx*1.08;
+    ctx.fillStyle = "rgba(193,255,0,.12)"; ctx.beginPath(); ctx.moveTo(PX,PY); ctx.arc(PX, PY, R0, Math.PI/2 - lim, Math.PI/2 + lim); ctx.closePath(); ctx.fill();
+    ctx.setLineDash([5,5]); ctx.strokeStyle = "#9FB3B8"; ctx.lineWidth = 1.5;
+    [-1,1].forEach(kk=>{ ctx.beginPath(); ctx.moveTo(PX,PY); ctx.lineTo(PX + kk*Math.sin(lim)*R0, PY + Math.cos(lim)*R0); ctx.stroke(); }); ctx.setLineDash([]);
+    if(Math.abs(s.th) > .01){ ctx.strokeStyle = "#1863DC"; ctx.lineWidth = 3; ctx.beginPath(); const a0 = Math.PI/2, a1 = Math.PI/2 - s.th; ctx.arc(PX, PY, 54, Math.min(a0,a1), Math.max(a0,a1)); ctx.stroke(); }
+    // estela de la masa
+    fx.trail.forEach((p,i)=>{ ctx.globalAlpha = (i/fx.trail.length)*.22; ctx.fillStyle = "#1863DC"; ctx.beginPath(); ctx.arc(p.x, p.y, r*(.5 + .5*i/fx.trail.length), 0, 7); ctx.fill(); }); ctx.globalAlpha = 1;
+    // hilo y medida de longitud
+    ctx.strokeStyle = "#111"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(PX, PY); ctx.lineTo(bx, by); ctx.stroke();
+    const mx = (PX+bx)/2 - 26, my = (PY+by)/2; ctx.font = F(11,700); ctx.textAlign = "center"; const lt = L.toFixed(2) + " m", lw = ctx.measureText(lt).width + 12;
+    ctx.fillStyle = "#000"; roundRect(ctx, mx-lw/2, my-9*uiScale, lw, 18*uiScale, 9*uiScale); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillText(lt, mx, my+4*uiScale);
+    // masa metálica
+    const gr = ctx.createRadialGradient(bx - r*.35, by - r*.35, 1, bx, by, r); gr.addColorStop(0,"#9CC2FF"); gr.addColorStop(.55,"#1863DC"); gr.addColorStop(1,"#0B3A8C");
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(bx, by, r, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.4)"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.beginPath(); ctx.ellipse(bx - r*.35, by - r*.4, r*.28, r*.16, -.6, 0, 7); ctx.fill();
+    if(s.held){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.globalAlpha = .6 + .4*Math.sin(fx.t*9); ctx.beginPath(); ctx.arc(bx, by, r+6, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
+    // etiqueta de ángulo cuando la agarras
+    if(s.held){ const at = (Math.abs(s.th)*180/Math.PI).toFixed(0) + "°"; ctx.font = F(12,800); const aw = ctx.measureText(at).width + 14; ctx.fillStyle = s.atLimit ? "#c92a2a" : "#000"; roundRect(ctx, bx-aw/2, by-r-26*uiScale, aw, 20*uiScale, 10*uiScale); ctx.fill(); ctx.fillStyle = "#fff"; ctx.fillText(at, bx, by-r-11*uiScale); }
+    // datos sobre el suelo
+    ctx.font = F(12,700); ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText(`masa = ${this.m} g   ·   ángulo = ${Math.abs(s.th*180/Math.PI).toFixed(0)}°`, 330, 421);
+    if(s.atLimit){ ctx.fillStyle = "#c92a2a"; ctx.font = F(12,700); wrapCenterText(ctx, "Ángulo máximo 20°: la fórmula es para ángulos pequeños", 330, 392, 560, Math.round(16*uiScale)); }
+    // cronómetro digital
+    if(sw2.run){
+      const tx = `⏱ ${sw2.t.toFixed(1)} s`, ot = sw2.arm ? "Esperando el extremo…" : `Oscilaciones: ${nOsc}${sw2.auto ? " / 10" : ""}`; ctx.font = F(18,800); const w1 = ctx.measureText(tx).width; ctx.font = F(12,700); const w2 = ctx.measureText(ot).width, w = Math.max(w1, w2) + 28;
+      ctx.fillStyle = "#000"; roundRect(ctx, 330-w/2, 6, w, 46*uiScale, 14); ctx.fill();
+      ctx.fillStyle = "#C1FF00"; ctx.font = F(18,800); ctx.fillText(tx, 330, 6 + 20*uiScale); ctx.fillStyle = "#fff"; ctx.font = F(12,700); ctx.fillText(ot, 330, 6 + 38*uiScale);
+    } else if(!s.moved){
+      const hint = "👆 Arrastra la masa para soltarla", y = 24 + Math.sin(fx.t*4)*3; ctx.font = F(13,700); const w = ctx.measureText(hint).width + 26;
+      ctx.fillStyle = "#C1FF00"; roundRect(ctx, 330-w/2, y-(14*uiScale), w, 26*uiScale, 13*uiScale); ctx.fill(); ctx.fillStyle = "#000"; ctx.fillText(hint, 330, y+4*uiScale);
+    }
+    // partículas y textos flotantes
+    fx.p.forEach(p=>{ if(p.k === "b") return; ctx.globalAlpha = Math.max(0, 1 - p.t/p.life); ctx.fillStyle = p.c;
+      if(p.k === "c"){ ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.r, -p.r*.5, p.r*2, p.r); ctx.restore(); }
+      else if(p.k === "s"){ ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.t*4); ctx.beginPath(); for(let i = 0; i < 4; i++){ ctx.lineTo(Math.cos(i*1.571)*p.r, Math.sin(i*1.571)*p.r); ctx.lineTo(Math.cos(i*1.571+.785)*p.r*.35, Math.sin(i*1.571+.785)*p.r*.35); } ctx.closePath(); ctx.fill(); ctx.restore(); }
+      else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); } }); ctx.globalAlpha = 1;
+    fx.pops.forEach(q=>{ const kk = q.t/q.life, e = kk < .15 ? kk/.15 : 1; ctx.globalAlpha = kk > .7 ? 1 - (kk-.7)/.3 : 1; ctx.font = F(14,800); ctx.textAlign = "center";
+      const w = ctx.measureText(q.text).width + 18, x = Math.min(650 - w/2, Math.max(10 + w/2, q.x)), y = q.y - kk*22 - 4*e;
+      ctx.fillStyle = "#000"; roundRect(ctx, x-w/2, y-15*uiScale, w, 22*uiScale, 11); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillText(q.text, x, y); }); ctx.globalAlpha = 1;
+    ctx.textAlign = "left"; ctx.restore();
+  }
+};
+
+/* ---------- Tiro parabólico · look de juego y retos (piloto) ---------- */
+const expTiroV3 = {...expTiroV2, ...RetosMix,
+  name:"Tiro parabólico: ¿dónde cae? (piloto 2)",
+  cardDesc:"Apunta el cañón arrastrando la flecha, dispara, mide dónde cae y cumple tres retos con estrellas. Compara ángulos.",
+  TARGET_M:28,
+  RETOS:[
+    {id:"par", txt:"Dispara a 30° y a 60° con la misma rapidez y compara dónde caen", ok:"Probaste 30° y 60° con la misma rapidez", pista:"Cambia solo el ángulo, deja la rapidez como está."},
+    {id:"max", txt:"Con rapidez 14 m/s, llega a 19.5 m o más", ok:"Llegaste a 19.5 m o más con 14 m/s", pista:"Prueba varios ángulos y fíjate en cuál llega más lejos."},
+    {id:"blanco", txt:"Da en el blanco (28 m, con 1 m de margen)", ok:"¡Diste en el blanco!", pista:"Combina ángulo y rapidez. Dispara, mide y ajusta."}
+  ],
+  mount(){
+    expTiroV2.mount.call(this); // mismos controles y arrastre de la flecha
+    const s = this.st; s.fx = FX.make(); s.recoil = 0; s.flash = 0; s.clouds = [{x:90,y:60,s:1},{x:360,y:40,s:.8},{x:560,y:80,s:1.2}];
+    ctrlBtn(FX.snd.on ? "🔊 Sonido activado" : "🔇 Sonido apagado", "ghost", function(){
+      FX.snd.on = !FX.snd.on; this.textContent = FX.snd.on ? "🔊 Sonido activado" : "🔇 Sonido apagado"; if(FX.snd.on) FX.sound("ding");
+    });
+    this.rd = this.rd || {done:{}}; this.dibujarRetos();
+  },
+  unmount(){ expTiroV2.unmount.call(this); this.quitarRetos(); },
+  fire(){
+    const s = this.st; if(s.flight) return;
+    expTiroV2.fire.call(this);
+    const a = s.angle*Math.PI/180, tx = this.GX + Math.cos(a)*34, ty = this.GY - Math.sin(a)*34, fx = s.fx;
+    s.recoil = 1; s.flash = .12; fx.shake = Math.max(fx.shake, 3);
+    if(!FX.rm){ for(let i = 0; i < 9; i++) FX.add(fx, {k:"d", x:tx, y:ty, vx:Math.cos(a)*(60+Math.random()*120) + (Math.random()-.5)*60, vy:-Math.sin(a)*(60+Math.random()*120) - Math.random()*40, life:.5+Math.random()*.4, r:3+Math.random()*4, c:i%3 ? "rgba(120,125,130,.85)" : "#FFB020", g:30}); }
+    FX.sound("boom");
+  },
+  tick(dt){
+    const s = this.st, GX = this.GX, GY = this.GY, G = this.G, PXM = this.PXM, fx = s.fx;
+    FX.step(fx, dt); s.recoil *= Math.exp(-9*dt); s.flash = Math.max(0, s.flash - dt);
+    const tM = this.TARGET_M, tX = GX + tM*PXM;
+    // ---- vuelo y aterrizaje (misma física) ----
+    if(s.flight){
+      const f = s.flight; f.t += Math.min(dt, 0.05);
+      const x = GX + f.vx*f.t, y = GY + f.vy*f.t + 0.5*G*f.t*f.t; f.trail.push({x, y:Math.min(y, GY)}); f.pos = {x, y};
+      if(y >= GY || x > 650){
+        const land = Math.min(x, 650), range = (land-GX)/PXM;
+        s.shots.push({trail:f.trail, land, color:f.color, angle:f.angle, speed:f.speed, range});
+        s.flight = null; this.report(); if(s.shots.length >= 2) markRan();
+        FX.dust(fx, land, GY); FX.splash(fx, land, GY, "rgba(150,160,165,.9)", .15); FX.pop(fx, land, GY - 26, range.toFixed(1) + " m"); FX.sound("thud"); fx.shake = Math.max(fx.shake, 1.5);
+        const gana = [];
+        const a30 = s.shots.filter(q=>q.angle === 30), a60 = s.shots.filter(q=>q.angle === 60);
+        if(a30.some(p=>a60.some(q=>q.speed === p.speed))) gana.push("par");
+        if(f.speed === 200 && range >= 19.5) gana.push("max");
+        if(Math.abs(range - tM) <= 1) gana.push("blanco");
+        let nuevo = false; gana.forEach(id=>{ if(this.marcarReto(id)) nuevo = true; });
+        if(nuevo){
+          FX.burst(fx, land, GY - 14, ["#FFD54A", "#C1FF00", "#fff"]); FX.pop(fx, land, GY - 54, "⭐ ¡Reto cumplido!"); FX.sound("ding");
+          if(gana.includes("blanco")) FX.confetti(fx, ["#C1FF00", "#1863DC", "#FFD54A", "#fff"]);
+          if(this.cuantasEstrellas() === this.RETOS.length) FX.pop(fx, 330, 84, "¡Tres estrellas! ⭐⭐⭐");
+        }
+      }
+    }
+    // ---- dibujo ----
+    ctx.clearRect(0,0,660,430); ctx.save();
+    if(!FX.rm && fx.shake > .05) ctx.translate((Math.random()-.5)*fx.shake*2, (Math.random()-.5)*fx.shake*2);
+    const sky = ctx.createLinearGradient(0,0,0,GY); sky.addColorStop(0,"#CFE3FF"); sky.addColorStop(1,"#F4F9FF"); ctx.fillStyle = sky; ctx.fillRect(-10,-10,680,GY+12);
+    ctx.fillStyle = "rgba(255,255,255,.9)";
+    s.clouds.forEach(c=>{ if(!FX.rm){ c.x += 6*c.s*dt; if(c.x > 720) c.x = -80; } ctx.beginPath(); ctx.ellipse(c.x, c.y, 38*c.s, 12*c.s, 0, 0, 7); ctx.ellipse(c.x+22*c.s, c.y-8*c.s, 24*c.s, 11*c.s, 0, 0, 7); ctx.ellipse(c.x-24*c.s, c.y-4*c.s, 20*c.s, 9*c.s, 0, 0, 7); ctx.fill(); });
+    ctx.fillStyle = "#E4EEFB"; ctx.beginPath(); ctx.moveTo(-10,GY); ctx.quadraticCurveTo(160,GY-60,330,GY-18); ctx.quadraticCurveTo(500,GY-70,670,GY-10); ctx.lineTo(670,GY); ctx.closePath(); ctx.fill();
+    // suelo con borde lima y regla en metros
+    const gd = ctx.createLinearGradient(0,GY,0,430); gd.addColorStop(0,"#2A2A2A"); gd.addColorStop(1,"#000"); ctx.fillStyle = gd; ctx.fillRect(-10,GY,680,60); ctx.fillStyle = "#C1FF00"; ctx.fillRect(-10,GY,680,3);
+    ctx.fillStyle = "#fff"; ctx.font = F(10,700); ctx.textAlign = "center"; ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 1.5;
+    for(let m = 0; GX + m*PXM <= 650; m += 5){ const x = GX + m*PXM; ctx.beginPath(); ctx.moveTo(x,GY+4); ctx.lineTo(x,GY+12); ctx.stroke(); ctx.fillText(m+" m", x, GY+27); }
+    // blanco
+    ctx.fillStyle = "#555"; ctx.fillRect(tX-2, GY-28, 4, 28);
+    [[17,"#fff"],[13,"#c92a2a"],[9,"#fff"],[5,"#c92a2a"]].forEach(a=>{ ctx.fillStyle = a[1]; ctx.beginPath(); ctx.arc(tX, GY-30, a[0], 0, 7); ctx.fill(); }); ctx.strokeStyle = "#222"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(tX, GY-30, 17, 0, 7); ctx.stroke();
+    // trayectorias anteriores
+    s.shots.forEach(sh=>{
+      ctx.strokeStyle = sh.color; ctx.globalAlpha = .4; ctx.lineWidth = 2; ctx.beginPath(); sh.trail.forEach((p,i)=> i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = sh.color; ctx.beginPath(); ctx.arc(sh.land, GY, 5, 0, 7); ctx.fill();
+      ctx.strokeStyle = "#111"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sh.land, GY); ctx.lineTo(sh.land, GY-16); ctx.stroke(); ctx.fillStyle = sh.color; ctx.beginPath(); ctx.moveTo(sh.land, GY-16); ctx.lineTo(sh.land+11, GY-12); ctx.lineTo(sh.land, GY-8); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#fff"; ctx.font = F(10,800); ctx.textAlign = "center"; ctx.fillText(sh.angle + "°", sh.land, GY+42);
+    });
+    // previsión opcional
+    if(s.showPrev && !s.flight){
+      const rad = s.angle*Math.PI/180, vx = s.speed*Math.cos(rad), vy = -s.speed*Math.sin(rad);
+      ctx.setLineDash([4,6]); ctx.strokeStyle = "#6F8A92"; ctx.lineWidth = 2; ctx.beginPath();
+      for(let t = 0; t < 8; t += 0.04){ const x = GX + vx*t, y = GY + vy*t + 0.5*G*t*t; if(y > GY || x > 650) break; t ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    // proyectil con estela
+    if(s.flight && s.flight.pos){
+      const f = s.flight, p = f.pos, n = f.trail.length;
+      for(let i = Math.max(0, n-40); i < n; i++){ const q = f.trail[i], k = (i-(n-40))/40; ctx.globalAlpha = Math.max(0,k)*.5; ctx.fillStyle = f.color; ctx.beginPath(); ctx.arc(q.x, q.y, 2 + 4*Math.max(0,k), 0, 7); ctx.fill(); } ctx.globalAlpha = 1;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(f.t*9); const gr = ctx.createRadialGradient(-3,-3,1,0,0,9); gr.addColorStop(0,"#fff"); gr.addColorStop(.4,f.color); gr.addColorStop(1,"#222"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0,0,9,0,7); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,0,6,0,1.6); ctx.stroke(); ctx.restore();
+    }
+    // cañón con retroceso, destello y flecha de velocidad
+    const a = s.angle*Math.PI/180, len = s.speed*0.55, tx = GX + Math.cos(a)*len, ty = GY - Math.sin(a)*len;
+    ctx.save(); ctx.translate(GX, GY); ctx.rotate(-a); const back = -s.recoil*7;
+    const bg = ctx.createLinearGradient(0,-8,0,8); bg.addColorStop(0,"#6B7478"); bg.addColorStop(.5,"#2A2F31"); bg.addColorStop(1,"#101213"); ctx.fillStyle = bg; roundRect(ctx, back-4, -8, 38, 16, 4); ctx.fill();
+    ctx.fillStyle = "#C1FF00"; ctx.fillRect(back+22, -8, 3, 16); ctx.restore();
+    ctx.fillStyle = "#1A1A1A"; ctx.beginPath(); ctx.arc(GX, GY, 15, Math.PI, 0); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(GX, GY, 15, Math.PI, 0); ctx.stroke();
+    if(s.flash > 0){ const fxp = {x:GX + Math.cos(a)*(36 + back), y:GY - Math.sin(a)*(36 + back)}; ctx.fillStyle = "rgba(255,200,60,.9)"; ctx.beginPath(); ctx.arc(fxp.x, fxp.y, 12*(s.flash/.12)+4, 0, 7); ctx.fill(); }
+    if(!s.flight){
+      if(s.showComp){
+        ctx.setLineDash([4,4]); ctx.lineWidth = 2; ctx.strokeStyle = "#1863DC"; ctx.beginPath(); ctx.moveTo(GX,GY); ctx.lineTo(tx,GY); ctx.stroke();
+        ctx.strokeStyle = "#c92a2a"; ctx.beginPath(); ctx.moveTo(tx,GY); ctx.lineTo(tx,ty); ctx.stroke(); ctx.setLineDash([]);
+        ctx.font = F(10,700); ctx.fillStyle = "#1863DC"; ctx.textAlign = "center"; ctx.fillText("v·cosθ", (GX+tx)/2, GY-6); ctx.fillStyle = "#c92a2a"; ctx.textAlign = "left"; ctx.fillText("v·senθ", tx+6, (GY+ty)/2);
+      }
+      ctx.strokeStyle = "rgba(24,99,220,.9)"; ctx.fillStyle = "#1863DC"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(GX,GY); ctx.lineTo(tx,ty); ctx.stroke();
+      ctx.strokeStyle = "#1863DC"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(GX, GY, 40, -a, 0); ctx.stroke();
+      ctx.globalAlpha = .45 + .25*Math.sin(fx.t*5); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(tx, ty, 17, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = "#1863DC"; ctx.beginPath(); ctx.arc(tx, ty, 10, 0, 7); ctx.fill(); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(tx, ty, 4, 0, 7); ctx.fill();
+    }
+    // datos arriba y ayuda
+    ctx.font = F(12,700); ctx.textAlign = "left"; const dt2 = `Ángulo: ${s.angle}°   Rapidez: ${(s.speed/PXM).toFixed(1)} m/s`, dw = ctx.measureText(dt2).width + 20;
+    ctx.fillStyle = "#000"; roundRect(ctx, 12, 10, dw, 24*uiScale, 12); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillText(dt2, 22, 10 + 16*uiScale);
+    if(s.shots.length === 0 && !s.flight && !s.aimed){
+      const hint = "👆 Arrastra la punta de la flecha y pulsa Disparar", y = 80 + Math.sin(fx.t*4)*3; ctx.font = F(13,700); ctx.textAlign = "center"; const w = ctx.measureText(hint).width + 26;
+      ctx.fillStyle = "#C1FF00"; roundRect(ctx, 350-w/2, y-(14*uiScale), w, 26*uiScale, 13*uiScale); ctx.fill(); ctx.fillStyle = "#000"; ctx.fillText(hint, 350, y+4*uiScale);
+    }
+    // partículas y textos
+    fx.p.forEach(p=>{ if(p.k === "b") return; ctx.globalAlpha = Math.max(0, 1 - p.t/p.life); ctx.fillStyle = p.c;
+      if(p.k === "c"){ ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.r, -p.r*.5, p.r*2, p.r); ctx.restore(); }
+      else if(p.k === "s"){ ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.t*4); ctx.beginPath(); for(let i = 0; i < 4; i++){ ctx.lineTo(Math.cos(i*1.571)*p.r, Math.sin(i*1.571)*p.r); ctx.lineTo(Math.cos(i*1.571+.785)*p.r*.35, Math.sin(i*1.571+.785)*p.r*.35); } ctx.closePath(); ctx.fill(); ctx.restore(); }
+      else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); } }); ctx.globalAlpha = 1;
+    fx.pops.forEach(q=>{ const kk = q.t/q.life, e = kk < .15 ? kk/.15 : 1; ctx.globalAlpha = kk > .7 ? 1 - (kk-.7)/.3 : 1; ctx.font = F(14,800); ctx.textAlign = "center";
+      const w = ctx.measureText(q.text).width + 18, x = Math.min(650 - w/2, Math.max(10 + w/2, q.x)), y = q.y - kk*22 - 4*e;
+      ctx.fillStyle = "#000"; roundRect(ctx, x-w/2, y-15*uiScale, w, 22*uiScale, 11); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillText(q.text, x, y); }); ctx.globalAlpha = 1;
+    ctx.textAlign = "left"; ctx.restore();
+  }
+};
+
+const FISICA_EXPS = [PILOTO ? expTiroV3 : expTiroV2, expRampa, expResorte, expChoque, expPresion, expPalanca, expLuz, expOnda];
 /* ---------- QUÍMICA ---------- */
 const expReacterm = {
   id:"reacterm", name:"Caliente o frío: reacciones que cambian la temperatura", icon:"🌡️", cat:"quimica",
@@ -6410,7 +6685,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  expDensV3, expInercia, expPendV2, expLava, expPH, expReac,
+  expDensV3, expInercia, PILOTO ? expPendV3 : expPendV2, expLava, expPH, expReac,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
