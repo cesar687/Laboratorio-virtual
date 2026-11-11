@@ -141,7 +141,10 @@
   .user-badge img{width:26px; height:26px; border-radius:50%; background:#fff;}
   .user-badge span{color:#fff; font-size:.78rem; font-weight:600; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .user-badge button{background:none; border:none; color:var(--amber); font-size:.72rem; font-weight:700; cursor:pointer; text-decoration:underline; padding:0;}
-  @media (max-width:560px){ .user-badge span{max-width:80px;} }
+  .user-badge{flex-wrap:wrap; border-radius:22px;}
+  .user-badge .teacher-top{background:var(--amber); color:#000; text-decoration:none; font-weight:800; font-size:.78rem; padding:6px 12px; border-radius:18px;}
+  @media (max-width:900px){ .user-badge{position:relative; top:auto; right:auto; margin:0 0 16px auto; width:fit-content; max-width:100%;} }
+  @media (max-width:560px){ .user-badge span{max-width:90px;} }
 
   /* ---------- comunidad de docentes ---------- */
   .teacher-cta{background:linear-gradient(135deg,var(--navy),#1A1A1A); color:#fff; border-radius:14px; padding:30px 26px; margin:0 0 18px; text-align:center;}
@@ -179,9 +182,9 @@
   .panel-msg{font-size:.9rem; color:var(--muted); padding:14px 0;}
   .panel-link{background:none; border:none; color:var(--amber); font-weight:700; text-decoration:underline; cursor:pointer; font-size:.85rem; margin-top:12px; font-family:inherit;}
   .pd-lbl{font-size:.85rem; font-weight:700;}
-  .pd-tabs{display:flex; gap:6px; margin:14px 0 16px; background:#E3EBEE; padding:5px; border-radius:14px;}
-  .pd-tabs button{flex:1; border:none; background:transparent; padding:11px 2px; border-radius:10px; font-size:.78rem; white-space:nowrap; font-weight:700; color:var(--muted); cursor:pointer; font-family:inherit;}
-  .pd-tabs button.active{background:var(--navy); color:#fff;}
+  .pd-tabs{display:flex; gap:2px; margin:6px 0 16px; border-bottom:2px solid #DCE7EA; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .pd-tabs button{flex:0 0 auto; border:none; background:transparent; padding:12px 14px; font-size:.9rem; font-weight:700; color:var(--muted); cursor:pointer; font-family:inherit; border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap;}
+  .pd-tabs button.active{color:var(--teal); border-bottom-color:var(--teal);}
   .pd-h{font-family:'Roboto Mono','Courier New',monospace; font-weight:700; font-size:1rem; color:var(--navy); margin:20px 0 10px;}
   .pd-areas{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px;}
   .pd-area{background:var(--card); border:2px solid transparent; border-radius:12px; padding:12px; text-align:left; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.08); font-family:inherit;}
@@ -202,6 +205,36 @@
   .pd-quote{background:var(--teal-l); border-left:4px solid var(--teal); border-radius:8px; padding:10px 12px; margin-top:8px; font-size:.92rem; line-height:1.5; color:var(--navy); white-space:pre-wrap; overflow-wrap:anywhere;}
   .pd-pred{font-size:.82rem; color:var(--muted); margin-top:6px;}
   .pd-sel2{padding:10px 12px; border:2px solid #DCE7EA; border-radius:10px; font-size:16px; font-family:inherit; background:#fff; width:100%; margin-bottom:12px;}
+  .pd-code{display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; background:var(--navy); color:#fff; border-radius:14px; padding:16px 18px; margin:8px 0 14px;}
+  .pd-code small{display:block; color:#CFCFCF; font-size:.78rem; max-width:380px; line-height:1.4;}
+  .pd-bigcode{display:block; font-family:'Roboto Mono','Courier New',monospace; font-size:1.8rem; color:var(--amber); letter-spacing:2px; margin:2px 0; overflow-wrap:anywhere;}
+  .pd-acts{display:flex; gap:8px; flex-wrap:wrap;}
+  .pd-code .btn:not(.amber){background:rgba(255,255,255,.15); color:#fff;}
+  .pd-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px;}
+  .pd-class{text-align:left; background:var(--card); border:2px solid transparent; border-radius:14px; padding:16px; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.08); font-family:inherit; display:flex; flex-direction:column; align-items:flex-start; gap:7px;}
+  .pd-class:hover{border-color:var(--teal);}
+  .pd-class small{color:var(--muted); font-size:.8rem;}
+  .pd-class-code{font-family:'Roboto Mono','Courier New',monospace; font-size:1.2rem; color:var(--navy); overflow-wrap:anywhere;}
+  .pd-note{color:var(--muted); font-size:.85rem; margin-top:16px;}
+  .pd-two{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; align-items:start;}
+  .pd-box{background:#F0F4F5; border-radius:14px; padding:4px 14px 14px;}
+  .pd-box .panel-item{box-shadow:none;}
+  .panel-stat.ic{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .panel-stat.ic b{font-size:1.3rem; white-space:nowrap;}
+  .pd-ic{width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;}
+  .pd-ic.verde{background:var(--ok);} .pd-ic.azul{background:var(--teal);} .pd-ic.lima{background:var(--amber);} .pd-ic.negro{background:var(--navy);}
+  .pd-av{width:34px; height:34px; border-radius:50%; background:var(--teal-l); color:var(--teal); font-weight:800; font-size:.8rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .pd-feed{display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid #DCE5E7;}
+  .pd-feed:first-of-type{border-top:none;}
+  .pd-feed-tx{flex:1; min-width:0;} .pd-feed-tx b{display:block; font-size:.88rem;} .pd-feed-tx small{color:var(--muted); font-size:.76rem;}
+  .pd-who{display:flex; align-items:center; gap:10px; min-width:0;}
+  .pd-toast{position:fixed; left:50%; transform:translateX(-50%); bottom:24px; background:var(--navy); color:#fff; padding:12px 18px; border-radius:12px; z-index:1005; max-width:90vw; font-size:.9rem; font-weight:700;}
+  .pd-manual{display:block; width:100%; margin-top:8px; padding:8px; font-size:14px; border-radius:6px; border:none;}
+  .pd-modal-card{background:var(--navy); color:#fff; border-radius:18px; padding:28px 22px; max-width:680px; width:100%; text-align:center; max-height:92vh; overflow:auto;}
+  .pd-modal-card h2{font-family:'Roboto Mono','Courier New',monospace; font-size:1.2rem;}
+  .pd-modal-code{font-family:'Roboto Mono','Courier New',monospace; font-weight:700; font-size:clamp(2rem,9vw,4.2rem); color:var(--amber); letter-spacing:.06em; overflow-wrap:anywhere; margin:16px 0;}
+  .pd-modal-card ol{text-align:left; max-width:460px; margin:0 auto 18px; padding-left:22px; line-height:1.7; font-size:1rem; color:#E6E6E6;}
+  .pd-modal-card .btn.ghost{background:rgba(255,255,255,.15); color:#fff;}
   .teacher-close-x{position:absolute; top:14px; right:16px; background:none; border:none; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--muted); padding:4px;}
 </style>
 </head>
@@ -242,6 +275,7 @@
   <div class="user-badge" id="userBadge">
     <img id="userAvatar" src="" alt="">
     <span id="userName"></span>
+    <button id="teacherTop" class="teacher-top" title="Panel del docente">🎓 Maestro</button>
     <button id="classBtn" class="class-btn" title="Cambiar el código de tu clase">Clase</button>
     <button id="logoutBtn" title="Cerrar sesión">Salir</button>
   </div>
@@ -315,21 +349,41 @@
 
 <main id="panelMaestro" hidden>
   <button class="back" id="panelBack">← Todos los experimentos</button>
-  <div class="exp-title">Panel del docente</div>
-  <div class="exp-sub" id="panelSub">Mira de un vistazo cómo va tu grupo: qué experimentos cuestan más, quién necesita apoyo y qué entendieron tus alumnos.</div>
+  <div class="exp-title" id="pdTitle">Panel del docente</div>
+  <div class="exp-sub" id="pdSub">Mira de un vistazo cómo va tu grupo.</div>
   <div class="panel-msg" id="panelMsg">Cargando…</div>
   <div id="panelBody" hidden>
-    <label for="panelClase" class="pd-lbl">Clase</label>
-    <select id="panelClase" class="panel-sel"></select>
-    <div class="cattabs" id="pdAreas" aria-label="Filtrar por área"></div>
-    <div class="pd-tabs" role="tablist" id="pdTabs">
-      <button role="tab" data-tab="resumen" class="active">📊 Resumen</button>
-      <button role="tab" data-tab="alumnos">👥 Alumnos</button>
-      <button role="tab" data-tab="explicaciones">💬 Explicaciones</button>
+    <div id="pdClases"></div>
+    <div id="pdClase" hidden>
+      <button class="back" id="pdBackClases">‹ Tus clases</button>
+      <div class="pd-code" id="pdCodeBox" hidden></div>
+      <div class="pd-tabs" role="tablist" id="pdTabs">
+        <button role="tab" data-tab="inicio" class="active">Inicio</button>
+        <button role="tab" data-tab="alumnos">Alumnos</button>
+        <button role="tab" data-tab="experimentos">Experimentos</button>
+        <button role="tab" data-tab="explicaciones">Explicaciones</button>
+      </div>
+      <div class="cattabs" id="pdAreas" aria-label="Filtrar por área" hidden></div>
+      <div id="pdContent"></div>
     </div>
-    <div id="pdContent"></div>
   </div>
+  <div class="pd-toast" id="pdToast" hidden></div>
 </main>
+<div class="login-gate" id="pdModal" style="display:none; z-index:1004;">
+  <div class="pd-modal-card">
+    <h2>Únete a la clase</h2>
+    <div class="pd-modal-code" id="pdModalCode"></div>
+    <ol>
+      <li>Entra a <b id="pdModalUrl"></b></li>
+      <li>Inicia sesión con tu cuenta de Google.</li>
+      <li>Escribe el código de la clase cuando te lo pida.</li>
+    </ol>
+    <div class="pd-acts" style="justify-content:center;">
+      <button class="btn amber" id="pdModalCopy">Copiar vínculo</button>
+      <button class="btn ghost" id="pdModalClose">Cerrar</button>
+    </div>
+  </div>
+</div>
 
 <div class="wrap">
   <section class="teacher-cta">
@@ -401,6 +455,8 @@ function refreshClassBtn(){
   const c = getClassCode(), b = document.getElementById("classBtn");
   b.textContent = c ? "Clase: " + c : "Clase";
 }
+// vínculo de clase: ...?clase=CODIGO llena el código solo (una vez por sesión)
+const URL_CLASE = (()=>{ try{ const c = new URLSearchParams(location.search).get("clase"); return c ? c.trim().toUpperCase().slice(0,30) : ""; }catch(err){ return ""; } })();
 let askedThisSession = false;
 function openClassModal(){
   document.getElementById("classInput").value = getClassCode();
@@ -411,6 +467,11 @@ function closeClassModal(){
   markClassAsked(); refreshClassBtn();
 }
 function askClassIfNeeded(){
+  if(URL_CLASE){
+    let ya = ""; try{ ya = sessionStorage.getItem("labClaseUrl") || ""; }catch(err){}
+    if(ya !== URL_CLASE){ setClassCode(URL_CLASE); markClassAsked(); refreshClassBtn(); try{ sessionStorage.setItem("labClaseUrl", URL_CLASE); }catch(err){} }
+    return;
+  }
   if(askedThisSession || classAsked()) return;
   askedThisSession = true;
   openClassModal();
@@ -695,8 +756,10 @@ function showExplanation(){
   logEvent("ciclo_completo", e, { correcta: predCorrect, segundos: secondsSinceOpen() });
 }
 /* ================= panel del docente ================= */
-let PD = null, pdTab = "resumen", pdArea = "todos", pdExplN = 30;
+let PD = null, pdSel = "", pdTab = "inicio", pdArea = "todos", pdExpSel = "", pdExplN = 30;
+const PD_TODAS = "__todas__";
 const pe = (tag, cls, txt)=>{ const n = document.createElement(tag); if(cls) n.className = cls; if(txt !== undefined) n.textContent = txt; return n; };
+const pdPl = (n, uno, varios)=> n + " " + (n === 1 ? uno : varios);
 function pdSemaforo(pct, n){
   if(pct === null || n < 3) return {c:"gris", t:"Pocos datos"};
   if(pct >= 70) return {c:"verde", t:"Va bien"};
@@ -721,21 +784,59 @@ function pdFecha(iso){
 function pdBar(pct, cls){
   const bar = pe("div","panel-bar"), fill = pe("i", cls); fill.style.width = (pct === null ? 0 : pct) + "%"; bar.appendChild(fill); return bar;
 }
-function pdDatos(){ // aplica los filtros de clase y área
-  const clase = $("panelClase").value;
-  const enClase = x => clase === "__todas__" || x.c === clase;
-  const intentos = PD.intentos.filter(enClase);
-  return {
-    alumnos: PD.alumnos.filter(enClase),
-    intentos: intentos,
-    filtrados: pdArea === "todos" ? intentos : intentos.filter(x=>x.t === pdArea)
-  };
+function pdIni(nombre){ const p = String(nombre || "?").trim().split(/\s+/); return ((p[0] || "?")[0] + (p.length > 1 ? p[p.length-1][0] : "")).toUpperCase(); }
+function pdCodigos(){ return [...new Set([...(PD.clases || []), ...(PD.permitidos || [])])].sort((a,b)=>a.localeCompare(b,"es")); }
+const pdEsCodigo = c => !!c && c !== PD_TODAS && c !== "SIN CÓDIGO";
+const pdVinculo = c => location.origin + location.pathname + "?clase=" + encodeURIComponent(c);
+function pdDatos(sel){ // aplica la clase elegida y el filtro de área
+  const en = x => sel === PD_TODAS || x.c === sel;
+  const intentos = PD.intentos.filter(en);
+  return { alumnos: PD.alumnos.filter(en), intentos: intentos, filtrados: pdArea === "todos" ? intentos : intentos.filter(x=>x.t === pdArea) };
 }
+function pdPorExperimento(arr){
+  const por = {};
+  arr.forEach(x=>{ (por[x.e] = por[x.e] || {n:x.n, t:x.t, arr:[]}).arr.push(x); });
+  const lista = Object.keys(por).map(id=>{ const o = por[id], pc = pdPct(o.arr); return {id, n:o.n, t:o.t, arr:o.arr, pct:pc.pct, ev:pc.n, sem:pdSemaforo(pc.pct, pc.n), alum:new Set(o.arr.map(x=>x.m)).size}; });
+  lista.sort((a,b)=> (a.pct === null ? 101 : a.pct) - (b.pct === null ? 101 : b.pct));
+  return lista;
+}
+function pdExpItem(x){
+  const it = pe("div","panel-item"), row = pe("div","pd-row");
+  row.append(pe("h5","",x.n), pe("span","pd-chip " + x.sem.c, x.sem.t));
+  it.appendChild(row); it.appendChild(pdBar(x.pct, x.sem.c));
+  it.appendChild(pe("small","", x.pct === null
+    ? pdPl(x.arr.length,"ciclo","ciclos") + " · " + pdPl(x.alum,"alumno","alumnos") + " · sin respuesta única (no se califica)"
+    : x.pct + "% de aciertos · " + pdPl(x.ev,"intento","intentos") + " · " + pdPl(x.alum,"alumno","alumnos")));
+  return it;
+}
+/* ---- copiar y mostrar el código ---- */
+function pdToast(msg, manual){
+  const t = $("pdToast"); t.textContent = msg;
+  if(manual){ const i = pe("input","pd-manual"); i.value = manual; i.readOnly = true; t.appendChild(i); t.hidden = false; i.focus(); i.select(); t.onclick = ev=>{ if(ev.target === t) t.hidden = true; }; return; }
+  t.hidden = false; clearTimeout(pdToast._t); pdToast._t = setTimeout(()=>{ t.hidden = true; }, 2200);
+}
+function pdCopiar(txt, msg){
+  const fallback = ()=>{
+    try{ const t = document.createElement("textarea"); t.value = txt; t.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(t); t.select(); const ok = document.execCommand("copy"); t.remove(); if(ok){ pdToast("✔ " + msg); return; } }catch(err){}
+    pdToast("No se pudo copiar solo. Cópialo a mano:", txt);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(()=>pdToast("✔ " + msg), fallback); } else fallback();
+}
+function pdMostrarCodigo(c){
+  $("pdModalCode").textContent = c; $("pdModalUrl").textContent = location.origin + location.pathname;
+  $("pdModal").style.display = "flex"; $("pdModal").dataset.code = c;
+}
+$("pdModalClose").onclick = ()=>{ $("pdModal").style.display = "none"; };
+$("pdModalCopy").onclick = ()=>pdCopiar(pdVinculo($("pdModal").dataset.code), "Vínculo copiado");
+document.addEventListener("keydown", ev=>{ if(ev.key === "Escape") $("pdModal").style.display = "none"; });
+
+/* ---- carga ---- */
 function abrirPanel(){
   if(current && current.unmount) current.unmount();
   stopLoop(); current = null;
   $("home").hidden = true; $("exp").hidden = true; $("panelMaestro").hidden = false;
-  $("panelBody").hidden = true;
+  $("panelBody").hidden = true; $("pdTitle").textContent = "Panel del docente";
+  $("pdSub").textContent = "Mira de un vistazo cómo va tu grupo: qué experimentos cuestan más, quién necesita apoyo y qué entendieron tus alumnos.";
   const msg = $("panelMsg"); msg.hidden = false; msg.textContent = "Cargando…";
   window.scrollTo({top:0});
   let token = ""; try{ token = sessionStorage.getItem("labCred") || ""; }catch(err){}
@@ -747,102 +848,122 @@ function abrirPanel(){
   }).then(r=>r.json()).then(r=>{
     if(!r.ok){
       msg.textContent = r.error === "no_maestro"
-        ? "Tu cuenta aún no está registrada como docente. Pide a Dimex que agregue tu correo."
+        ? "Tu cuenta aún no está registrada como docente. Pide a Dimex que agregue tu correo, o usa «Quiero unirme» al final de la página."
         : r.error === "sesion"
         ? "Tu sesión caducó. Presiona «Salir» y vuelve a entrar con Google para abrir el panel."
         : "No se pudo cargar el panel. Intenta de nuevo en un momento.";
       return;
     }
+    r.alumnos = r.alumnos || []; r.intentos = r.intentos || []; r.clases = r.clases || []; r.permitidos = r.permitidos || [];
     PD = r;
-    if(!r.clases.length){ msg.textContent = "Todavía no hay actividad en tus clases. Cuando tus alumnos usen el código de clase, aparecerán aquí."; return; }
-    const sel = $("panelClase"); sel.innerHTML = "";
-    const ops = r.clases.length > 1 ? [["__todas__","Todas mis clases"]] : [];
-    r.clases.forEach(c=>ops.push([c,c]));
-    ops.forEach(o=>{ const op = pe("option","",o[1]); op.value = o[0]; sel.appendChild(op); });
-    pdArea = "todos"; pdTab = "resumen"; pdExplN = 30;
+    const codigos = pdCodigos();
+    if(!codigos.length){ msg.textContent = "Todavía no tienes clases. Pide a Dimex que agregue tu código de clase a tu cuenta; en cuanto tus alumnos lo usen, aparecerán aquí."; return; }
     msg.hidden = true; $("panelBody").hidden = false;
-    pdRender();
+    if(codigos.length === 1) pdAbrir(codigos[0], true); else pdVerClases();
   }).catch(()=>{ msg.textContent = "No se pudo cargar el panel. Revisa tu conexión e intenta de nuevo."; });
 }
-function pdRender(){
-  // filtros de área
-  const ar = $("pdAreas"); ar.innerHTML = "";
-  CATS.forEach(c=>{
-    const b = pe("button","cattab" + (pdArea === c.id ? " active" : ""));
-    b.append(pe("span","",c.icon + " " + c.label)); b.onclick = ()=>{ pdArea = c.id; pdExplN = 30; pdRender(); };
-    ar.appendChild(b);
+/* ---- nivel 1: tus clases ---- */
+function pdVerClases(){
+  $("pdClase").hidden = true; $("pdClases").hidden = false;
+  $("pdTitle").textContent = "Tus clases"; $("pdSub").textContent = "Elige una clase para ver cómo van tus alumnos.";
+  const box = $("pdClases"); box.innerHTML = "";
+  const codigos = pdCodigos(), lista = codigos.length > 1 ? [PD_TODAS].concat(codigos) : codigos;
+  const grid = pe("div","pd-grid");
+  lista.forEach(c=>{
+    const D = pdDatos(c), pc = pdPct(D.intentos), sm = D.intentos.length ? pdSemaforo(pc.pct, pc.n) : {c:"gris", t:"Sin actividad"};
+    const last = D.alumnos.reduce((m,a)=>Math.max(m, Date.parse(a.u) || 0), 0);
+    const card = pe("button","pd-class");
+    card.append(pe("b","pd-class-code", c === PD_TODAS ? "Todas mis clases" : c), pe("span","pd-chip " + sm.c, sm.t),
+      pe("small","", pdPl(D.alumnos.length,"alumno","alumnos") + " · " + pdPl(D.intentos.length,"ciclo","ciclos") + (pc.pct === null ? "" : " · " + pc.pct + "% de aciertos")),
+      pe("small","", last ? "Última actividad " + pdHace(new Date(last).toISOString()) : "Aún sin actividad"));
+    card.onclick = ()=>pdAbrir(c); grid.appendChild(card);
   });
-  [...$("pdTabs").children].forEach(b=>{ b.className = b.dataset.tab === pdTab ? "active" : ""; b.setAttribute("aria-selected", b.dataset.tab === pdTab); });
-  const box = $("pdContent"); box.innerHTML = "";
-  const D = pdDatos();
-  if(pdTab === "resumen") pdResumen(box, D);
-  else if(pdTab === "alumnos") pdAlumnos(box, D);
-  else pdExplicaciones(box, D);
+  box.appendChild(grid);
+  box.appendChild(pe("p","pd-note","¿Necesitas otra clase? Comparte un código nuevo con tus alumnos y pide a Dimex que lo agregue a tu cuenta."));
 }
-function pdResumen(box, D){
-  const alum = new Set(D.intentos.map(x=>x.m)), t = pdPct(D.filtrados);
-  const segs = D.filtrados.map(x=>x.s).filter(v=>typeof v === "number" && v > 0);
-  const prom = segs.length ? Math.round(segs.reduce((a,b)=>a+b,0)/segs.length/60*10)/10 : null;
+/* ---- nivel 2: una clase ---- */
+function pdAbrir(sel, unica){
+  pdSel = sel; pdTab = "inicio"; pdArea = "todos"; pdExpSel = ""; pdExplN = 30;
+  $("pdClases").hidden = true; $("pdClase").hidden = false; $("pdBackClases").hidden = !!unica;
+  window.scrollTo({top:0}); pdRender();
+}
+function pdCodeCard(){
+  const box = $("pdCodeBox"); box.innerHTML = "";
+  box.hidden = !pdEsCodigo(pdSel); if(box.hidden) return;
+  const izq = pe("div"); izq.append(pe("small","","Código de la clase"), pe("b","pd-bigcode",pdSel), pe("small","","Tus alumnos lo escriben al entrar al laboratorio, o abren el vínculo y se llena solo."));
+  const acts = pe("div","pd-acts");
+  const b1 = pe("button","btn amber small","📺 Mostrar a la clase"); b1.onclick = ()=>pdMostrarCodigo(pdSel);
+  const b2 = pe("button","btn small","Copiar código"); b2.onclick = ()=>pdCopiar(pdSel, "Código copiado");
+  const b3 = pe("button","btn small","Copiar vínculo"); b3.onclick = ()=>pdCopiar(pdVinculo(pdSel), "Vínculo copiado");
+  acts.append(b1, b2, b3); box.append(izq, acts);
+}
+function pdRender(){
+  $("pdTitle").textContent = pdSel === PD_TODAS ? "Todas mis clases" : "Clase " + pdSel;
+  $("pdSub").textContent = "Resumen, alumnos, experimentos y explicaciones de esta clase.";
+  pdCodeCard();
+  [...$("pdTabs").children].forEach(b=>{ b.className = b.dataset.tab === pdTab ? "active" : ""; b.setAttribute("aria-selected", b.dataset.tab === pdTab); });
+  const ar = $("pdAreas"); ar.innerHTML = ""; ar.hidden = !(pdTab === "experimentos" || pdTab === "explicaciones");
+  if(!ar.hidden) CATS.forEach(c=>{
+    const b = pe("button","cattab" + (pdArea === c.id ? " active" : "")); b.append(pe("span","",c.icon + " " + c.label));
+    b.onclick = ()=>{ pdArea = c.id; pdExplN = 30; pdRender(); }; ar.appendChild(b);
+  });
+  const box = $("pdContent"); box.innerHTML = "";
+  const D = pdDatos(pdSel);
+  if(pdTab === "inicio") pdInicio(box, D); else if(pdTab === "alumnos") pdAlumnos(box, D);
+  else if(pdTab === "experimentos") pdExperimentos(box, D); else pdExplicaciones(box, D);
+}
+function pdInicio(box, D){
+  const t = pdPct(D.intentos), alum = new Set(D.intentos.map(x=>x.m)).size, nExp = new Set(D.intentos.map(x=>x.e)).size;
   const stats = pe("div","panel-stats");
-  [[alum.size + " de " + D.alumnos.length, "alumnos con ciclos completos"],[D.filtrados.length,"ciclos completados"],[t.pct === null ? "—" : t.pct + "%","de aciertos al predecir"],[prom === null ? "—" : prom + " min","por experimento (promedio)"]].forEach(p=>{
-    const d = pe("div","panel-stat"); d.append(pe("b","",String(p[0])), pe("span","",p[1])); stats.appendChild(d);
+  [["👥","verde", alum + " de " + D.alumnos.length, "alumnos con ciclos completos"],["🧪","azul", D.intentos.length, "ciclos completados"],
+   ["🎯","lima", t.pct === null ? "—" : t.pct + "%", "de aciertos al predecir"],["🔬","negro", nExp, "experimentos probados"]].forEach(p=>{
+    const d = pe("div","panel-stat ic"), tx = pe("div"); tx.append(pe("b","",String(p[2])), pe("span","",p[3]));
+    d.append(tx, pe("div","pd-ic " + p[1], p[0])); stats.appendChild(d);
   });
   box.appendChild(stats);
-
-  // por experimento (con el filtro de área)
-  const porExp = {};
-  D.filtrados.forEach(x=>{ (porExp[x.e] = porExp[x.e] || {n:x.n, t:x.t, arr:[]}).arr.push(x); });
-  const lista = Object.keys(porExp).map(id=>{ const o = porExp[id], pc = pdPct(o.arr); return {id, n:o.n, t:o.t, arr:o.arr, pct:pc.pct, ev:pc.n, sem:pdSemaforo(pc.pct, pc.n), alum:new Set(o.arr.map(x=>x.m)).size}; });
-  lista.sort((a,b)=> (a.pct === null ? 101 : a.pct) - (b.pct === null ? 101 : b.pct));
-  const rojos = lista.filter(x=>x.sem.c === "rojo");
-  const al = pe("div","pd-alert " + (rojos.length ? "rojo" : "verde"),
-    !lista.length ? "Aún no hay ciclos completados con estos filtros."
-    : rojos.length ? "⚠ " + rojos.length + (rojos.length === 1 ? " experimento necesita" : " experimentos necesitan") + " atención: " + rojos.slice(0,3).map(x=>x.n).join(", ") + (rojos.length > 3 ? "…" : "")
-    : "✔ Ningún experimento está en rojo. ¡Buen trabajo!");
-  box.appendChild(al);
-
-  // por área
-  if(pdArea === "todos" && D.intentos.length){
+  const lista = pdPorExperimento(D.intentos), atencion = lista.filter(x=>x.sem.c === "rojo" || x.sem.c === "ambar");
+  const dos = pe("div","pd-two");
+  const izq = pe("div","pd-box"); izq.appendChild(pe("div","pd-h","Experimentos que necesitan atención"));
+  if(!D.intentos.length) izq.appendChild(pe("div","panel-msg","Aún no hay ciclos completados en esta clase."));
+  else if(!atencion.length) izq.appendChild(pe("div","pd-alert verde","✔ Todo va bien por ahora."));
+  else atencion.slice(0,5).forEach(x=>izq.appendChild(pdExpItem(x)));
+  if(D.intentos.length){ const ver = pe("button","btn ghost small mt","Ver todos los experimentos →"); ver.onclick = ()=>{ pdTab = "experimentos"; pdRender(); }; izq.appendChild(ver); }
+  const der = pe("div","pd-box"); der.appendChild(pe("div","pd-h","Actividad reciente"));
+  const rec = D.intentos.slice().sort((p,q)=>Date.parse(q.f)-Date.parse(p.f)).slice(0,6);
+  if(!rec.length) der.appendChild(pe("div","panel-msg","Cuando tus alumnos completen experimentos, los verás aquí."));
+  rec.forEach(x=>{
+    const fila = pe("div","pd-feed"), tx = pe("div","pd-feed-tx"); tx.append(pe("b","",x.a), pe("small","", x.n + " · " + pdHace(x.f)));
+    fila.append(pe("div","pd-av", pdIni(x.a)), tx, pe("span","pd-chip " + (x.ok === true ? "verde" : x.ok === false ? "rojo" : "gris"), x.ok === true ? "Acertó" : x.ok === false ? "No acertó" : "Sin calificar"));
+    der.appendChild(fila);
+  });
+  dos.append(izq, der); box.appendChild(dos);
+  if(D.intentos.length){
     box.appendChild(pe("div","pd-h","Por área"));
     const g = pe("div","pd-areas");
     CATS.filter(c=>c.id !== "todos").forEach(c=>{
       const arr = D.intentos.filter(x=>x.t === c.id), pc = pdPct(arr), sm = pdSemaforo(pc.pct, pc.n);
-      const b = pe("button","pd-area"); b.append(pe("b","",c.icon + " " + c.label), pe("span","pd-chip " + sm.c, sm.t), pe("small","", (pc.pct === null ? "—" : pc.pct + "%") + " · " + arr.length + " ciclos"));
-      b.onclick = ()=>{ pdArea = c.id; pdRender(); }; g.appendChild(b);
+      const b = pe("button","pd-area"); b.append(pe("b","",c.icon + " " + c.label), pe("span","pd-chip " + sm.c, sm.t), pe("small","", (pc.pct === null ? "—" : pc.pct + "%") + " · " + pdPl(arr.length,"ciclo","ciclos")));
+      b.onclick = ()=>{ pdArea = c.id; pdTab = "experimentos"; pdRender(); }; g.appendChild(b);
     });
     box.appendChild(g);
-  }
-
-  if(lista.length){
-    box.appendChild(pe("div","pd-h","Experimentos (los que más cuestan, primero)"));
-    lista.forEach(x=>{
-      const it = pe("div","panel-item"), row = pe("div","pd-row");
-      row.append(pe("h5","",x.n), pe("span","pd-chip " + x.sem.c, x.sem.t));
-      it.appendChild(row);
-      it.appendChild(pdBar(x.pct, x.sem.c));
-      it.appendChild(pe("small","", x.pct === null
-        ? x.arr.length + " ciclos · " + x.alum + " alumnos · sin respuesta única (no se califica)"
-        : x.pct + "% de aciertos · " + x.ev + " intentos · " + x.alum + " alumnos"));
-      box.appendChild(it);
-    });
   }
 }
 function pdAlumnos(box, D){
   const por = {};
   D.alumnos.forEach(a=>{ por[a.c + "|" + a.m] = {a:a, arr:[]}; });
-  D.filtrados.forEach(x=>{ const k = x.c + "|" + x.m; if(por[k]) por[k].arr.push(x); });
+  D.intentos.forEach(x=>{ const k = x.c + "|" + x.m; if(por[k]) por[k].arr.push(x); });
   const lista = Object.keys(por).map(k=>{ const o = por[k], pc = pdPct(o.arr); return {a:o.a, arr:o.arr, pct:pc.pct, n:pc.n, sem:o.arr.length ? pdSemaforo(pc.pct, pc.n) : {c:"gris", t:"Sin ciclos aún"}}; });
   const orden = {"Sin ciclos aún":0, "Atención":1, "Revisar":2, "Pocos datos":3, "Va bien":4};
   lista.sort((x,y)=> orden[x.sem.t] - orden[y.sem.t] || x.a.a.localeCompare(y.a.a, "es"));
   const sin = lista.filter(x=>!x.arr.length).length;
-  box.appendChild(pe("div","pd-alert " + (sin ? "rojo" : "verde"), sin ? "👋 " + sin + (sin === 1 ? " alumno no ha completado" : " alumnos no han completado") + " ningún experimento con estos filtros." : "✔ Todos tus alumnos ya completaron al menos un experimento."));
-  if(!lista.length) box.appendChild(pe("div","panel-msg","Aún no hay alumnos registrados en esta clase."));
+  box.appendChild(pe("div","pd-alert " + (sin ? "rojo" : "verde"), !lista.length ? "Aún no hay alumnos en esta clase." : sin ? "👋 " + (sin === 1 ? "1 alumno no ha completado" : sin + " alumnos no han completado") + " ningún experimento." : "✔ Todos tus alumnos ya completaron al menos un experimento."));
   lista.forEach(x=>{
-    const d = pe("details","panel-item pd-det"), sm = pe("summary"), row = pe("div","pd-row");
-    row.append(pe("h5","",x.a.a), pe("span","pd-chip " + x.sem.c, x.sem.t));
+    const d = pe("details","panel-item pd-det"), sm = pe("summary"), row = pe("div","pd-row"), izq = pe("div","pd-who");
+    izq.append(pe("div","pd-av", pdIni(x.a.a)), pe("h5","",x.a.a));
+    row.append(izq, pe("span","pd-chip " + x.sem.c, x.sem.t));
     sm.appendChild(row); sm.appendChild(pdBar(x.pct, x.sem.c));
     sm.appendChild(pe("small","", x.arr.length
-      ? x.arr.length + " ciclos · " + (x.pct === null ? "sin calificar" : x.pct + "% de aciertos") + " · última actividad " + pdHace(x.a.u)
+      ? pdPl(x.arr.length,"ciclo","ciclos") + " · " + (x.pct === null ? "sin calificar" : x.pct + "% de aciertos") + " · última actividad " + pdHace(x.a.u)
       : "Última actividad " + pdHace(x.a.u)));
     d.appendChild(sm);
     if(x.arr.length){
@@ -855,6 +976,12 @@ function pdAlumnos(box, D){
     box.appendChild(d);
   });
 }
+function pdExperimentos(box, D){
+  const lista = pdPorExperimento(D.filtrados);
+  if(!lista.length){ box.appendChild(pe("div","panel-msg","Aún no hay ciclos completados con este filtro.")); return; }
+  box.appendChild(pe("small","","Los que más cuestan, primero"));
+  lista.forEach(x=>box.appendChild(pdExpItem(x)));
+}
 function pdExplicaciones(box, D){
   const con = D.filtrados.filter(x=>x.x && x.x.trim()).sort((p,q)=>Date.parse(q.f)-Date.parse(p.f));
   const exps = {}; con.forEach(x=>{ exps[x.e] = x.n; });
@@ -864,25 +991,21 @@ function pdExplicaciones(box, D){
   sel.onchange = ()=>{ pdExpSel = sel.value; pdExplN = 30; pdRender(); };
   box.appendChild(sel);
   const lista = pdExpSel ? con.filter(x=>x.e === pdExpSel) : con;
-  if(!lista.length){ box.appendChild(pe("div","panel-msg","Todavía no hay explicaciones con estos filtros.")); return; }
-  box.appendChild(pe("small","", lista.length + (lista.length === 1 ? " explicación" : " explicaciones")));
+  if(!lista.length){ box.appendChild(pe("div","panel-msg","Todavía no hay explicaciones con este filtro.")); return; }
+  box.appendChild(pe("small","", pdPl(lista.length,"explicación","explicaciones")));
   lista.slice(0, pdExplN).forEach(x=>{
     const it = pe("div","panel-item"), row = pe("div","pd-row");
     row.append(pe("h5","",x.a), pe("span","pd-chip " + (x.ok === true ? "verde" : x.ok === false ? "rojo" : "gris"), x.ok === true ? "Acertó" : x.ok === false ? "No acertó" : "Sin calificar"));
-    it.appendChild(row);
-    it.appendChild(pe("small","", x.n + " · " + pdFecha(x.f)));
+    it.appendChild(row); it.appendChild(pe("small","", x.n + " · " + pdFecha(x.f)));
     if(x.p) it.appendChild(pe("div","pd-pred","Predijo " + (x.l ? x.l + ": " : "") + x.p));
-    it.appendChild(pe("div","pd-quote", x.x));
-    box.appendChild(it);
+    it.appendChild(pe("div","pd-quote", x.x)); box.appendChild(it);
   });
-  if(lista.length > pdExplN){
-    const m = pe("button","btn ghost mt","Ver más explicaciones"); m.onclick = ()=>{ pdExplN += 30; pdRender(); }; box.appendChild(m);
-  }
+  if(lista.length > pdExplN){ const m = pe("button","btn ghost mt","Ver más explicaciones"); m.onclick = ()=>{ pdExplN += 30; pdRender(); }; box.appendChild(m); }
 }
-let pdExpSel = "";
-$("pdTabs").onclick = ev=>{ const b = ev.target.closest("button"); if(!b) return; pdTab = b.dataset.tab; pdRender(); };
-$("panelClase").onchange = ()=>{ pdExplN = 30; pdRender(); };
+$("pdTabs").onclick = ev=>{ const b = ev.target.closest("button"); if(!b) return; pdTab = b.dataset.tab; pdExplN = 30; pdRender(); };
+$("pdBackClases").onclick = pdVerClases;
 $("openPanel").onclick = abrirPanel;
+$("teacherTop").onclick = abrirPanel;
 function ctrlBtn(txt, cls, fn){ const b=document.createElement("button"); b.className="btn small "+(cls||""); b.textContent=txt; b.onclick=fn; $("controls").appendChild(b); return b; }
 function ctrlSlider(labelTxt, min, max, step, val, fn){
   const l=document.createElement("label"); l.textContent=labelTxt+" ";
