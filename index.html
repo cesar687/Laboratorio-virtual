@@ -178,6 +178,30 @@
   .panel-bar.low i{background:#c92a2a;}
   .panel-msg{font-size:.9rem; color:var(--muted); padding:14px 0;}
   .panel-link{background:none; border:none; color:var(--amber); font-weight:700; text-decoration:underline; cursor:pointer; font-size:.85rem; margin-top:12px; font-family:inherit;}
+  .pd-lbl{font-size:.85rem; font-weight:700;}
+  .pd-tabs{display:flex; gap:6px; margin:14px 0 16px; background:#E3EBEE; padding:5px; border-radius:14px;}
+  .pd-tabs button{flex:1; border:none; background:transparent; padding:11px 2px; border-radius:10px; font-size:.78rem; white-space:nowrap; font-weight:700; color:var(--muted); cursor:pointer; font-family:inherit;}
+  .pd-tabs button.active{background:var(--navy); color:#fff;}
+  .pd-h{font-family:'Roboto Mono','Courier New',monospace; font-weight:700; font-size:1rem; color:var(--navy); margin:20px 0 10px;}
+  .pd-areas{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px;}
+  .pd-area{background:var(--card); border:2px solid transparent; border-radius:12px; padding:12px; text-align:left; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.08); font-family:inherit;}
+  .pd-area.active{border-color:var(--teal);}
+  .pd-area b{display:block; font-size:.9rem; color:var(--navy);}
+  .pd-area small{display:block; color:var(--muted); font-size:.75rem; margin-top:6px;}
+  .pd-area .pd-chip{margin-top:6px;}
+  .pd-chip{display:inline-block; font-size:.72rem; font-weight:800; padding:3px 9px; border-radius:20px; color:#fff; white-space:nowrap;}
+  .pd-chip.verde{background:var(--ok);} .pd-chip.ambar{background:#b07a00;} .pd-chip.rojo{background:var(--bad);} .pd-chip.gris{background:#8a8a8a;}
+  .panel-bar i.verde{background:var(--ok);} .panel-bar i.ambar{background:#d9a300;} .panel-bar i.rojo{background:var(--bad);} .panel-bar i.gris{background:#8a8a8a;}
+  .pd-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .pd-alert{border-radius:12px; padding:14px 16px; margin-bottom:12px; font-weight:700; font-size:.92rem;}
+  .pd-alert.rojo{background:#FDECEC; color:var(--bad);} .pd-alert.verde{background:#E7F5EA; color:var(--ok);}
+  .pd-det summary{cursor:pointer; list-style:none;}
+  .pd-det summary::-webkit-details-marker{display:none;}
+  .pd-det ul{margin:10px 0 0 0; padding:0; list-style:none; font-size:.82rem; color:var(--ink);}
+  .pd-det li{padding:5px 0; border-top:1px solid #EEF2F3;}
+  .pd-quote{background:var(--teal-l); border-left:4px solid var(--teal); border-radius:8px; padding:10px 12px; margin-top:8px; font-size:.92rem; line-height:1.5; color:var(--navy); white-space:pre-wrap; overflow-wrap:anywhere;}
+  .pd-pred{font-size:.82rem; color:var(--muted); margin-top:6px;}
+  .pd-sel2{padding:10px 12px; border:2px solid #DCE7EA; border-radius:10px; font-size:16px; font-family:inherit; background:#fff; width:100%; margin-bottom:12px;}
   .teacher-close-x{position:absolute; top:14px; right:16px; background:none; border:none; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--muted); padding:4px;}
 </style>
 </head>
@@ -291,13 +315,20 @@
 
 <main id="panelMaestro" hidden>
   <button class="back" id="panelBack">← Todos los experimentos</button>
-  <div class="exp-title">Panel del maestro</div>
-  <div class="exp-sub">Aciertos de predicción por experimento. Los experimentos con menos aciertos aparecen primero: ahí vale la pena detenerse en clase.</div>
-  <label for="panelClase" style="font-size:.85rem; font-weight:700;">Clase</label><br>
-  <select id="panelClase" class="panel-sel" hidden></select>
+  <div class="exp-title">Panel del docente</div>
+  <div class="exp-sub" id="panelSub">Mira de un vistazo cómo va tu grupo: qué experimentos cuestan más, quién necesita apoyo y qué entendieron tus alumnos.</div>
   <div class="panel-msg" id="panelMsg">Cargando…</div>
-  <div class="panel-stats" id="panelStats"></div>
-  <div id="panelLista"></div>
+  <div id="panelBody" hidden>
+    <label for="panelClase" class="pd-lbl">Clase</label>
+    <select id="panelClase" class="panel-sel"></select>
+    <div class="cattabs" id="pdAreas" aria-label="Filtrar por área"></div>
+    <div class="pd-tabs" role="tablist" id="pdTabs">
+      <button role="tab" data-tab="resumen" class="active">📊 Resumen</button>
+      <button role="tab" data-tab="alumnos">👥 Alumnos</button>
+      <button role="tab" data-tab="explicaciones">💬 Explicaciones</button>
+    </div>
+    <div id="pdContent"></div>
+  </div>
 </main>
 
 <div class="wrap">
@@ -663,13 +694,48 @@ function showExplanation(){
   $("explicaPanel").scrollIntoView({behavior:"smooth"});
   logEvent("ciclo_completo", e, { correcta: predCorrect, segundos: secondsSinceOpen() });
 }
-/* ================= panel del maestro ================= */
-let panelDatos = null;
+/* ================= panel del docente ================= */
+let PD = null, pdTab = "resumen", pdArea = "todos", pdExplN = 30;
+const pe = (tag, cls, txt)=>{ const n = document.createElement(tag); if(cls) n.className = cls; if(txt !== undefined) n.textContent = txt; return n; };
+function pdSemaforo(pct, n){
+  if(pct === null || n < 3) return {c:"gris", t:"Pocos datos"};
+  if(pct >= 70) return {c:"verde", t:"Va bien"};
+  if(pct >= 40) return {c:"ambar", t:"Revisar"};
+  return {c:"rojo", t:"Atención"};
+}
+function pdPct(arr){ // % de aciertos sobre los intentos que se califican
+  const ev = arr.filter(x=>x.ok === true || x.ok === false);
+  return ev.length ? {pct: Math.round(100*ev.filter(x=>x.ok).length/ev.length), n: ev.length} : {pct:null, n:0};
+}
+function pdHace(iso){
+  const t = Date.parse(iso); if(!t) return "—";
+  const m = Math.round((Date.now()-t)/60000);
+  if(m < 2) return "hace un momento"; if(m < 60) return "hace " + m + " min";
+  const hr = Math.round(m/60); if(hr < 24) return "hace " + hr + " h";
+  const d = Math.round(hr/24); return d === 1 ? "ayer" : "hace " + d + " días";
+}
+function pdFecha(iso){
+  const d = new Date(iso); if(isNaN(d)) return "";
+  return d.toLocaleDateString("es-MX",{day:"numeric",month:"short"}) + ", " + d.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
+}
+function pdBar(pct, cls){
+  const bar = pe("div","panel-bar"), fill = pe("i", cls); fill.style.width = (pct === null ? 0 : pct) + "%"; bar.appendChild(fill); return bar;
+}
+function pdDatos(){ // aplica los filtros de clase y área
+  const clase = $("panelClase").value;
+  const enClase = x => clase === "__todas__" || x.c === clase;
+  const intentos = PD.intentos.filter(enClase);
+  return {
+    alumnos: PD.alumnos.filter(enClase),
+    intentos: intentos,
+    filtrados: pdArea === "todos" ? intentos : intentos.filter(x=>x.t === pdArea)
+  };
+}
 function abrirPanel(){
   if(current && current.unmount) current.unmount();
   stopLoop(); current = null;
   $("home").hidden = true; $("exp").hidden = true; $("panelMaestro").hidden = false;
-  $("panelStats").innerHTML = ""; $("panelLista").innerHTML = ""; $("panelClase").hidden = true;
+  $("panelBody").hidden = true;
   const msg = $("panelMsg"); msg.hidden = false; msg.textContent = "Cargando…";
   window.scrollTo({top:0});
   let token = ""; try{ token = sessionStorage.getItem("labCred") || ""; }catch(err){}
@@ -681,52 +747,141 @@ function abrirPanel(){
   }).then(r=>r.json()).then(r=>{
     if(!r.ok){
       msg.textContent = r.error === "no_maestro"
-        ? "Tu cuenta aún no está registrada como maestro. Pide a Dimex que agregue tu correo."
+        ? "Tu cuenta aún no está registrada como docente. Pide a Dimex que agregue tu correo."
         : r.error === "sesion"
         ? "Tu sesión caducó. Presiona «Salir» y vuelve a entrar con Google para abrir el panel."
         : "No se pudo cargar el panel. Intenta de nuevo en un momento.";
       return;
     }
-    panelDatos = r;
-    if(!r.clases.length){ msg.textContent = "Todavía no hay ciclos completados en tus clases."; return; }
+    PD = r;
+    if(!r.clases.length){ msg.textContent = "Todavía no hay actividad en tus clases. Cuando tus alumnos usen el código de clase, aparecerán aquí."; return; }
     const sel = $("panelClase"); sel.innerHTML = "";
-    const opciones = r.clases.length > 1 ? [["__todas__","Todas mis clases"]] : [];
-    r.clases.forEach(c=>opciones.push([c,c]));
-    opciones.forEach(o=>{ const op=document.createElement("option"); op.value=o[0]; op.textContent=o[1]; sel.appendChild(op); });
-    sel.hidden = false; msg.hidden = true;
-    pintarPanel();
+    const ops = r.clases.length > 1 ? [["__todas__","Todas mis clases"]] : [];
+    r.clases.forEach(c=>ops.push([c,c]));
+    ops.forEach(o=>{ const op = pe("option","",o[1]); op.value = o[0]; sel.appendChild(op); });
+    pdArea = "todos"; pdTab = "resumen"; pdExplN = 30;
+    msg.hidden = true; $("panelBody").hidden = false;
+    pdRender();
   }).catch(()=>{ msg.textContent = "No se pudo cargar el panel. Revisa tu conexión e intenta de nuevo."; });
 }
-function pintarPanel(){
-  const filas = (panelDatos.datos[$("panelClase").value] || []).slice();
-  const calif = x => x.evaluables ? x.aciertos / x.evaluables : 2; // sin respuesta única → al final
-  filas.sort((a,b)=> calif(a) - calif(b));
-  const tot = filas.reduce((t,x)=>({ciclos:t.ciclos+x.ciclos, ev:t.ev+x.evaluables, ac:t.ac+x.aciertos}), {ciclos:0, ev:0, ac:0});
-  const st = $("panelStats"); st.innerHTML = "";
-  [[tot.ciclos,"ciclos completados"],[tot.ev ? Math.round(100*tot.ac/tot.ev)+"%" : "—","aciertos en total"],[filas.length,"experimentos con datos"]].forEach(p=>{
-    const d=document.createElement("div"); d.className="panel-stat";
-    const b=document.createElement("b"); b.textContent=p[0];
-    const sp=document.createElement("span"); sp.textContent=p[1];
-    d.append(b,sp); st.appendChild(d);
+function pdRender(){
+  // filtros de área
+  const ar = $("pdAreas"); ar.innerHTML = "";
+  CATS.forEach(c=>{
+    const b = pe("button","cattab" + (pdArea === c.id ? " active" : ""));
+    b.append(pe("span","",c.icon + " " + c.label)); b.onclick = ()=>{ pdArea = c.id; pdExplN = 30; pdRender(); };
+    ar.appendChild(b);
   });
-  const lista = $("panelLista"); lista.innerHTML = "";
-  filas.forEach(x=>{
-    const pct = x.evaluables ? Math.round(100*x.aciertos/x.evaluables) : null;
-    const it = document.createElement("div"); it.className = "panel-item";
-    const h = document.createElement("h5"); h.textContent = x.nombre;
-    const sm = document.createElement("small");
-    sm.textContent = pct === null
-      ? x.ciclos + " ciclos · " + x.alumnos + " alumnos · sin respuesta única (no se califica)"
-      : pct + "% de aciertos · " + x.aciertos + " de " + x.evaluables + " · " + x.alumnos + " alumnos";
-    it.append(h);
-    if(pct !== null){
-      const bar = document.createElement("div"); bar.className = "panel-bar" + (pct < 50 ? " low" : "");
-      const fill = document.createElement("i"); fill.style.width = pct + "%"; bar.appendChild(fill); it.appendChild(bar);
+  [...$("pdTabs").children].forEach(b=>{ b.className = b.dataset.tab === pdTab ? "active" : ""; b.setAttribute("aria-selected", b.dataset.tab === pdTab); });
+  const box = $("pdContent"); box.innerHTML = "";
+  const D = pdDatos();
+  if(pdTab === "resumen") pdResumen(box, D);
+  else if(pdTab === "alumnos") pdAlumnos(box, D);
+  else pdExplicaciones(box, D);
+}
+function pdResumen(box, D){
+  const alum = new Set(D.intentos.map(x=>x.m)), t = pdPct(D.filtrados);
+  const segs = D.filtrados.map(x=>x.s).filter(v=>typeof v === "number" && v > 0);
+  const prom = segs.length ? Math.round(segs.reduce((a,b)=>a+b,0)/segs.length/60*10)/10 : null;
+  const stats = pe("div","panel-stats");
+  [[alum.size + " de " + D.alumnos.length, "alumnos con ciclos completos"],[D.filtrados.length,"ciclos completados"],[t.pct === null ? "—" : t.pct + "%","de aciertos al predecir"],[prom === null ? "—" : prom + " min","por experimento (promedio)"]].forEach(p=>{
+    const d = pe("div","panel-stat"); d.append(pe("b","",String(p[0])), pe("span","",p[1])); stats.appendChild(d);
+  });
+  box.appendChild(stats);
+
+  // por experimento (con el filtro de área)
+  const porExp = {};
+  D.filtrados.forEach(x=>{ (porExp[x.e] = porExp[x.e] || {n:x.n, t:x.t, arr:[]}).arr.push(x); });
+  const lista = Object.keys(porExp).map(id=>{ const o = porExp[id], pc = pdPct(o.arr); return {id, n:o.n, t:o.t, arr:o.arr, pct:pc.pct, ev:pc.n, sem:pdSemaforo(pc.pct, pc.n), alum:new Set(o.arr.map(x=>x.m)).size}; });
+  lista.sort((a,b)=> (a.pct === null ? 101 : a.pct) - (b.pct === null ? 101 : b.pct));
+  const rojos = lista.filter(x=>x.sem.c === "rojo");
+  const al = pe("div","pd-alert " + (rojos.length ? "rojo" : "verde"),
+    !lista.length ? "Aún no hay ciclos completados con estos filtros."
+    : rojos.length ? "⚠ " + rojos.length + (rojos.length === 1 ? " experimento necesita" : " experimentos necesitan") + " atención: " + rojos.slice(0,3).map(x=>x.n).join(", ") + (rojos.length > 3 ? "…" : "")
+    : "✔ Ningún experimento está en rojo. ¡Buen trabajo!");
+  box.appendChild(al);
+
+  // por área
+  if(pdArea === "todos" && D.intentos.length){
+    box.appendChild(pe("div","pd-h","Por área"));
+    const g = pe("div","pd-areas");
+    CATS.filter(c=>c.id !== "todos").forEach(c=>{
+      const arr = D.intentos.filter(x=>x.t === c.id), pc = pdPct(arr), sm = pdSemaforo(pc.pct, pc.n);
+      const b = pe("button","pd-area"); b.append(pe("b","",c.icon + " " + c.label), pe("span","pd-chip " + sm.c, sm.t), pe("small","", (pc.pct === null ? "—" : pc.pct + "%") + " · " + arr.length + " ciclos"));
+      b.onclick = ()=>{ pdArea = c.id; pdRender(); }; g.appendChild(b);
+    });
+    box.appendChild(g);
+  }
+
+  if(lista.length){
+    box.appendChild(pe("div","pd-h","Experimentos (los que más cuestan, primero)"));
+    lista.forEach(x=>{
+      const it = pe("div","panel-item"), row = pe("div","pd-row");
+      row.append(pe("h5","",x.n), pe("span","pd-chip " + x.sem.c, x.sem.t));
+      it.appendChild(row);
+      it.appendChild(pdBar(x.pct, x.sem.c));
+      it.appendChild(pe("small","", x.pct === null
+        ? x.arr.length + " ciclos · " + x.alum + " alumnos · sin respuesta única (no se califica)"
+        : x.pct + "% de aciertos · " + x.ev + " intentos · " + x.alum + " alumnos"));
+      box.appendChild(it);
+    });
+  }
+}
+function pdAlumnos(box, D){
+  const por = {};
+  D.alumnos.forEach(a=>{ por[a.c + "|" + a.m] = {a:a, arr:[]}; });
+  D.filtrados.forEach(x=>{ const k = x.c + "|" + x.m; if(por[k]) por[k].arr.push(x); });
+  const lista = Object.keys(por).map(k=>{ const o = por[k], pc = pdPct(o.arr); return {a:o.a, arr:o.arr, pct:pc.pct, n:pc.n, sem:o.arr.length ? pdSemaforo(pc.pct, pc.n) : {c:"gris", t:"Sin ciclos aún"}}; });
+  const orden = {"Sin ciclos aún":0, "Atención":1, "Revisar":2, "Pocos datos":3, "Va bien":4};
+  lista.sort((x,y)=> orden[x.sem.t] - orden[y.sem.t] || x.a.a.localeCompare(y.a.a, "es"));
+  const sin = lista.filter(x=>!x.arr.length).length;
+  box.appendChild(pe("div","pd-alert " + (sin ? "rojo" : "verde"), sin ? "👋 " + sin + (sin === 1 ? " alumno no ha completado" : " alumnos no han completado") + " ningún experimento con estos filtros." : "✔ Todos tus alumnos ya completaron al menos un experimento."));
+  if(!lista.length) box.appendChild(pe("div","panel-msg","Aún no hay alumnos registrados en esta clase."));
+  lista.forEach(x=>{
+    const d = pe("details","panel-item pd-det"), sm = pe("summary"), row = pe("div","pd-row");
+    row.append(pe("h5","",x.a.a), pe("span","pd-chip " + x.sem.c, x.sem.t));
+    sm.appendChild(row); sm.appendChild(pdBar(x.pct, x.sem.c));
+    sm.appendChild(pe("small","", x.arr.length
+      ? x.arr.length + " ciclos · " + (x.pct === null ? "sin calificar" : x.pct + "% de aciertos") + " · última actividad " + pdHace(x.a.u)
+      : "Última actividad " + pdHace(x.a.u)));
+    d.appendChild(sm);
+    if(x.arr.length){
+      const ul = pe("ul");
+      x.arr.slice().sort((p,q)=>Date.parse(q.f)-Date.parse(p.f)).forEach(i=>{
+        ul.appendChild(pe("li","", (i.ok === true ? "✔ " : i.ok === false ? "✗ " : "• ") + i.n + (typeof i.s === "number" ? " · " + Math.max(1,Math.round(i.s/60)) + " min" : "")));
+      });
+      d.appendChild(ul);
     }
-    it.appendChild(sm); lista.appendChild(it);
+    box.appendChild(d);
   });
 }
-$("panelClase").onchange = pintarPanel;
+function pdExplicaciones(box, D){
+  const con = D.filtrados.filter(x=>x.x && x.x.trim()).sort((p,q)=>Date.parse(q.f)-Date.parse(p.f));
+  const exps = {}; con.forEach(x=>{ exps[x.e] = x.n; });
+  const sel = pe("select","pd-sel2"); const o0 = pe("option","","Todos los experimentos"); o0.value = ""; sel.appendChild(o0);
+  Object.keys(exps).sort((a,b)=>exps[a].localeCompare(exps[b],"es")).forEach(id=>{ const o = pe("option","",exps[id]); o.value = id; sel.appendChild(o); });
+  sel.value = pdExpSel in exps ? pdExpSel : ""; pdExpSel = sel.value;
+  sel.onchange = ()=>{ pdExpSel = sel.value; pdExplN = 30; pdRender(); };
+  box.appendChild(sel);
+  const lista = pdExpSel ? con.filter(x=>x.e === pdExpSel) : con;
+  if(!lista.length){ box.appendChild(pe("div","panel-msg","Todavía no hay explicaciones con estos filtros.")); return; }
+  box.appendChild(pe("small","", lista.length + (lista.length === 1 ? " explicación" : " explicaciones")));
+  lista.slice(0, pdExplN).forEach(x=>{
+    const it = pe("div","panel-item"), row = pe("div","pd-row");
+    row.append(pe("h5","",x.a), pe("span","pd-chip " + (x.ok === true ? "verde" : x.ok === false ? "rojo" : "gris"), x.ok === true ? "Acertó" : x.ok === false ? "No acertó" : "Sin calificar"));
+    it.appendChild(row);
+    it.appendChild(pe("small","", x.n + " · " + pdFecha(x.f)));
+    if(x.p) it.appendChild(pe("div","pd-pred","Predijo " + (x.l ? x.l + ": " : "") + x.p));
+    it.appendChild(pe("div","pd-quote", x.x));
+    box.appendChild(it);
+  });
+  if(lista.length > pdExplN){
+    const m = pe("button","btn ghost mt","Ver más explicaciones"); m.onclick = ()=>{ pdExplN += 30; pdRender(); }; box.appendChild(m);
+  }
+}
+let pdExpSel = "";
+$("pdTabs").onclick = ev=>{ const b = ev.target.closest("button"); if(!b) return; pdTab = b.dataset.tab; pdRender(); };
+$("panelClase").onchange = ()=>{ pdExplN = 30; pdRender(); };
 $("openPanel").onclick = abrirPanel;
 function ctrlBtn(txt, cls, fn){ const b=document.createElement("button"); b.className="btn small "+(cls||""); b.textContent=txt; b.onclick=fn; $("controls").appendChild(b); return b; }
 function ctrlSlider(labelTxt, min, max, step, val, fn){
