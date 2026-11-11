@@ -164,6 +164,20 @@
   .words-count.ok{color:var(--ok); font-weight:700;}
   .class-card input{width:100%; padding:12px; border:2px solid #DCE7EA; border-radius:10px; font-size:16px; font-family:inherit; margin:6px 0 4px; text-transform:uppercase;}
   .class-card .row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:14px;}
+  /* ---------- panel del maestro ---------- */
+  .panel-sel{width:100%; max-width:320px; padding:11px 12px; border:2px solid #DCE7EA; border-radius:10px; font-size:16px; font-family:inherit; background:#fff; margin:6px 0 16px;}
+  .panel-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:18px;}
+  .panel-stat{background:var(--card); border-radius:12px; padding:14px; box-shadow:0 1px 4px rgba(0,0,0,.08);}
+  .panel-stat b{display:block; font-family:'Roboto Mono','Courier New',monospace; font-size:1.5rem; color:var(--teal);}
+  .panel-stat span{font-size:.78rem; color:var(--muted);}
+  .panel-item{background:var(--card); border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,.08);}
+  .panel-item h5{font-size:.95rem; color:var(--navy); margin-bottom:2px;}
+  .panel-item small{color:var(--muted); font-size:.78rem;}
+  .panel-bar{height:12px; background:#E3EBEE; border-radius:8px; overflow:hidden; margin:8px 0 4px;}
+  .panel-bar i{display:block; height:100%; background:var(--teal); border-radius:8px;}
+  .panel-bar.low i{background:#c92a2a;}
+  .panel-msg{font-size:.9rem; color:var(--muted); padding:14px 0;}
+  .panel-link{background:none; border:none; color:var(--amber); font-weight:700; text-decoration:underline; cursor:pointer; font-size:.85rem; margin-top:12px; font-family:inherit;}
   .teacher-close-x{position:absolute; top:14px; right:16px; background:none; border:none; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--muted); padding:4px;}
 </style>
 </head>
@@ -275,11 +289,23 @@
   </section>
 </main>
 
+<main id="panelMaestro" hidden>
+  <button class="back" id="panelBack">← Todos los experimentos</button>
+  <div class="exp-title">Panel del maestro</div>
+  <div class="exp-sub">Aciertos de predicción por experimento. Los experimentos con menos aciertos aparecen primero: ahí vale la pena detenerse en clase.</div>
+  <label for="panelClase" style="font-size:.85rem; font-weight:700;">Clase</label><br>
+  <select id="panelClase" class="panel-sel" hidden></select>
+  <div class="panel-msg" id="panelMsg">Cargando…</div>
+  <div class="panel-stats" id="panelStats"></div>
+  <div id="panelLista"></div>
+</main>
+
 <div class="wrap">
   <section class="teacher-cta">
     <h3>¿Eres maestro y quieres formar parte de la comunidad?</h3>
     <p>Únete a la red de docentes que usan el Laboratorio Virtual en sus clases. Cuéntanos de ti y te mantenemos al tanto de nuevos experimentos, capacitaciones y recursos.</p>
-    <button class="btn amber" id="openTeacherForm">Quiero unirme</button>
+    <button class="btn amber" id="openTeacherForm">Quiero unirme</button><br>
+    <button class="panel-link" id="openPanel">Ya soy maestro registrado: abrir mi panel</button>
   </section>
 </div>
 
@@ -415,12 +441,14 @@ function handleCredentialResponse(response){
   const payload = decodeJwt(response.credential);
   const user = { name: payload.name, email: payload.email, picture: payload.picture };
   sessionStorage.setItem("labUser", JSON.stringify(user));
+  try{ sessionStorage.setItem("labCred", response.credential); }catch(err){} // solo para abrir el panel del maestro
   unlockLab(user);
   logEvent("inicio_sesion", null);
 }
 
 document.getElementById("logoutBtn").onclick = function(){
   sessionStorage.removeItem("labUser");
+  try{ sessionStorage.removeItem("labCred"); }catch(err){}
   location.reload();
 };
 document.getElementById("privacyLink").onclick = function(ev){
@@ -540,10 +568,11 @@ function roundRect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x
 function goHome(){
   if(current && current.unmount) current.unmount();
   stopLoop(); current = null;
-  $("exp").hidden = true; $("home").hidden = false;
+  $("exp").hidden = true; $("panelMaestro").hidden = true; $("home").hidden = false;
   window.scrollTo({top:0});
 }
 $("backBtn").onclick = goHome;
+$("panelBack").onclick = goHome;
 $("otherBtn").onclick = goHome;
 
 function openExp(e){
@@ -634,6 +663,71 @@ function showExplanation(){
   $("explicaPanel").scrollIntoView({behavior:"smooth"});
   logEvent("ciclo_completo", e, { correcta: predCorrect, segundos: secondsSinceOpen() });
 }
+/* ================= panel del maestro ================= */
+let panelDatos = null;
+function abrirPanel(){
+  if(current && current.unmount) current.unmount();
+  stopLoop(); current = null;
+  $("home").hidden = true; $("exp").hidden = true; $("panelMaestro").hidden = false;
+  $("panelStats").innerHTML = ""; $("panelLista").innerHTML = ""; $("panelClase").hidden = true;
+  const msg = $("panelMsg"); msg.hidden = false; msg.textContent = "Cargando…";
+  window.scrollTo({top:0});
+  let token = ""; try{ token = sessionStorage.getItem("labCred") || ""; }catch(err){}
+  if(!token){ msg.textContent = "Tu sesión caducó. Presiona «Salir» y vuelve a entrar con Google para abrir el panel."; return; }
+  fetch(SHEET_WEBHOOK_URL, {
+    method:"POST", redirect:"follow",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body: JSON.stringify({tipo:"panel", token:token})
+  }).then(r=>r.json()).then(r=>{
+    if(!r.ok){
+      msg.textContent = r.error === "no_maestro"
+        ? "Tu cuenta aún no está registrada como maestro. Pide a Dimex que agregue tu correo."
+        : r.error === "sesion"
+        ? "Tu sesión caducó. Presiona «Salir» y vuelve a entrar con Google para abrir el panel."
+        : "No se pudo cargar el panel. Intenta de nuevo en un momento.";
+      return;
+    }
+    panelDatos = r;
+    if(!r.clases.length){ msg.textContent = "Todavía no hay ciclos completados en tus clases."; return; }
+    const sel = $("panelClase"); sel.innerHTML = "";
+    const opciones = r.clases.length > 1 ? [["__todas__","Todas mis clases"]] : [];
+    r.clases.forEach(c=>opciones.push([c,c]));
+    opciones.forEach(o=>{ const op=document.createElement("option"); op.value=o[0]; op.textContent=o[1]; sel.appendChild(op); });
+    sel.hidden = false; msg.hidden = true;
+    pintarPanel();
+  }).catch(()=>{ msg.textContent = "No se pudo cargar el panel. Revisa tu conexión e intenta de nuevo."; });
+}
+function pintarPanel(){
+  const filas = (panelDatos.datos[$("panelClase").value] || []).slice();
+  const calif = x => x.evaluables ? x.aciertos / x.evaluables : 2; // sin respuesta única → al final
+  filas.sort((a,b)=> calif(a) - calif(b));
+  const tot = filas.reduce((t,x)=>({ciclos:t.ciclos+x.ciclos, ev:t.ev+x.evaluables, ac:t.ac+x.aciertos}), {ciclos:0, ev:0, ac:0});
+  const st = $("panelStats"); st.innerHTML = "";
+  [[tot.ciclos,"ciclos completados"],[tot.ev ? Math.round(100*tot.ac/tot.ev)+"%" : "—","aciertos en total"],[filas.length,"experimentos con datos"]].forEach(p=>{
+    const d=document.createElement("div"); d.className="panel-stat";
+    const b=document.createElement("b"); b.textContent=p[0];
+    const sp=document.createElement("span"); sp.textContent=p[1];
+    d.append(b,sp); st.appendChild(d);
+  });
+  const lista = $("panelLista"); lista.innerHTML = "";
+  filas.forEach(x=>{
+    const pct = x.evaluables ? Math.round(100*x.aciertos/x.evaluables) : null;
+    const it = document.createElement("div"); it.className = "panel-item";
+    const h = document.createElement("h5"); h.textContent = x.nombre;
+    const sm = document.createElement("small");
+    sm.textContent = pct === null
+      ? x.ciclos + " ciclos · " + x.alumnos + " alumnos · sin respuesta única (no se califica)"
+      : pct + "% de aciertos · " + x.aciertos + " de " + x.evaluables + " · " + x.alumnos + " alumnos";
+    it.append(h);
+    if(pct !== null){
+      const bar = document.createElement("div"); bar.className = "panel-bar" + (pct < 50 ? " low" : "");
+      const fill = document.createElement("i"); fill.style.width = pct + "%"; bar.appendChild(fill); it.appendChild(bar);
+    }
+    it.appendChild(sm); lista.appendChild(it);
+  });
+}
+$("panelClase").onchange = pintarPanel;
+$("openPanel").onclick = abrirPanel;
 function ctrlBtn(txt, cls, fn){ const b=document.createElement("button"); b.className="btn small "+(cls||""); b.textContent=txt; b.onclick=fn; $("controls").appendChild(b); return b; }
 function ctrlSlider(labelTxt, min, max, step, val, fn){
   const l=document.createElement("label"); l.textContent=labelTxt+" ";
