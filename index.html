@@ -4425,7 +4425,206 @@ const expOnda = {
   clase:`Con una cuerda o resorte largo (tipo Slinky) sostenido entre dos personas, uno agita un extremo a distintas velocidades mientras el otro cuenta cuántas "panzas" (antinodos) aparecen. Reto: dibujen los primeros 3 modos.`
 };
 
-const FISICA_EXPS = [expTiro, expRampa, expResorte, expChoque, expPresion, expPalanca, expLuz, expOnda];
+/* ===== Piloto interactivo · Péndulo y Tiro parabólico (arrastrar) =====
+   Misma predicción, explicación y registro que las versiones originales (se heredan sin cambios).
+   Se activan con  ?piloto=1  al final de la dirección. */
+const PILOTO = /[?&]piloto=1/.test(location.search);
+// arrastrar con mouse o dedo en el canvas; el dedo solo bloquea el desplazamiento de la página si toca algo arrastrable
+function bindDrag(h){
+  let drag = null;
+  const pt = ev=>{ const r = cv.getBoundingClientRect(); return {x:(ev.clientX-r.left)*cv.width/r.width, y:(ev.clientY-r.top)*cv.height/r.height}; };
+  const sc = ()=> cv.width / (cv.clientWidth || cv.width);
+  const down = ev=>{ const p = pt(ev), o = h.hit(p, sc()); if(!o) return; ev.preventDefault();
+    try{ cv.setPointerCapture(ev.pointerId); }catch(err){}
+    drag = {o, id:ev.pointerId}; cv.style.cursor = "grabbing"; if(h.down) h.down(o, p); };
+  const move = ev=>{ const p = pt(ev); if(!drag){ cv.style.cursor = h.hit(p, sc()) ? "grab" : ""; return; }
+    if(ev.pointerId !== drag.id) return; h.move(drag.o, p); };
+  const up = ev=>{ if(!drag || (ev.pointerId !== undefined && ev.pointerId !== drag.id)) return;
+    const o = drag.o; drag = null; cv.style.cursor = ""; if(h.up) h.up(o); };
+  const ts = ev=>{ const t = ev.touches[0]; if(t && h.hit(pt(t), sc())) ev.preventDefault(); };
+  cv.addEventListener("pointerdown", down); cv.addEventListener("pointermove", move);
+  cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+  cv.addEventListener("touchstart", ts, {passive:false});
+  return ()=>{
+    cv.removeEventListener("pointerdown", down); cv.removeEventListener("pointermove", move);
+    cv.removeEventListener("pointerup", up); cv.removeEventListener("pointercancel", up);
+    cv.removeEventListener("touchstart", ts); cv.style.cursor = ""; drag = null;
+  };
+}
+
+/* ---------- Péndulo ---------- */
+const expPendV2 = {...expPend,
+  name:"Péndulo: mide la gravedad (piloto)",
+  cardDesc:"Arrastra la masa para soltar el péndulo, cambia el largo y la masa, cronometra tú mismo las oscilaciones y calcula la gravedad de la Tierra.",
+  PX:330, PY:60, MAXTH:0.35, // ángulo máximo ≈ 20°: ahí el periodo real difiere menos de 1 % de T = 2π√(L/g)
+  st:null,
+  mount(){
+    const s = this.st = {th:0.26, w:0, held:false, speed:1, moved:false, atLimit:false,
+      sw:{run:false, auto:false, t:0, changes:0, dir:0, maxAbs:0}, results:[]};
+    this.L = 1.0; this.m = 100;
+    ctrlSlider("Largo del hilo (m)", 0.3, 1.2, 0.05, 1.0, v=>{ this.L = v; this.cancel(); });
+    ctrlSlider("Masa (g)", 50, 500, 25, 100, v=>{ this.m = v; });
+    this.btnSw = ctrlBtn("⏱ Iniciar cronómetro", "amber", ()=>this.toggleSw());
+    ctrlBtn("⏱ Automático: 10 oscilaciones", "", ()=>{ this.cancel(); s.sw.run = true; s.sw.auto = true; this.btnSw.textContent = "■ Detener cronómetro"; });
+    ctrlBtn("⏩ Más rápido", "ghost", function(){ s.speed = s.speed === 1 ? 3 : 1; this.textContent = s.speed === 1 ? "⏩ Más rápido" : "⏪ Velocidad normal"; });
+    ctrlBtn("Reiniciar", "ghost", ()=>{ this.unmount(); $("controls").innerHTML = ""; $("readout").hidden = true; this.mount(); });
+    const bob = ()=>({x:this.PX + Math.sin(s.th)*this.L*240, y:this.PY + Math.cos(s.th)*this.L*240, r:14 + (this.m-50)/450*14});
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const b = bob(); return Math.hypot(p.x-b.x, p.y-b.y) <= Math.max(b.r+10, 26*sc) ? {} : null; },
+      down:()=>{ s.held = true; s.moved = true; this.cancel(); s.w = 0; },
+      move:(o, p)=>{ let th = Math.atan2(p.x - this.PX, p.y - this.PY); s.atLimit = Math.abs(th) > this.MAXTH; s.th = Math.max(-this.MAXTH, Math.min(this.MAXTH, th)); s.w = 0; },
+      up:()=>{ s.held = false; s.w = 0; s.atLimit = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ stopLoop(); if(this._off){ this._off(); this._off = null; } },
+  cancel(){ const s = this.st; s.sw = {run:false, auto:false, t:0, changes:0, dir:0, maxAbs:0}; if(this.btnSw) this.btnSw.textContent = "⏱ Iniciar cronómetro"; },
+  toggleSw(){
+    const s = this.st, sw = s.sw;
+    if(!sw.run){ s.sw = {run:true, auto:false, t:0, changes:0, dir:0, maxAbs:0}; this.btnSw.textContent = "■ Detener cronómetro"; return; }
+    if(sw.auto){ this.cancel(); return; }
+    const T0 = 2*Math.PI*Math.sqrt(this.L/9.81), N = Math.round(sw.t / T0);
+    if(N < 5){ setReadout(`Cronometra al menos <b>5 oscilaciones</b> antes de detener (llevas ${Math.floor(sw.changes/2)}). Más oscilaciones = menos error de tu dedo.`); return; }
+    this.finish(sw.t, N, false);
+  },
+  finish(t, N, auto){
+    const s = this.st, L = this.L, T = t/N, g = 4*Math.PI*Math.PI*L/(T*T), Tth = 2*Math.PI*Math.sqrt(L/9.81);
+    s.results.push({L, m:this.m, N, T, g, err:100*(T-Tth)/Tth, auto});
+    this.cancel();
+    const rows = s.results.map(r=>`L = <b>${r.L.toFixed(2)} m</b> · masa <b>${r.m} g</b> → ${r.N} oscilaciones → T = <b>${r.T.toFixed(3)} s</b> → g = <b>${r.g.toFixed(2)} m/s²</b> <span style="color:var(--muted)">(${r.auto ? "automático" : "tu cronómetro: " + (r.err >= 0 ? "+" : "") + r.err.toFixed(1) + " %"})</span>`).join("<br>");
+    setReadout(rows + `<br><span style="color:var(--muted)">Fórmula: g = 4π²L / T². El valor real es 9.81 m/s²; la diferencia es el error de cronómetro. Compara filas con distinta masa y el mismo largo.</span>`);
+    markRan();
+  },
+  tick(dt){
+    const s = this.st, g = 9.81, L = this.L, sw = s.sw, PX = this.PX, PY = this.PY;
+    // ---- física: péndulo real (sin aproximar), con un poco de fricción del aire ----
+    if(!s.held){
+      const total = Math.min(dt, 0.05)*s.speed, n = Math.max(1, Math.ceil(total/0.004)), h = total/n;
+      for(let i = 0; i < n; i++){
+        s.w += (-(g/L)*Math.sin(s.th) - 0.02*s.w)*h; s.th += s.w*h;
+        if(sw.run){
+          sw.t += h; sw.maxAbs = Math.max(sw.maxAbs, Math.abs(s.th));
+          const d = s.w > 0 ? 1 : s.w < 0 ? -1 : 0;
+          if(d !== 0){ if(sw.dir !== 0 && d !== sw.dir) sw.changes++; sw.dir = d; }
+        }
+      }
+      if(sw.run && sw.auto && Math.floor(sw.changes/2) >= 10){
+        const human = Math.random()*0.30 - 0.15; // tu dedo no es perfecto
+        this.finish(sw.t + human, 10, true); // ±0.15 s en 10 oscilaciones ≈ ±0.015 s en T
+      }
+    }
+    // ---- dibujo ----
+    ctx.clearRect(0,0,660,430); ctx.fillStyle = "#FDFEFE"; ctx.fillRect(0,0,660,430);
+    const lenPx = L*240, bx = PX + Math.sin(s.th)*lenPx, by = PY + Math.cos(s.th)*lenPx, r = 14 + (this.m-50)/450*14;
+    ctx.fillStyle = "#D7C4A3"; ctx.fillRect(230, PY-16, 200, 10);
+    // límite de ángulo (≈ 20°)
+    ctx.setLineDash([5,5]); ctx.strokeStyle = "#C9D3D6"; ctx.lineWidth = 1.5;
+    [-1,1].forEach(k=>{ ctx.beginPath(); ctx.moveTo(PX, PY); ctx.lineTo(PX + k*Math.sin(this.MAXTH)*lenPx*1.08, PY + Math.cos(this.MAXTH)*lenPx*1.08); ctx.stroke(); });
+    ctx.setLineDash([]);
+    ctx.strokeStyle = COL.navy; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(PX, PY); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.fillStyle = COL.teal; ctx.beginPath(); ctx.arc(bx, by, r, 0, 7); ctx.fill();
+    if(s.held){ ctx.strokeStyle = COL.amber; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(bx, by, r+5, 0, 7); ctx.stroke(); }
+    ctx.textAlign = "center"; ctx.fillStyle = COL.muted; ctx.font = F(13);
+    ctx.fillText(`L = ${L.toFixed(2)} m   ·   masa = ${this.m} g   ·   ángulo = ${Math.abs(s.th*180/Math.PI).toFixed(0)}°`, 330, 400);
+    if(s.atLimit){ ctx.fillStyle = "#c92a2a"; ctx.font = F(12,700); wrapCenterText(ctx, "Ángulo máximo 20°: la fórmula es para ángulos pequeños", 330, 420, 560, Math.round(16*uiScale)); }
+    if(sw.run){
+      ctx.fillStyle = COL.navy; ctx.font = F(20,800);
+      ctx.fillText(`⏱ ${sw.t.toFixed(1)} s · Oscilaciones: ${Math.floor(sw.changes/2)}${sw.auto ? " / 10" : ""}`, 330, 36);
+    } else if(!s.moved){ ctx.fillStyle = COL.muted; ctx.font = F(13); wrapCenterText(ctx, "👆 Arrastra la masa para soltarla desde otro ángulo", 330, 36, 560, Math.round(18*uiScale)); }
+    ctx.textAlign = "left";
+  }
+};
+
+/* ---------- Tiro parabólico ---------- */
+const expTiroV2 = {...expTiro,
+  name:"Tiro parabólico: ¿dónde cae? (piloto)",
+  cardDesc:"Arrastra la flecha del cañón para apuntar, elige la rapidez, dispara y mide dónde cae sobre la regla. Compara ángulos.",
+  PXM:14.2857, // píxeles por metro (G = 140 px/s² ↔ 9.8 m/s²)
+  st:null,
+  mount(){
+    const s = this.st = {angle:45, speed:200, flight:null, shots:[], colors:["#0E7C86","#F5A524","#7B2D8B","#2b8a3e","#c92a2a"], showPrev:false, showComp:false, aimed:false};
+    s.slA = ctrlSlider("Ángulo (°)", 10, 80, 1, s.angle, v=>{ s.angle = v; });
+    s.slV = ctrlSlider("Rapidez", 120, 280, 5, s.speed, v=>{ s.speed = v; });
+    this.btnFire = ctrlBtn("🚀 Disparar", "", ()=>this.fire());
+    ctrlBtn("🧹 Borrar trayectorias", "ghost", ()=>{ s.shots = []; $("readout").hidden = true; });
+    ctrlBtn("👁 Ver previsión", "ghost", function(){ s.showPrev = !s.showPrev; this.textContent = s.showPrev ? "🙈 Ocultar previsión" : "👁 Ver previsión"; });
+    ctrlBtn("↗ Componentes", "ghost", ()=>{ s.showComp = !s.showComp; });
+    const GX = this.GX, GY = this.GY;
+    const tip = ()=>{ const a = s.angle*Math.PI/180, len = s.speed*0.55; return {x:GX + Math.cos(a)*len, y:GY - Math.sin(a)*len}; };
+    this._off = bindDrag({
+      hit:(p, sc)=>{ if(s.flight) return null; const t = tip(); return Math.hypot(p.x-t.x, p.y-t.y) <= Math.max(22, 28*sc) ? {} : null; },
+      down:()=>{ s.aimed = true; },
+      move:(o, p)=>{ // solo cambia el ángulo: la rapidez se elige con su deslizador, así los disparos son comparables
+        const ang = Math.atan2(GY - p.y, p.x - GX)*180/Math.PI; s.angle = Math.round(Math.max(10, Math.min(80, ang)));
+        s.slA.value = s.angle;
+      }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ stopLoop(); if(this._off){ this._off(); this._off = null; } },
+  fire(){
+    const s = this.st; if(s.flight) return; const rad = s.angle*Math.PI/180;
+    s.flight = {t:0, vx:s.speed*Math.cos(rad), vy:-s.speed*Math.sin(rad), trail:[], color:s.colors[s.shots.length%s.colors.length], angle:s.angle, speed:s.speed};
+  },
+  report(){
+    const s = this.st;
+    setReadout(s.shots.map((sh,i)=>`Disparo ${i+1}: <b>${sh.angle}°</b> · rapidez <b>${(sh.speed/this.PXM).toFixed(1)} m/s</b> → alcance <b>${sh.range.toFixed(1)} m</b>`).join("<br>"));
+  },
+  tick(dt){
+    const s = this.st, GX = this.GX, GY = this.GY, G = this.G, PXM = this.PXM;
+    ctx.clearRect(0,0,660,430); ctx.fillStyle = "#FDFEFE"; ctx.fillRect(0,0,660,430);
+    ctx.strokeStyle = "#B7C6CC"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0,GY); ctx.lineTo(660,GY); ctx.stroke();
+    // regla en metros (cada 5 m)
+    ctx.fillStyle = COL.muted; ctx.font = F(10); ctx.textAlign = "center"; ctx.lineWidth = 1.5; ctx.strokeStyle = "#B7C6CC";
+    for(let m = 0; GX + m*PXM <= 650; m += 5){ const x = GX + m*PXM; ctx.beginPath(); ctx.moveTo(x,GY); ctx.lineTo(x,GY+8); ctx.stroke(); ctx.fillText(m+" m", x, GY+22); }
+    s.shots.forEach(sh=>{
+      ctx.strokeStyle = sh.color; ctx.globalAlpha = .45; ctx.lineWidth = 2;
+      ctx.beginPath(); sh.trail.forEach((p,i)=> i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = sh.color; ctx.beginPath(); ctx.arc(sh.land, GY, 4, 0, 7); ctx.fill();
+      ctx.fillStyle = COL.navy; ctx.font = F(10,700); ctx.textAlign = "center"; ctx.fillText(sh.angle + "°", sh.land, GY-10);
+    });
+    // previsión (opcional)
+    if(s.showPrev && !s.flight){
+      const rad = s.angle*Math.PI/180, vx = s.speed*Math.cos(rad), vy = -s.speed*Math.sin(rad);
+      ctx.setLineDash([4,6]); ctx.strokeStyle = "#8FA9B0"; ctx.lineWidth = 2; ctx.beginPath();
+      for(let t = 0; t < 8; t += 0.04){ const x = GX + vx*t, y = GY + vy*t + 0.5*G*t*t; if(y > GY || x > 650) break; t ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    if(s.flight){
+      const f = s.flight; f.t += Math.min(dt, 0.05);
+      const x = GX + f.vx*f.t, y = GY + f.vy*f.t + 0.5*G*f.t*f.t;
+      f.trail.push({x, y:Math.min(y, GY)});
+      if(y >= GY || x > 650){
+        const land = Math.min(x, 650);
+        s.shots.push({trail:f.trail, land, color:f.color, angle:f.angle, speed:f.speed, range:(land-GX)/PXM});
+        s.flight = null; this.report(); if(s.shots.length >= 2) markRan();
+      } else {
+        ctx.strokeStyle = f.color; ctx.lineWidth = 2.5; ctx.beginPath(); f.trail.forEach((p,i)=> i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y)); ctx.stroke();
+        ctx.fillStyle = f.color; ctx.beginPath(); ctx.arc(x, y, 6, 0, 7); ctx.fill();
+      }
+    }
+    // cañón y flecha de velocidad (la punta se arrastra para apuntar)
+    const a = s.angle*Math.PI/180, len = s.speed*0.55, tx = GX + Math.cos(a)*len, ty = GY - Math.sin(a)*len;
+    ctx.save(); ctx.translate(GX,GY); ctx.rotate(-a); ctx.fillStyle = COL.navy; ctx.fillRect(0,-5,26,10); ctx.restore();
+    ctx.fillStyle = COL.navy; ctx.beginPath(); ctx.arc(GX,GY,8,0,7); ctx.fill();
+    if(!s.flight){
+      if(s.showComp){
+        ctx.setLineDash([4,4]); ctx.lineWidth = 2; ctx.strokeStyle = "#1863DC"; ctx.beginPath(); ctx.moveTo(GX,GY); ctx.lineTo(tx,GY); ctx.stroke();
+        ctx.strokeStyle = "#c92a2a"; ctx.beginPath(); ctx.moveTo(tx,GY); ctx.lineTo(tx,ty); ctx.stroke(); ctx.setLineDash([]);
+        ctx.font = F(10,700); ctx.fillStyle = "#1863DC"; ctx.textAlign = "center"; ctx.fillText("v·cosθ", (GX+tx)/2, GY+(s.showComp ? -6 : 0));
+        ctx.fillStyle = "#c92a2a"; ctx.textAlign = "left"; ctx.fillText("v·senθ", tx+6, (GY+ty)/2);
+      }
+      ctx.strokeStyle = COL.teal; ctx.fillStyle = COL.teal; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(GX,GY); ctx.lineTo(tx,ty); ctx.stroke();
+      ctx.beginPath(); ctx.arc(tx,ty,9,0,7); ctx.fill(); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(tx,ty,3.5,0,7); ctx.fill();
+    }
+    ctx.fillStyle = COL.muted; ctx.font = F(12); ctx.textAlign = "left";
+    ctx.fillText(`Ángulo: ${s.angle}°   Rapidez: ${(s.speed/PXM).toFixed(1)} m/s`, 20, 24);
+    if(s.shots.length === 0 && !s.flight && !s.aimed){ ctx.fillStyle = COL.muted; ctx.font = F(14); ctx.textAlign = "center";
+      wrapCenterText(ctx, "👆 Arrastra la punta de la flecha para apuntar y luego pulsa Disparar ↓", 360, 190, 460, Math.round(20*uiScale)); ctx.textAlign = "left"; }
+  }
+};
+
+const FISICA_EXPS = [PILOTO ? expTiroV2 : expTiro, expRampa, expResorte, expChoque, expPresion, expPalanca, expLuz, expOnda];
 /* ---------- QUÍMICA ---------- */
 const expReacterm = {
   id:"reacterm", name:"Caliente o frío: reacciones que cambian la temperatura", icon:"🌡️", cat:"quimica",
@@ -5884,7 +6083,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  expDensV2, expInercia, expPend, expLava, expPH, expReac,
+  expDensV2, expInercia, PILOTO ? expPendV2 : expPend, expLava, expPH, expReac,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
