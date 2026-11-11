@@ -5226,7 +5226,280 @@ const expTiroV3 = {...expTiroV2, ...RetosMix,
   }
 };
 
-const FISICA_EXPS = [expTiroV3, expRampa, expResorte, expChoque, expPresion, expPalanca, expLuz, expOnda];
+/* ===== Base común de las simulaciones con look de juego (Física) ===== */
+const Juego = {
+  fondo(sueloY){ // cielo suave con la paleta de Dimex y suelo oscuro con borde lima
+    const bg = ctx.createLinearGradient(0,0,0,430); bg.addColorStop(0,"#EEF4FF"); bg.addColorStop(1,"#FFFFFF"); ctx.fillStyle = bg; ctx.fillRect(-10,-10,680,450);
+    ctx.fillStyle = "rgba(24,99,220,.07)"; ctx.beginPath(); ctx.arc(590,60,120,0,7); ctx.fill(); ctx.beginPath(); ctx.arc(50,340,90,0,7); ctx.fill();
+    if(sueloY){ const fl = ctx.createLinearGradient(0,sueloY,0,430); fl.addColorStop(0,"#2A2A2A"); fl.addColorStop(1,"#000"); ctx.fillStyle = fl; ctx.fillRect(-10,sueloY,680,440-sueloY); ctx.fillStyle = "#C1FF00"; ctx.fillRect(-10,sueloY,680,3); }
+  },
+  pastilla(txt, x, y, o){ // etiqueta redondeada centrada
+    o = o || {}; ctx.font = F(o.px || 12, 700); ctx.textAlign = "center"; const w = ctx.measureText(txt).width + (o.pad || 20), h = (o.h || 24)*uiScale;
+    ctx.fillStyle = o.bg || "#000"; roundRect(ctx, x-w/2, y-h/2, w, h, h/2); ctx.fill(); ctx.fillStyle = o.fg || "#C1FF00"; ctx.fillText(txt, x, y + 4*uiScale);
+  },
+  ayuda(fx, txt, x, y){ this.pastilla(txt, x, y + Math.sin(fx.t*4)*3, {bg:"#C1FF00", fg:"#000", px:13, pad:26, h:26}); },
+  capaFx(fx){ // partículas (salpicaduras, chispas, confeti) y textos flotantes
+    fx.p.forEach(p=>{ if(p.k === "b") return; ctx.globalAlpha = Math.max(0, 1 - p.t/p.life); ctx.fillStyle = p.c;
+      if(p.k === "c"){ ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.r, -p.r*.5, p.r*2, p.r); ctx.restore(); }
+      else if(p.k === "s"){ ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.t*4); ctx.beginPath(); for(let i = 0; i < 4; i++){ ctx.lineTo(Math.cos(i*1.571)*p.r, Math.sin(i*1.571)*p.r); ctx.lineTo(Math.cos(i*1.571+.785)*p.r*.35, Math.sin(i*1.571+.785)*p.r*.35); } ctx.closePath(); ctx.fill(); ctx.restore(); }
+      else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); } }); ctx.globalAlpha = 1;
+    fx.pops.forEach(q=>{ const k = q.t/q.life, e = k < .15 ? k/.15 : 1; ctx.globalAlpha = k > .7 ? 1 - (k-.7)/.3 : 1; ctx.font = F(14,800); ctx.textAlign = "center";
+      const w = ctx.measureText(q.text).width + 18, x = Math.min(650 - w/2, Math.max(10 + w/2, q.x)), y = q.y - k*22 - 4*e;
+      ctx.fillStyle = "#000"; roundRect(ctx, x-w/2, y-15*uiScale, w, 22*uiScale, 11); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillText(q.text, x, y); }); ctx.globalAlpha = 1;
+  }
+};
+const JuegoMix = {
+  iniciarJuego(){ // efectos, botón de sonido y retos (se llama al final del mount)
+    const s = this.st; s.fx = FX.make();
+    ctrlBtn(FX.snd.on ? "🔊 Sonido activado" : "🔇 Sonido apagado", "ghost", function(){
+      FX.snd.on = !FX.snd.on; this.textContent = FX.snd.on ? "🔊 Sonido activado" : "🔇 Sonido apagado"; if(FX.snd.on) FX.sound("ding");
+    });
+    this.rd = this.rd || {done:{}}; this.dibujarRetos();
+  },
+  fotograma(dt){ const fx = this.st.fx; FX.step(fx, dt); ctx.clearRect(0,0,660,430); ctx.save(); if(!FX.rm && fx.shake > .05) ctx.translate((Math.random()-.5)*fx.shake*2, (Math.random()-.5)*fx.shake*2); return fx; },
+  finFotograma(){ Juego.capaFx(this.st.fx); ctx.textAlign = "left"; ctx.restore(); },
+  ganar(ids, x, y){ // marca retos cumplidos con chispas, mensaje y sonido
+    let nuevo = false; ids.forEach(id=>{ if(this.marcarReto(id)) nuevo = true; }); if(!nuevo) return false;
+    const fx = this.st.fx; FX.burst(fx, x, y, ["#FFD54A", "#C1FF00", "#fff"]); FX.pop(fx, x, y - 34, "⭐ ¡Reto cumplido!"); FX.sound("ding");
+    if(this.cuantasEstrellas() === this.RETOS.length){ FX.confetti(fx, ["#C1FF00", "#1863DC", "#FFD54A", "#fff"]); FX.pop(fx, 330, 84, "¡Tres estrellas! ⭐⭐⭐"); }
+    return true;
+  },
+  salirJuego(){ stopLoop(); if(this._off){ this._off(); this._off = null; } this.quitarRetos(); }
+};
+
+/* ---------- Resorte · look de juego y retos (piloto) ---------- */
+const expResorteV3 = {...expResorte, ...RetosMix, ...JuegoMix,
+  name:"Resorte: ¿cuánto estira el peso? (piloto 2)",
+  cardDesc:"Arrastra pesas al resorte, mide cuánto se estira y llena la gráfica. Cumple tres retos con estrellas.",
+  PESAS:[10,20,50,100,200,500], COL:{10:"#8FA9B0",20:"#2b8a3e",50:"#1863DC",100:"#7B2D8B",200:"#E8730C",500:"#c92a2a"}, MAXM:500, MAXN:5, SX:150, TOPY:40, BASE:90,
+  RETOS:[
+    {id:"tres", txt:"Mide tres pesos distintos y llena la gráfica", ok:"Tienes tres puntos en la gráfica", pista:"Cuelga una pesa, espera a que se quede quieta y se marca un punto."},
+    {id:"doble", txt:"Mide 100 g y luego 200 g y compara los estiramientos", ok:"Mediste 100 g y 200 g", pista:"Usa la pesa de 100 g y después la de 200 g (o dos de 100 g)."},
+    {id:"once", txt:"Estira el resorte 11 cm (±0.5 cm)", ok:"¡Lograste estirarlo 11 cm!", pista:"Mira tu gráfica: ¿qué masa corresponde a 11 cm?"}
+  ],
+  mount(){
+    const s = this.st = {cargas:[], x:0, v:0, pts:[], quieto:0, held:null};
+    this.PESAS.forEach(m=> ctrlBtn("+ " + m + " g", "ghost", ()=>this.colgar(m)));
+    ctrlBtn("↩ Quitar la última", "ghost", ()=>{ s.cargas.pop(); });
+    ctrlBtn("🧹 Borrar gráfica", "ghost", ()=>{ s.pts = []; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        const m = Math.max(1, 26*sc/1.6);
+        for(let i = 0; i < s.cargas.length; i++){ const r = this.rectCarga(i); if(Math.abs(p.x-r.x) <= Math.max(r.w/2, 22*sc) && Math.abs(p.y-r.y) <= Math.max(r.h/2, 18*sc)) return {t:"c", i}; }
+        for(let i = 0; i < this.PESAS.length; i++){ const r = this.rectEstante(i); if(Math.abs(p.x-r.x) <= Math.max(r.w/2, 22*sc) && Math.abs(p.y-r.y) <= Math.max(r.h/2, 22*sc)) return {t:"e", m:this.PESAS[i]}; }
+        return null; },
+      down:(o, p)=>{ if(o.t === "c"){ const m = s.cargas.splice(o.i, 1)[0]; s.held = {m, x:p.x, y:p.y}; } else s.held = {m:o.m, x:p.x, y:p.y}; },
+      move:(o, p)=>{ if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:()=>{ const h = s.held; s.held = null; if(!h) return; const ye = this.TOPY + this.BASE + s.x;
+        if(Math.abs(h.x - this.SX) < 80 && h.y > ye - 40 && h.y < ye + 170) this.colgar(h.m); else FX.dust(s.fx, h.x, h.y); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  total(){ return this.st.cargas.reduce((a,b)=>a+b, 0); },
+  colgar(m){
+    const s = this.st, fx = s.fx;
+    if(this.total() + m > this.MAXM || s.cargas.length >= this.MAXN){ FX.pop(fx, this.SX, this.TOPY + this.BASE + s.x + 20, "Máximo " + this.MAXM + " g"); return false; }
+    s.cargas.push(m); s.v += 70; FX.dust(fx, this.SX, this.TOPY + this.BASE + s.x + 10); FX.pop(fx, this.SX + 60, this.TOPY + this.BASE + s.x, "+" + m + " g"); FX.sound("thud"); return true;
+  },
+  tamano(m){ return {w:34 + m/500*30, h:18 + m/500*14}; },
+  rectCarga(i){ const s = this.st; let y = this.TOPY + this.BASE + s.x + 14; for(let j = 0; j < i; j++) y += this.tamano(s.cargas[j]).h + 2; const t = this.tamano(s.cargas[i]); return {x:this.SX, y:y + t.h/2, w:t.w, h:t.h}; },
+  rectEstante(i){ const m = this.PESAS[i], t = this.tamano(m); return {x:40 + i*58, y:404 - t.h/2, w:t.w, h:t.h}; },
+  dibujarPesa(m, x, y, brillo){
+    const t = this.tamano(m), c = this.COL[m]; const g = ctx.createLinearGradient(0, y-t.h/2, 0, y+t.h/2); g.addColorStop(0, FX.mix(c, .3)); g.addColorStop(1, c);
+    ctx.fillStyle = g; roundRect(ctx, x-t.w/2, y-t.h/2, t.w, t.h, 5); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.35)"; roundRect(ctx, x-t.w/2+3, y-t.h/2+2, t.w-6, 3, 1.5); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = F(10,800); ctx.textAlign = "center"; ctx.fillText(m + " g", x, y + 4*uiScale);
+    if(brillo){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; roundRect(ctx, x-t.w/2-3, y-t.h/2-3, t.w+6, t.h+6, 7); ctx.stroke(); }
+  },
+  tick(dt){
+    const s = this.st, K = this.K, tot = this.total(), SX = this.SX, TOPY = this.TOPY, d = Math.min(dt, .05);
+    // resorte amortiguado (rebota al colgar)
+    const target = K*tot*6; for(let i = 0; i < 2; i++){ s.v += (90*(target - s.x) - 5*s.v)*(d/2); s.x += s.v*(d/2); } if(s.x < 0){ s.x = 0; s.v = 0; }
+    if(tot > 0 && Math.abs(s.x - target) < .6 && Math.abs(s.v) < 3) s.quieto += d; else s.quieto = 0;
+    const fx = this.fotograma(dt);
+    if(s.quieto > .45 && !s.pts.some(p=>p.mass === tot)){
+      s.pts.push({mass:tot, x:K*tot}); const gx = 350 + K*tot*9, gy = 340 - tot*(280/520); FX.burst(fx, gx, gy, ["#C1FF00", "#1863DC", "#fff"]); FX.sound("ding");
+      const ids = []; if(s.pts.length >= 3) ids.push("tres"); if(s.pts.some(p=>p.mass === 100) && s.pts.some(p=>p.mass === 200)) ids.push("doble"); if(s.pts.some(p=>Math.abs(p.x - 11) <= .5)) ids.push("once");
+      this.ganar(ids, gx, gy);
+    }
+    if(s.pts.length >= 3) markRan();
+    Juego.fondo(404);
+    // soporte y resorte
+    ctx.fillStyle = "#3A3A3A"; roundRect(ctx, SX-70, TOPY-18, 140, 14, 5); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillRect(SX-66, TOPY-6, 132, 2);
+    const len = this.BASE + s.x, ye = TOPY + len;
+    const sg = ctx.createLinearGradient(SX-24,0,SX+24,0); sg.addColorStop(0,"#0B3A8C"); sg.addColorStop(.5,"#6AA0FF"); sg.addColorStop(1,"#0B3A8C");
+    ctx.strokeStyle = sg; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(SX, TOPY);
+    for(let t = 0; t <= 1.0001; t += .01){ ctx.lineTo(SX + 22*Math.sin(t*12*Math.PI)*Math.min(1, t*12, (1-t)*12), TOPY + t*len); } ctx.stroke();
+    ctx.strokeStyle = "#555"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(SX, ye); ctx.lineTo(SX, ye+10); ctx.stroke(); ctx.beginPath(); ctx.arc(SX, ye+14, 5, 0, 7); ctx.stroke();
+    s.cargas.forEach((m,i)=>{ const r = this.rectCarga(i); this.dibujarPesa(m, r.x, r.y, false); });
+    // estante con las pesas disponibles
+    this.PESAS.forEach((m,i)=>{ const r = this.rectEstante(i); this.dibujarPesa(m, r.x, r.y, false); });
+    // gráfica
+    const gx = 350, gy = 60, gw = 260, gh = 280;
+    ctx.fillStyle = "rgba(255,255,255,.85)"; roundRect(ctx, gx-34, gy-14, gw+52, gh+54, 12); ctx.fill();
+    ctx.strokeStyle = "#E3EBEE"; ctx.lineWidth = 1; for(let c = 0; c <= 25; c += 5){ const x = gx + c*9; ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, gy+gh); ctx.stroke(); }
+    for(let m = 0; m <= 500; m += 100){ const y = gy+gh - m*(gh/520); ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx+gw, y); ctx.stroke(); }
+    ctx.strokeStyle = "#8FA9B0"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx,gy); ctx.lineTo(gx,gy+gh); ctx.lineTo(gx+gw,gy+gh); ctx.stroke();
+    ctx.fillStyle = COL.muted; ctx.font = F(9,700); ctx.textAlign = "center"; for(let c = 0; c <= 25; c += 5) ctx.fillText(c, gx + c*9, gy+gh+13); ctx.textAlign = "right"; for(let m = 0; m <= 500; m += 100) ctx.fillText(m, gx-5, gy+gh - m*(gh/520) + 3);
+    ctx.textAlign = "center"; ctx.fillText("estiramiento (cm)", gx+gw/2, gy+gh+27); ctx.save(); ctx.translate(gx-26, gy+gh/2); ctx.rotate(-Math.PI/2); ctx.fillText("masa (g)", 0, 0); ctx.restore();
+    const srt = [...s.pts].sort((a,b)=>a.mass-b.mass);
+    if(srt.length >= 2){ ctx.strokeStyle = "#1863DC"; ctx.lineWidth = 3; ctx.beginPath(); srt.forEach((p,i)=>{ const px = gx + p.x*9, py = gy+gh - p.mass*(gh/520); i ? ctx.lineTo(px,py) : ctx.moveTo(px,py); }); ctx.stroke(); }
+    srt.forEach(p=>{ const px = gx + p.x*9, py = gy+gh - p.mass*(gh/520); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(px,py,6,0,7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke(); });
+    // pesa en la mano
+    if(s.held) this.dibujarPesa(s.held.m, s.held.x, s.held.y, true);
+    ctx.font = F(12,700); ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.fillText(`Masa: ${tot} g  ·  Estiramiento: ${(K*tot).toFixed(1)} cm`, 14, 424);
+    if(!tot && !s.pts.length && !s.held) Juego.ayuda(fx, "👆 Arrastra una pesa al resorte", 440, 22);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Rampa · look de juego y retos (piloto) ---------- */
+const expRampaV3 = {...expRampa, ...RetosMix, ...JuegoMix,
+  name:"Rampa: ¿resbala o se queda? (piloto 2)",
+  cardDesc:"Arrastra la punta de la rampa para inclinarla, cambia de material y descubre en qué ángulo empieza a resbalar el bloque.",
+  BX:100, BY:384, LEN:420,
+  RETOS:[
+    {id:"hielo", txt:"Haz resbalar el hielo con menos de 5° de inclinación", ok:"El hielo resbaló con menos de 5°", pista:"Sube el ángulo muy poquito a poco, empezando desde cero."},
+    {id:"madera", txt:"Encuentra el ángulo en que empieza a resbalar la madera (±2°)", ok:"Encontraste el ángulo de la madera", pista:"Sube el ángulo despacio y detente justo cuando empiece a moverse."},
+    {id:"hule", txt:"Haz resbalar el hule (necesitarás mucha inclinación)", ok:"¡El hule resbaló!", pista:"El hule se agarra muy fuerte: inclina más de lo que crees."}
+  ],
+  mount(){
+    const s = this.st = {mat:"madera", angle:0, pos:0, v:0, crit:{}, mov:false, btns:{}};
+    Object.keys(this.MATS).forEach(k=>{ s.btns[k] = ctrlBtn(this.MATS[k].label, k === s.mat ? "" : "ghost", ()=>this.elegir(k)); });
+    s.sl = ctrlSlider("Ángulo de la rampa (°)", 0, 60, 1, s.angle, v=>{ s.angle = v; s.mov = true; });
+    ctrlBtn("⬆ Subir el bloque", "amber", ()=>{ s.pos = 0; s.v = 0; });
+    this.iniciarJuego();
+    const tip = ()=>{ const r = s.angle*Math.PI/180; return {x:this.BX + this.LEN*Math.cos(r), y:this.BY - this.LEN*Math.sin(r)}; };
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const t = tip(); return Math.hypot(p.x-t.x, p.y-t.y) <= Math.max(24, 28*sc) ? {} : null; },
+      down:()=>{ s.mov = true; },
+      move:(o, p)=>{ const a = Math.atan2(this.BY - p.y, Math.max(1, p.x - this.BX))*180/Math.PI; s.angle = Math.round(Math.max(0, Math.min(60, a))*2)/2; s.sl.value = Math.round(s.angle); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  elegir(k){ const s = this.st; s.mat = k; s.pos = 0; s.v = 0; Object.keys(s.btns).forEach(m=>{ s.btns[m].className = "btn small " + (m === k ? "" : "ghost"); }); },
+  tick(dt){
+    const s = this.st, m = this.MATS[s.mat], rad = s.angle*Math.PI/180, d = Math.min(dt, .05);
+    const a = 4.2*(Math.sin(rad) - m.mu*Math.cos(rad));
+    const fx = this.fotograma(dt), BX = this.BX, BY = this.BY, LEN = this.LEN;
+    if(s.pos < 1 && (s.v > 0 || a > 0)){
+      const antes = s.v; s.v = Math.max(0, s.v + a*d); s.pos = Math.min(1, s.pos + s.v*d);
+      if(antes === 0 && s.v > 0){ // empezó a resbalar desde el reposo: se mide el ángulo
+        s.crit[s.mat] = s.angle; const bx = BX + LEN*(1-s.pos)*Math.cos(rad), by = BY - LEN*(1-s.pos)*Math.sin(rad);
+        FX.pop(fx, bx, by - 40, "¡Resbala a " + s.angle.toFixed(1).replace(".0","") + "°!"); FX.sound("tick");
+        const ids = []; if(s.mat === "hielo" && s.angle < 5) ids.push("hielo"); if(s.mat === "madera" && Math.abs(s.angle - 26.57) <= 2) ids.push("madera"); if(s.mat === "hule") ids.push("hule"); this.ganar(ids, bx, by);
+        if(Object.keys(s.crit).length >= 2) markRan();
+      }
+      if(s.pos >= 1){ if(s.v > .5){ FX.dust(fx, BX + 4, BY); fx.shake = Math.max(fx.shake, 2); FX.sound("thud"); } s.v = 0; }
+    }
+    Juego.fondo(BY);
+    // rampa
+    ctx.fillStyle = "#DCE6EA"; ctx.strokeStyle = "#1A1A1A"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(BX,BY); ctx.lineTo(BX + LEN*Math.cos(rad), BY - LEN*Math.sin(rad)); ctx.lineTo(BX + LEN*Math.cos(rad), BY); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.save(); ctx.translate(BX, BY); ctx.rotate(-rad);
+    const sg = ctx.createLinearGradient(0,-10,0,0); sg.addColorStop(0, FX.mix(m.color,.25)); sg.addColorStop(1, m.color); ctx.fillStyle = sg; ctx.fillRect(0,-10,LEN,10);
+    ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 1.5;
+    if(s.mat === "hielo"){ for(let x = 20; x < LEN; x += 46){ ctx.beginPath(); ctx.moveTo(x,-8); ctx.lineTo(x+16,-3); ctx.stroke(); } }
+    else if(s.mat === "madera"){ ctx.strokeStyle = "rgba(60,35,10,.35)"; for(let x = 6; x < LEN; x += 14){ ctx.beginPath(); ctx.moveTo(x,-9); ctx.lineTo(x+7,-1); ctx.stroke(); } }
+    else { ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 2; for(let x = 4; x < LEN; x += 8){ ctx.beginPath(); ctx.moveTo(x,-9); ctx.lineTo(x,-1); ctx.stroke(); } }
+    // bloque
+    const along = LEN*(1-s.pos) - 22, sq = s.v > 0 ? Math.min(.12, s.v*.05) : 0;
+    ctx.save(); ctx.translate(along, -10); ctx.scale(1 + sq, 1 - sq); const bg = ctx.createLinearGradient(0,-30,0,0); bg.addColorStop(0, FX.mix(m.color,.35)); bg.addColorStop(1, m.color);
+    ctx.fillStyle = bg; roundRect(ctx, -20, -30, 40, 30, 5); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.35)"; roundRect(ctx, -16, -27, 18, 4, 2); ctx.fill();
+    if(s.v > 0.1){ ctx.fillStyle = "#C1FF00"; for(let i = 1; i <= 3; i++){ ctx.globalAlpha = .5/i; ctx.fillRect(18 + i*8, -22 + i*2, 10, 3); } ctx.globalAlpha = 1; }
+    ctx.restore(); ctx.restore();
+    // transportador y manija
+    if(s.angle > .5){ ctx.strokeStyle = "#1863DC"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(BX, BY, 70, -rad, 0); ctx.stroke(); this.pill = 0; }
+    Juego.pastilla(`${s.angle.toFixed(s.angle % 1 ? 1 : 0)}°`, BX + 96*Math.cos(rad/2), BY - 96*Math.sin(rad/2), {px:12, pad:14, h:22});
+    const t = {x:BX + LEN*Math.cos(rad), y:BY - LEN*Math.sin(rad)};
+    ctx.globalAlpha = .45 + .25*Math.sin(fx.t*5); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(t.x, t.y, 20, 0, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = "#1863DC"; ctx.beginPath(); ctx.arc(t.x, t.y, 11, 0, 7); ctx.fill(); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(t.x, t.y, 4, 0, 7); ctx.fill();
+    Juego.pastilla(`${m.label} · ${s.v > 0 ? "¡RESBALA!" : "se queda quieto"} · μ ≈ ${m.mu}`, 330, 22, {px:12, pad:22, h:26});
+    const done = Object.keys(s.crit).map(k=>`${this.MATS[k].label.split("/")[0]}: ${s.crit[k]}°`).join("  ·  ");
+    ctx.font = F(11,700); ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.fillText(done ? "Resbaló a → " + done : "Mide el ángulo en que empieza a resbalar", 14, 410 + 8);
+    if(!s.mov) Juego.ayuda(fx, "👆 Arrastra la punta de la rampa para inclinarla", 400, 60);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Choque de canicas (cuna de Newton) · look de juego y retos (piloto) ---------- */
+const expChoqueV3 = {...expChoque, ...RetosMix, ...JuegoMix,
+  name:"Choque de canicas: ¿quién se mueve? (piloto 2)",
+  cardDesc:"Una cuna de Newton: levanta una o dos bolas, suéltalas y mira cuántas salen del otro lado. Cumple tres retos con estrellas.",
+  R:16, L:200, PY:70, GR:1800, GAM:0.1,
+  RETOS:[
+    {id:"uno", txt:"Lanza 1 bola y mira cuántas salen del otro lado", ok:"Lanzaste 1 bola y salió 1 del otro lado", pista:"Levanta solo la primera bola, suéltala y cuenta."},
+    {id:"dos", txt:"Lanza 2 bolas a la vez y observa", ok:"Lanzaste 2 bolas juntas y salieron 2", pista:"Elige «2 bolas» abajo y levanta el grupo."},
+    {id:"aguanta", txt:"Mantén la cuna en movimiento 15 s sin volver a tocarla", ok:"La cuna siguió moviéndose 15 s", pista:"Dale un buen empujón inicial y ten paciencia."}
+  ],
+  mount(){
+    const s = this.st = {n:4, k:1, th:[], w:[], held:null, rel:null, lanz:0, t:0, mov:false, bn:[], bk:[]};
+    this.armar();
+    [3,4,5,6].forEach(n=>{ s.bn[n] = ctrlBtn(n + " bolas", n === s.n ? "" : "ghost", ()=>{ s.n = n; if(s.k > n-1) s.k = n-1; this.armar(); this.marcar(); }); });
+    [1,2,3].forEach(k=>{ s.bk[k] = ctrlBtn("Lanzar " + k + (k === 1 ? " bola" : " bolas"), k === s.k ? "" : "ghost", ()=>{ if(k <= s.n-1){ s.k = k; this.marcar(); } }); });
+    ctrlBtn("🔫 Lanzar", "amber", ()=>{ s.mov = true; this.soltar("L", -0.6); });
+    this.iniciarJuego();
+    const grupo = (i, side)=> side === "L" ? [...Array(s.k).keys()] : [...Array(s.k).keys()].map(j=>s.n-1-j);
+    this._off = bindDrag({
+      hit:(p, sc)=>{ if(s.held) return null; for(let i = 0; i < s.n; i++){ const b = this.bola(i); if(Math.hypot(p.x-b.x, p.y-b.y) <= Math.max(this.R+8, 26*sc)) return {i}; } return null; },
+      down:(o)=>{ const side = o.i < s.n/2 ? "L" : "R"; s.held = {side, g:grupo(o.i, side)}; s.mov = true; s.rel = null; s.held.g.forEach(j=>{ s.w[j] = 0; }); },
+      move:(o, p)=>{ const h = s.held; if(!h) return; const j = h.g[0]; let th = Math.atan2(p.x - this.px(j), p.y - this.PY); th = h.side === "L" ? Math.max(-0.95, Math.min(0, th)) : Math.max(0, Math.min(0.95, th)); h.g.forEach(g=>{ s.th[g] = th; s.w[g] = 0; }); },
+      up:()=>{ const h = s.held; if(!h) return; s.held = null; const th = s.th[h.g[0]]; if(Math.abs(th) > .15) this.registrar(h.side, h.g, th); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  marcar(){ const s = this.st; [3,4,5,6].forEach(n=>{ s.bn[n].className = "btn small " + (n === s.n ? "" : "ghost"); }); [1,2,3].forEach(k=>{ s.bk[k].className = "btn small " + (k === s.k ? "" : "ghost"); }); },
+  armar(){ const s = this.st; s.th = Array(s.n).fill(0); s.w = Array(s.n).fill(0); s.held = null; s.rel = null; },
+  px(i){ return 330 - (this.st.n-1)*this.R + 2*this.R*i; },
+  bola(i){ const s = this.st; return {x:this.px(i) + this.L*Math.sin(s.th[i]), y:this.PY + this.L*Math.cos(s.th[i])}; },
+  soltar(side, th){ // camino sin arrastrar: levanta el grupo y lo suelta
+    const s = this.st; if(s.held) return; const g = side === "L" ? [...Array(s.k).keys()] : [...Array(s.k).keys()].map(j=>s.n-1-j);
+    g.forEach(j=>{ s.th[j] = th; s.w[j] = 0; }); this.registrar(side, g, th);
+  },
+  registrar(side, g, th){ const s = this.st; s.lanz++; s.rel = {t0:s.t, k:g.length, side, th0:Math.abs(th), tHit:null, peaks:Array(s.n).fill(0), hecho:false}; if(s.lanz >= 2) markRan(); },
+  tick(dt){
+    const s = this.st, n = s.n, R = this.R, L = this.L, d = Math.min(dt, .05), fx = this.fotograma(dt), sub = Math.max(1, Math.ceil(d/(1/240))), h = d/sub;
+    const heldSet = new Set(s.held ? s.held.g : []);
+    for(let q = 0; q < sub; q++){
+      s.t += h;
+      for(let i = 0; i < n; i++){ if(heldSet.has(i)) continue; s.w[i] += (-(this.GR/L)*Math.sin(s.th[i]) - this.GAM*s.w[i])*h; s.th[i] += s.w[i]*h; }
+      for(let pass = 0; pass < n; pass++){
+        for(let dir = 0; dir < 2; dir++){
+          for(let k = 0; k < n-1; k++){ const i = dir ? n-2-k : k; if(heldSet.has(i) || heldSet.has(i+1)) continue;
+            const gap = this.bola(i+1).x - this.bola(i).x - 2*R;
+            if(gap <= 0 && s.w[i] - s.w[i+1] > 1e-3){
+              const a = s.w[i], b = s.w[i+1], e = .998; s.w[i] = ((1-e)*a + (1+e)*b)/2; s.w[i+1] = ((1+e)*a + (1-e)*b)/2;
+              if(Math.abs(a - b) > .3){ const p = this.bola(i); FX.burst(fx, p.x + R, p.y, ["#C1FF00", "#fff"]); FX.sound("tick"); fx.shake = Math.max(fx.shake, .6); if(s.rel && s.rel.tHit === null) s.rel.tHit = s.t; }
+            } } } }
+      if(s.rel && s.rel.tHit !== null && s.t - s.rel.tHit < .9){ for(let i = 0; i < n; i++) s.rel.peaks[i] = Math.max(s.rel.peaks[i], Math.abs(s.th[i])); }
+    }
+    // retos
+    const r = s.rel;
+    if(r && !r.hecho && r.tHit !== null && s.t - r.tHit >= .9){
+      r.hecho = true; const salen = r.side === "L" ? [...Array(r.k).keys()].map(j=>n-1-j) : [...Array(r.k).keys()]; const otras = [...Array(n).keys()].filter(i=>!salen.includes(i));
+      const ok = salen.every(i=>r.peaks[i] >= .75*r.th0) && otras.every(i=>r.peaks[i] < .15); const p = this.bola(salen[0]);
+      if(ok){ if(r.k === 1) this.ganar(["uno"], p.x, p.y); if(r.k === 2) this.ganar(["dos"], p.x, p.y); }
+    }
+    if(r && !s.held && s.t - r.t0 >= 15 && Math.max(...s.th.map(Math.abs)) > .04){ const p = this.bola(Math.floor(n/2)); this.ganar(["aguanta"], p.x, p.y); }
+    // dibujo
+    Juego.fondo(404);
+    const x0 = this.px(0) - 60, x1 = this.px(n-1) + 60;
+    ctx.fillStyle = "#3A3A3A"; ctx.fillRect(x0-6, this.PY-6, 8, 404-this.PY+6); ctx.fillRect(x1-2, this.PY-6, 8, 404-this.PY+6); roundRect(ctx, x0-10, this.PY-20, x1-x0+20, 16, 6); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillRect(x0-6, this.PY-6, x1-x0+12, 2);
+    for(let i = 0; i < n; i++){ const b = this.bola(i), k = Math.max(.4, 1 - (404 - b.y)/500); ctx.fillStyle = `rgba(0,0,0,${.3*k})`; ctx.beginPath(); ctx.ellipse(this.px(i) + (b.x-this.px(i))*.6, 410, R*1.1*k, 3.5*k, 0, 0, 7); ctx.fill(); }
+    for(let i = 0; i < n; i++){
+      const b = this.bola(i), px = this.px(i); ctx.strokeStyle = "#555"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(px-5, this.PY); ctx.lineTo(b.x, b.y); ctx.moveTo(px+5, this.PY); ctx.lineTo(b.x, b.y); ctx.stroke();
+      const gr = ctx.createRadialGradient(b.x - R*.35, b.y - R*.35, 1, b.x, b.y, R); gr.addColorStop(0, "#FFFFFF"); gr.addColorStop(.4, "#B9C7CE"); gr.addColorStop(1, "#5A6A72"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 1.5; ctx.stroke();
+      if(heldSet.has(i)){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.globalAlpha = .6 + .4*Math.sin(fx.t*9); ctx.beginPath(); ctx.arc(b.x, b.y, R+5, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
+    }
+    Juego.pastilla(`${n} bolas · lanzas ${s.k}`, 110, 22, {px:12, pad:20, h:24});
+    if(!s.mov) Juego.ayuda(fx, "👆 Arrastra la primera bola hacia atrás y suéltala", 330, 34);
+    this.finFotograma();
+  }
+};
+
+const FISICA_EXPS = [expTiroV3, PILOTO ? expRampaV3 : expRampa, PILOTO ? expResorteV3 : expResorte, PILOTO ? expChoqueV3 : expChoque, expPresion, expPalanca, expLuz, expOnda];
 /* ---------- QUÍMICA ---------- */
 const expReacterm = {
   id:"reacterm", name:"Caliente o frío: reacciones que cambian la temperatura", icon:"🌡️", cat:"quimica",
