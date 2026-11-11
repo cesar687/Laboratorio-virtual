@@ -5499,7 +5499,203 @@ const expChoqueV3 = {...expChoque, ...RetosMix, ...JuegoMix,
   }
 };
 
-const FISICA_EXPS = [expTiroV3, PILOTO ? expRampaV3 : expRampa, PILOTO ? expResorteV3 : expResorte, PILOTO ? expChoqueV3 : expChoque, expPresion, expPalanca, expLuz, expOnda];
+/* ---------- Palanca (sube y baja) · look de juego y retos (piloto) ---------- */
+const expPalancaV3 = {...expPalanca, ...RetosMix, ...JuegoMix,
+  name:"Sube y baja: encuentra el equilibrio (piloto 2)",
+  cardDesc:"Arrastra la caja del lado derecho a lo largo de la tabla y busca el equilibrio. Cumple tres retos con estrellas.",
+  CX:330, CY:270, HALF:240, PXM:55,
+  RETOS:[
+    {id:"m60", txt:"Equilibra el sube y baja con una caja de 60 kg", ok:"Equilibraste con 60 kg", pista:"Cambia la masa a 60 kg y mueve la caja hasta que la tabla se quede recta."},
+    {id:"m20", txt:"Equilibra con una caja de 20 kg", ok:"Equilibraste con 20 kg", pista:"Con menos masa, ¿la caja debe ir más cerca o más lejos del apoyo?"},
+    {id:"m40", txt:"Equilibra con una caja de 40 kg", ok:"Equilibraste con 40 kg", pista:"Prueba distancias de 0.1 en 0.1 m hasta que quede recta."}
+  ],
+  mount(){
+    const s = this.st = {m2:60, d2:2, ang:0, av:0, tested:new Set(), bal:0, ok:false, held:false, mov:false};
+    s.slM = ctrlSlider("Masa lado derecho (kg)", 10, 80, 5, s.m2, v=>{ s.m2 = v; });
+    s.slD = ctrlSlider("Distancia lado derecho (m)", 0.5, 4, 0.1, s.d2, v=>{ this.poner(v); });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const r = this.cajaDer(); return Math.abs(p.x-r.x) <= Math.max(r.w/2+6, 28*sc) && Math.abs(p.y-r.y) <= Math.max(r.h/2+8, 28*sc) ? {} : null; },
+      down:()=>{ s.held = true; s.mov = true; },
+      move:(o, p)=>{ this.poner(Math.round(Math.max(0.5, Math.min(4, (p.x - this.CX)/this.PXM))*10)/10); },
+      up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  poner(d){ const s = this.st; s.d2 = d; s.slD.value = d; s.mov = true; s.tested.add(d.toFixed(1)); if(s.tested.size >= 3) markRan(); },
+  cajaDer(){ const s = this.st, a = s.ang, L = s.d2*this.PXM, w = 34 + s.m2*.45; return {x:this.CX + Math.cos(a)*L, y:this.CY + Math.sin(a)*L - 14 - 10 - s.m2*.12, w, h:28 + s.m2*.24}; },
+  tick(dt){
+    const s = this.st, t1 = this.M1*this.D1, t2 = s.m2*s.d2, diff = t2 - t1, target = Math.max(-0.22, Math.min(0.22, diff*0.012)), d = Math.min(dt, .05), fx = this.fotograma(dt);
+    for(let i = 0; i < 2; i++){ s.av += (60*(target - s.ang) - 7*s.av)*(d/2); s.ang += s.av*(d/2); }
+    const eq = Math.abs(diff) < 3, clave = s.m2 + "@" + s.d2; if(clave !== s.clave){ s.clave = clave; s.ok = false; s.bal = 0; } // cada combinación nueva cuenta como un nuevo intento
+    if(eq && Math.abs(s.ang) < .02 && Math.abs(s.av) < .05) s.bal += d; else { s.bal = 0; if(!eq) s.ok = false; }
+    if(s.bal > .4 && !s.ok){
+      s.ok = true; FX.burst(fx, this.CX, this.CY - 40, ["#C1FF00", "#1863DC", "#fff"]); FX.pop(fx, this.CX, this.CY - 70, "⚖️ ¡Equilibrado!"); FX.sound("ding");
+      const ids = []; if(s.m2 === 60) ids.push("m60"); if(s.m2 === 20) ids.push("m20"); if(s.m2 === 40) ids.push("m40"); this.ganar(ids, this.CX, this.CY - 40);
+    }
+    Juego.fondo(404);
+    const CX = this.CX, CY = this.CY, H = this.HALF, PXM = this.PXM, a = s.ang;
+    // apoyo
+    ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.beginPath(); ctx.ellipse(CX, 408, 60, 5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = "#2A2A2A"; ctx.beginPath(); ctx.moveTo(CX-34, 404); ctx.lineTo(CX+34, 404); ctx.lineTo(CX, CY+6); ctx.closePath(); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(CX, CY+4, 7, 0, 7); ctx.fill();
+    if(s.ok){ ctx.globalAlpha = .35 + .25*Math.sin(fx.t*8); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(CX-H, CY); ctx.lineTo(CX+H, CY); ctx.stroke(); ctx.globalAlpha = 1; }
+    ctx.save(); ctx.translate(CX, CY); ctx.rotate(a);
+    const bg = ctx.createLinearGradient(0,-8,0,8); bg.addColorStop(0,"#D9B77E"); bg.addColorStop(1,"#9C7440"); ctx.fillStyle = bg; roundRect(ctx, -H, -8, 2*H, 16, 5); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = "#C1FF00"; ctx.fillRect(-H+6, -8, 2*H-12, 2);
+    ctx.font = F(9,800); ctx.textAlign = "center"; for(let m = -4; m <= 4; m++){ const x = m*PXM; ctx.fillStyle = "#3A2A10"; ctx.fillRect(x-1, 0, 2, m ? 8 : 12); if(m) ctx.fillText(Math.abs(m), x, 20*uiScale > 20 ? 22 : 21); }
+    // caja izquierda (fija) y derecha (se arrastra)
+    const caja = (x, masa, c1, c2, txt, borde)=>{ const w = 34 + masa*.45, h = 28 + masa*.24, y = -8 - h; const g = ctx.createLinearGradient(0,y,0,y+h); g.addColorStop(0,c1); g.addColorStop(1,c2);
+      ctx.fillStyle = g; roundRect(ctx, x-w/2, y, w, h, 5); ctx.fill(); ctx.strokeStyle = borde ? "#C1FF00" : "rgba(0,0,0,.45)"; ctx.lineWidth = borde ? 3 : 1.5; ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,.3)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x-w/2+4, y+h/2); ctx.lineTo(x+w/2-4, y+h/2); ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.font = F(11,800); ctx.textAlign = "center"; ctx.fillText(masa + " kg", x, y + h/2 + 4*uiScale); };
+    caja(-this.D1*PXM, this.M1, "#6AA0FF", "#1863DC", "", false); caja(s.d2*PXM, s.m2, "#FFE066", "#E8A400", "", s.held);
+    ctx.restore();
+    Juego.pastilla(`Torque izq: ${t1.toFixed(0)}   Torque der: ${t2.toFixed(0)}   ${eq ? "⚖️ ¡Equilibrado!" : (diff > 0 ? "→ pesa más la derecha" : "← pesa más la izquierda")}`, 330, 26, {px:12, pad:24, h:26, bg:eq ? "#C1FF00" : "#000", fg:eq ? "#000" : "#C1FF00"});
+    ctx.font = F(11,700); ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.fillText(`Derecha: ${s.m2} kg a ${s.d2.toFixed(1)} m  ·  Izquierda: ${this.M1} kg a ${this.D1} m`, 14, 424);
+    if(!s.mov) Juego.ayuda(fx, "👆 Arrastra la caja amarilla a lo largo de la tabla", 330, 70);
+    this.finFotograma();
+  }
+};
+
+/* ---------- El huevo que entra a la botella · look de juego y retos (piloto) ---------- */
+const expPresionV3 = {...expPresion, ...RetosMix, ...JuegoMix,
+  name:"El huevo que entra a la botella (piloto 2)",
+  cardDesc:"Arrastra el fósforo para calentar el aire de la botella, pon el huevo en la boca y observa la presión cuando se enfría.",
+  BX:280, BW:100, TOPY:180, BOTY:380, MX:330, HX:150, HY:350, EX:540, EY:358,
+  RETOS:[
+    {id:"entra", txt:"Mete el huevo en la botella", ok:"El huevo entró en la botella", pista:"Calienta bien el aire antes de poner el huevo y espera."},
+    {id:"poco", txt:"Calienta solo un poco (entre 35 y 45 °C) y comprueba qué pasa", ok:"Con poco calor el huevo se quedó arriba", pista:"Detén el calor cuando el termómetro marque unos 40 °C y pon el huevo."},
+    {id:"mucho", txt:"Calienta el aire a 80 °C antes de poner el huevo", ok:"Pusiste el huevo con el aire a 80 °C", pista:"Sigue calentando hasta que el termómetro llegue a 80 °C."}
+  ],
+  mount(){
+    const s = this.st = {temp:20, calor:false, fosforo:{x:this.HX, y:this.HY, held:false}, huevo:{x:this.EX, y:this.EY, held:false}, sellado:false, Ts:null, p:101, ey:0, dentro:false, fin:false, mov:false};
+    this.btnCalor = ctrlBtn("🔥 Calentar la botella", "", ()=>{ s.calor = !s.calor; s.mov = true; this.btnCalor.textContent = s.calor ? "⏹ Dejar de calentar" : "🔥 Calentar la botella"; });
+    ctrlBtn("🥚 Poner el huevo", "", ()=>{ if(!s.sellado && !s.huevo.held){ s.mov = true; this.sellar(); } });
+    ctrlBtn("🔁 Reiniciar", "ghost", ()=>this.reiniciar());
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ if(s.huevo.held || s.fosforo.held) return null; const e = s.huevo, f = s.fosforo;
+        if(!s.sellado && Math.hypot(p.x-e.x, p.y-e.y) <= Math.max(26, 28*sc)) return {t:"e"};
+        if(Math.hypot(p.x-f.x, p.y-(f.y-10)) <= Math.max(26, 28*sc)) return {t:"f"}; return null; },
+      down:(o)=>{ s.mov = true; if(o.t === "e") s.huevo.held = true; else { s.fosforo.held = true; s.calor = false; this.btnCalor.textContent = "🔥 Calentar la botella"; } },
+      move:(o, p)=>{ const t = o.t === "e" ? s.huevo : s.fosforo; t.x = p.x; t.y = p.y; },
+      up:(o)=>{ if(o.t === "e"){ s.huevo.held = false; if(Math.hypot(s.huevo.x - this.MX, s.huevo.y - (this.TOPY - 18)) < 55) this.sellar(); else { s.huevo.x = this.EX; s.huevo.y = this.EY; } }
+        else { s.fosforo.held = false; s.fosforo.x = this.HX; s.fosforo.y = this.HY; } }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  reiniciar(){ const s = this.st; Object.assign(s, {temp:20, calor:false, sellado:false, Ts:null, p:101, ey:0, dentro:false, fin:false}); s.huevo.x = this.EX; s.huevo.y = this.EY; s.huevo.held = false; s.fosforo.x = this.HX; s.fosforo.y = this.HY; this.btnCalor.textContent = "🔥 Calentar la botella"; },
+  sellar(){
+    const s = this.st, fx = s.fx; s.sellado = true; s.Ts = s.temp; s.calor = false; this.btnCalor.textContent = "🔥 Calentar la botella"; s.ey = this.TOPY - 22; s.huevo.x = this.MX; s.huevo.y = s.ey;
+    FX.dust(fx, this.MX, this.TOPY - 8); FX.sound("thud");
+    if(s.Ts >= 78) this.ganar(["mucho"], this.MX, this.TOPY - 40);
+  },
+  tick(dt){
+    const s = this.st, d = Math.min(dt, .05), fx = this.fotograma(dt), BX = this.BX, BW = this.BW, TOPY = this.TOPY, BOTY = this.BOTY, MX = this.MX;
+    // calor: el fósforo dentro de la botella o el botón
+    const fosforoDentro = s.fosforo.held && Math.abs(s.fosforo.x - MX) < 45 && s.fosforo.y > TOPY - 40 && s.fosforo.y < BOTY - 60;
+    if(!s.sellado){ if(fosforoDentro || s.calor) s.temp = Math.min(80, s.temp + 32*d); else s.temp = Math.max(20, s.temp - 6*d); }
+    else { s.temp = Math.max(20, s.temp - 22*d); }
+    if(s.sellado) s.p = 101*(s.temp + 273)/(s.Ts + 273); else s.p = 101;
+    const dp = 101 - s.p;
+    if(s.sellado && !s.dentro && dp > 9){ const v = Math.min(70, (dp - 9)*7 + 8); s.ey = Math.min(BOTY - 28, s.ey + v*d); s.huevo.y = s.ey;
+      if(s.ey >= BOTY - 28){ s.dentro = true; FX.dust(fx, MX, BOTY); FX.burst(fx, MX, BOTY - 40, ["#C1FF00", "#fff", "#FFD54A"]); FX.pop(fx, MX, TOPY + 30, "¡POP!"); FX.sound("boom"); fx.shake = Math.max(fx.shake, 3); this.ganar(["entra"], MX, TOPY + 60); } }
+    if(s.sellado && !s.fin && s.temp <= 20.5){ s.fin = true; markRan(); if(!s.dentro && s.Ts >= 35 && s.Ts < 45) this.ganar(["poco"], MX, TOPY - 40); }
+    // vapor / calor
+    if((fosforoDentro || s.calor || (s.temp > 45 && !s.sellado)) && Math.random() < .5 && !FX.rm) FX.add(fx, {k:"d", x:MX + (Math.random()-.5)*30, y:TOPY - 4, vx:(Math.random()-.5)*20, vy:-40 - Math.random()*40, g:-30, life:.9 + Math.random()*.6, r:3 + Math.random()*4, c:"rgba(255,170,60,.5)"});
+    Juego.fondo(404);
+    // botella
+    const caliente = (s.temp - 20)/60;
+    ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.beginPath(); ctx.ellipse(MX, 408, 60, 5, 0, 0, 7); ctx.fill();
+    const body = ()=>{ ctx.beginPath(); ctx.moveTo(BX, BOTY); ctx.lineTo(BX, TOPY+70); ctx.quadraticCurveTo(BX, TOPY+30, BX+33, TOPY+22); ctx.lineTo(BX+33, TOPY); ctx.lineTo(BX+67, TOPY); ctx.lineTo(BX+67, TOPY+22); ctx.quadraticCurveTo(BX+BW, TOPY+30, BX+BW, TOPY+70); ctx.lineTo(BX+BW, BOTY); ctx.closePath(); };
+    const gl = ctx.createLinearGradient(BX,0,BX+BW,0); gl.addColorStop(0,"rgba(210,235,240,.9)"); gl.addColorStop(.3,"rgba(255,255,255,.95)"); gl.addColorStop(1,"rgba(190,215,222,.9)");
+    body(); ctx.fillStyle = gl; ctx.fill();
+    ctx.save(); body(); ctx.clip(); ctx.fillStyle = `rgba(255,140,40,${.1 + caliente*.55})`; ctx.fillRect(BX, TOPY, BW, BOTY-TOPY); ctx.restore();
+    ctx.fillStyle = "rgba(255,255,255,.55)"; roundRect(ctx, BX+10, TOPY+80, 6, 200, 3); ctx.fill();
+    body(); ctx.strokeStyle = "rgba(95,125,135,.9)"; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.stroke();
+    // termómetro y presión
+    const tx = 175, ty = 110, th = 220; ctx.fillStyle = "#fff"; roundRect(ctx, tx-9, ty, 18, th, 9); ctx.fill(); ctx.strokeStyle = "#8FA9B0"; ctx.lineWidth = 2; ctx.stroke();
+    const fh = (s.temp - 20)/60*(th-20); ctx.fillStyle = "#c92a2a"; roundRect(ctx, tx-5, ty+th-8-fh-6, 10, fh+10, 5); ctx.fill(); ctx.beginPath(); ctx.arc(tx, ty+th+6, 13, 0, 7); ctx.fill();
+    ctx.font = F(10,800); ctx.fillStyle = COL.muted; ctx.textAlign = "left"; [20,50,80].forEach(t=>{ ctx.fillText(t + "°", tx+14, ty+th-8-(t-20)/60*(th-20)+3); });
+    Juego.pastilla(`Aire de adentro: ${Math.round(s.temp)} °C`, 175, 90, {px:11, pad:16, h:22});
+    Juego.pastilla(s.sellado ? `Presión adentro ${s.p.toFixed(1)} kPa  ·  afuera 101 kPa` : "Presión adentro 101 kPa  ·  afuera 101 kPa", 330, 28, {px:12, pad:24, h:26, bg:dp > 9 ? "#C1FF00" : "#000", fg:dp > 9 ? "#000" : "#C1FF00"});
+    // huevo
+    const e = s.huevo, pasa = s.sellado && e.y > TOPY - 5 && e.y < TOPY + 40, sqx = pasa ? .78 : 1, sqy = pasa ? 1.18 : 1;
+    ctx.fillStyle = "rgba(0,0,0,.25)"; if(!s.sellado && !e.held){ ctx.beginPath(); ctx.ellipse(e.x, 408, 20, 4, 0, 0, 7); ctx.fill(); }
+    ctx.save(); ctx.translate(e.x, e.y); ctx.scale(sqx, sqy); const eg = ctx.createRadialGradient(-6,-8,2,0,0,24); eg.addColorStop(0,"#FFFFFF"); eg.addColorStop(1,"#E6D8B4"); ctx.fillStyle = eg; ctx.beginPath(); ctx.ellipse(0,0,17,22,0,0,7); ctx.fill(); ctx.strokeStyle = "#C9B98A"; ctx.lineWidth = 1.5; ctx.stroke();
+    if(e.held){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0,0,22,27,0,0,7); ctx.stroke(); } ctx.restore();
+    if(s.sellado && !s.dentro && dp > 9){ ctx.strokeStyle = "#1863DC"; ctx.fillStyle = "#1863DC"; ctx.lineWidth = 3; [-12,0,12].forEach(o=>{ ctx.beginPath(); ctx.moveTo(e.x+o, e.y-52); ctx.lineTo(e.x+o, e.y-30); ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.x+o, e.y-26); ctx.lineTo(e.x+o-5, e.y-34); ctx.lineTo(e.x+o+5, e.y-34); ctx.closePath(); ctx.fill(); }); }
+    // fósforo con llama
+    const f = s.fosforo; ctx.strokeStyle = "#C9A063"; ctx.lineWidth = 6; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(f.x, f.y+26); ctx.lineTo(f.x, f.y-8); ctx.stroke(); ctx.fillStyle = "#c92a2a"; ctx.beginPath(); ctx.arc(f.x, f.y-12, 5, 0, 7); ctx.fill(); ctx.lineCap = "butt";
+    const fl = 1 + .25*Math.sin(fx.t*22); ctx.fillStyle = "rgba(255,140,30,.95)"; ctx.beginPath(); ctx.ellipse(f.x, f.y-24, 8*fl, 14*fl, 0, 0, 7); ctx.fill(); ctx.fillStyle = "#FFE066"; ctx.beginPath(); ctx.ellipse(f.x, f.y-22, 4*fl, 8*fl, 0, 0, 7); ctx.fill();
+    if(f.held){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, f.y-6, 30, 0, 7); ctx.stroke(); }
+    ctx.font = F(11,700); ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.fillText(!s.sellado ? "Calienta el aire y luego pon el huevo en la boca" : s.dentro ? "¡El huevo entró!" : dp > 9 ? "El huevo está entrando…" : s.temp > 20.5 ? "Enfriándose… observa el huevo" : "El huevo se quedó arriba", 14, 424);
+    if(!s.mov) Juego.ayuda(fx, "👆 Arrastra el fósforo a la botella para calentarla", 400, 70);
+    this.finFotograma();
+  }
+};
+
+/* ---------- El lápiz que se rompe en el agua · look de juego y retos (piloto) ---------- */
+const expLuzV3 = {...expLuz, ...RetosMix, ...JuegoMix,
+  name:"El lápiz que se rompe en el agua (piloto 2)",
+  cardDesc:"Arrastra el lápiz para cambiar su inclinación y compara agua, aceite y sin líquido. Cumple tres retos con estrellas.",
+  GX:210, GW:240, WY:230, GB:400, EX:330, EY:230,
+  LIQ:{agua:{n:1.33, label:"Agua", c1:"#CDEBF5", c2:"#7FC4DD"}, aceite:{n:1.47, label:"Aceite", c1:"#F7E08A", c2:"#E0B53A"}, aire:{n:1.0, label:"Sin líquido", c1:"rgba(0,0,0,0)", c2:"rgba(0,0,0,0)"}},
+  RETOS:[
+    {id:"angulos", txt:"Mira el lápiz con tres inclinaciones distintas", ok:"Probaste tres inclinaciones", pista:"Arrastra la punta del lápiz a distintos ángulos."},
+    {id:"aceite", txt:"Prueba también con aceite y compara con el agua", ok:"Probaste con aceite", pista:"Cambia el líquido con los botones de abajo y observa la línea punteada."},
+    {id:"aire", txt:"Quita el líquido y compara: ¿se sigue doblando?", ok:"Comparaste con «sin líquido»", pista:"Elige «Sin líquido» y mira si la línea punteada cambia."}
+  ],
+  mount(){
+    const s = this.st = {angle:35, liq:"agua", tested:new Set([35]), t:0, bts:{}, mov:false};
+    Object.keys(this.LIQ).forEach(k=>{ s.bts[k] = ctrlBtn(this.LIQ[k].label, k === s.liq ? "" : "ghost", ()=>{ s.liq = k; s.t = 0; s.mov = true; this.marcar(); }); });
+    s.sl = ctrlSlider("Ángulo del lápiz (°, desde la vertical)", 5, 70, 1, s.angle, v=>{ this.poner(v); });
+    this.iniciarJuego();
+    const top = ()=>{ const r = s.angle*Math.PI/180; return {x:this.EX - Math.sin(r)*100, y:this.EY - Math.cos(r)*100}; };
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const t = top(); return Math.hypot(p.x-t.x, p.y-t.y) <= Math.max(26, 28*sc) ? {} : null; },
+      down:()=>{ s.mov = true; },
+      move:(o, p)=>{ const a = Math.atan2(this.EX - p.x, Math.max(1, this.EY - p.y))*180/Math.PI; this.poner(Math.round(Math.max(5, Math.min(70, a)))); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  marcar(){ const s = this.st; Object.keys(s.bts).forEach(k=>{ s.bts[k].className = "btn small " + (k === s.liq ? "" : "ghost"); }); },
+  poner(a){ const s = this.st; s.angle = a; s.sl.value = a; s.mov = true; s.tested.add(a); if(s.tested.size >= 3){ markRan(); this.ganar(["angulos"], 330, 150); } },
+  tick(dt){
+    const s = this.st, d = Math.min(dt, .05), fx = this.fotograma(dt); s.t += d;
+    const L = this.LIQ[s.liq], rad = s.angle*Math.PI/180, GX = this.GX, GW = this.GW, WY = this.WY, GB = this.GB, EX = this.EX, EY = this.EY;
+    if(s.t > 1.5){ if(s.liq === "aceite") this.ganar(["aceite"], 330, 150); if(s.liq === "aire") this.ganar(["aire"], 330, 150); }
+    Juego.fondo(404);
+    // vaso y líquido con olas
+    if(s.liq !== "aire"){
+      const gr = ctx.createLinearGradient(0,WY,0,GB); gr.addColorStop(0,L.c1); gr.addColorStop(1,L.c2); ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(GX, WY);
+      for(let x = GX; x <= GX+GW; x += 6) ctx.lineTo(x, WY + (FX.rm ? 0 : Math.sin(x*.08 + fx.t*2.2)*1.6)); ctx.lineTo(GX+GW, GB); ctx.lineTo(GX, GB); ctx.closePath(); ctx.globalAlpha = .85; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 2; ctx.beginPath(); for(let x = GX; x <= GX+GW; x += 6){ const y = WY + (FX.rm ? 0 : Math.sin(x*.08 + fx.t*2.2)*1.6); x === GX ? ctx.moveTo(x,y) : ctx.lineTo(x,y); } ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(95,125,135,.9)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(GX, 130); ctx.lineTo(GX, GB); ctx.lineTo(GX+GW, GB); ctx.lineTo(GX+GW, 130); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, GX+8, 150, 7, GB-170, 3); ctx.fill();
+    // lápiz real y camino de la luz
+    const airLen = 100, waterLen = 130, ax = EX - Math.sin(rad)*airLen, ay = EY - Math.cos(rad)*airLen, rx = EX + Math.sin(rad)*waterLen, ry = EY + Math.cos(rad)*waterLen;
+    const radW = Math.asin(Math.min(1, Math.sin(rad)/L.n)), apx = EX + Math.sin(radW)*waterLen, apy = EY + Math.cos(radW)*waterLen;
+    const lapiz = (x1, y1, x2, y2, alfa, punta)=>{ ctx.globalAlpha = alfa; ctx.lineCap = "round"; ctx.strokeStyle = "#8A5A12"; ctx.lineWidth = 13; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.strokeStyle = "#F2C230"; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.lineCap = "butt"; if(punta){ const a = Math.atan2(y2-y1, x2-x1); ctx.fillStyle = "#3A2A18"; ctx.save(); ctx.translate(x2,y2); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-2,-6); ctx.lineTo(14,0); ctx.lineTo(-2,6); ctx.closePath(); ctx.fill(); ctx.restore(); } ctx.globalAlpha = 1; };
+    // parte de arriba (aire) siempre real; la sumergida se ve desplazada
+    lapiz(ax, ay, EX, EY, 1, false); lapiz(EX, EY, apx, apy, 1, true);
+    ctx.setLineDash([5,5]); ctx.strokeStyle = "rgba(24,99,220,.9)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(EX, EY); ctx.lineTo(rx, ry); ctx.stroke(); ctx.setLineDash([]);
+    ctx.globalAlpha = .35; ctx.strokeStyle = "#555"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(EX, EY); ctx.lineTo(rx, ry); ctx.stroke(); ctx.globalAlpha = 1;
+    // manija para arrastrar
+    ctx.globalAlpha = .45 + .25*Math.sin(fx.t*5); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(ax, ay, 18, 0, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = "#1863DC"; ctx.beginPath(); ctx.arc(ax, ay, 9, 0, 7); ctx.fill(); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ax, ay, 3.5, 0, 7); ctx.fill();
+    const dif = Math.abs(radW - rad)*180/Math.PI;
+    Juego.pastilla(`${L.label} · n = ${L.n.toFixed(2)} · lápiz a ${s.angle}° · se desvía ${dif.toFixed(1)}°`, 330, 24, {px:12, pad:24, h:26});
+    ctx.font = F(11,700); ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.fillText("Lápiz con la parte sumergida desplazada = lo que ves · línea punteada = el lápiz real", 14, 424);
+    if(!s.mov) Juego.ayuda(fx, "👆 Arrastra la punta del lápiz para inclinarlo", 450, 70);
+    this.finFotograma();
+  }
+};
+
+const FISICA_EXPS = [expTiroV3, PILOTO ? expRampaV3 : expRampa, PILOTO ? expResorteV3 : expResorte, PILOTO ? expChoqueV3 : expChoque, PILOTO ? expPresionV3 : expPresion, PILOTO ? expPalancaV3 : expPalanca, PILOTO ? expLuzV3 : expLuz, expOnda];
 /* ---------- QUÍMICA ---------- */
 const expReacterm = {
   id:"reacterm", name:"Caliente o frío: reacciones que cambian la temperatura", icon:"🌡️", cat:"quimica",
