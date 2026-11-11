@@ -4989,7 +4989,7 @@ const RetosMix = {
 
 /* ---------- Péndulo · look de juego y retos (piloto) ---------- */
 const expPendV3 = {...expPendV2, ...RetosMix,
-  name:"Péndulo: mide la gravedad (piloto 2)",
+  name:"Péndulo: mide la gravedad",
   cardDesc:"Arrastra la masa y suéltala, cronometra tú mismo las oscilaciones y cumple tres retos con estrellas para medir la gravedad.",
   RETOS:[
     {id:"g", txt:"Mide la gravedad con menos de 3 % de error", ok:"Tu medición quedó a menos de 3 % de 9.81 m/s²", pista:"Cronometra más oscilaciones o usa el modo automático."},
@@ -5103,7 +5103,7 @@ const expPendV3 = {...expPendV2, ...RetosMix,
 
 /* ---------- Tiro parabólico · look de juego y retos (piloto) ---------- */
 const expTiroV3 = {...expTiroV2, ...RetosMix,
-  name:"Tiro parabólico: ¿dónde cae? (piloto 2)",
+  name:"Tiro parabólico: ¿dónde cae?",
   cardDesc:"Apunta el cañón arrastrando la flecha, dispara, mide dónde cae y cumple tres retos con estrellas. Compara ángulos.",
   TARGET_M:28,
   RETOS:[
@@ -5226,7 +5226,7 @@ const expTiroV3 = {...expTiroV2, ...RetosMix,
   }
 };
 
-const FISICA_EXPS = [PILOTO ? expTiroV3 : expTiroV2, expRampa, expResorte, expChoque, expPresion, expPalanca, expLuz, expOnda];
+const FISICA_EXPS = [expTiroV3, expRampa, expResorte, expChoque, expPresion, expPalanca, expLuz, expOnda];
 /* ---------- QUÍMICA ---------- */
 const expReacterm = {
   id:"reacterm", name:"Caliente o frío: reacciones que cambian la temperatura", icon:"🌡️", cat:"quimica",
@@ -6685,7 +6685,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  expDensV3, expInercia, PILOTO ? expPendV3 : expPendV2, expLava, expPH, expReac,
+  expDensV3, expInercia, expPendV3, expLava, expPH, expReac,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
