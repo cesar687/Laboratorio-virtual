@@ -979,12 +979,10 @@ const expDens = {
   clase:`El experimento real cuesta menos de $40: miel, agua con colorante, aceite y (opcional) alcohol. Pide la predicción exactamente igual que aquí — ANTES de verter. Reto extra: que midan la densidad real de cada líquido con una báscula de cocina y una taza medidora, y comparen con los valores del simulador.`
 };
 
-/* ===== Piloto interactivo · Torre de densidades (arrastrar y soltar) =====
+/* ===== Torre de densidades interactiva (arrastrar y soltar) =====
    Misma predicción, explicación y registro que expDens (se heredan sin cambios).
-   Solo cambia la interacción. Se activa con  ?piloto=1  al final de la dirección. */
-const PILOTO = /[?&]piloto=1/.test(location.search);
+   Solo cambia la interacción. */
 const expDensV2 = {...expDens,
-  name:"Torre de densidades (piloto)",
   cardDesc:"Arrastra botellas para verter cuatro líquidos y mueve una uva, una moneda, un corcho y un bloque de densidad ajustable. ¿Dónde quedará cada cosa?",
   GL:{x:250, y:80, w:170, h:300, bot:380},
   VISC:{miel:7, aceite:2.4, agua:1.8, alcohol:1.4},
@@ -3438,7 +3436,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  PILOTO ? expDensV2 : expDens, expInercia, expPend, expLava, expPH, expReac,
+  expDensV2, expInercia, expPend, expLava, expPH, expReac,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
