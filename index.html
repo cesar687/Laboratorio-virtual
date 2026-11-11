@@ -4165,7 +4165,7 @@ const expResorte = {
   pred:{ q:"Cuelgas 100 g de un resorte y se estira 2 cm. Si cuelgas 200 g (el doble) del MISMO resorte, ¿cuánto se estira (dentro de su límite elástico)?",
     options:["1 cm (la mitad)","2 cm (lo mismo)","4 cm (el doble)","8 cm (cuatro veces)"],
     correct:2, okText:"La Ley de Hooke dice que el estiramiento es proporcional a la fuerza: F=kx. Doble fuerza, doble estiramiento." },
-  K:0.055,
+  K:0.02, // 100 g → 2 cm, 200 g → 4 cm (coincide con el enunciado de la predicción)
   st:null,
   mount(){
     const s = this.st = { mass:100, points:[] };
@@ -5275,7 +5275,7 @@ const expResorteV3 = {...expResorte, ...RetosMix, ...JuegoMix,
   RETOS:[
     {id:"tres", txt:"Mide tres pesos distintos y llena la gráfica", ok:"Tienes tres puntos en la gráfica", pista:"Cuelga una pesa, espera a que se quede quieta y se marca un punto."},
     {id:"doble", txt:"Mide 100 g y luego 200 g y compara los estiramientos", ok:"Mediste 100 g y 200 g", pista:"Usa la pesa de 100 g y después la de 200 g (o dos de 100 g)."},
-    {id:"once", txt:"Estira el resorte 11 cm (±0.5 cm)", ok:"¡Lograste estirarlo 11 cm!", pista:"Mira tu gráfica: ¿qué masa corresponde a 11 cm?"}
+    {id:"seis", txt:"Estira el resorte 6 cm (±0.3 cm)", ok:"¡Lograste estirarlo 6 cm!", pista:"Mira tu gráfica: ¿qué masa corresponde a 6 cm?"}
   ],
   mount(){
     const s = this.st = {cargas:[], x:0, v:0, pts:[], quieto:0, held:null};
@@ -5316,12 +5316,12 @@ const expResorteV3 = {...expResorte, ...RetosMix, ...JuegoMix,
   tick(dt){
     const s = this.st, K = this.K, tot = this.total(), SX = this.SX, TOPY = this.TOPY, d = Math.min(dt, .05);
     // resorte amortiguado (rebota al colgar)
-    const target = K*tot*6; for(let i = 0; i < 2; i++){ s.v += (90*(target - s.x) - 5*s.v)*(d/2); s.x += s.v*(d/2); } if(s.x < 0){ s.x = 0; s.v = 0; }
+    const target = K*tot*14; for(let i = 0; i < 2; i++){ s.v += (90*(target - s.x) - 5*s.v)*(d/2); s.x += s.v*(d/2); } if(s.x < 0){ s.x = 0; s.v = 0; }
     if(tot > 0 && Math.abs(s.x - target) < .6 && Math.abs(s.v) < 3) s.quieto += d; else s.quieto = 0;
     const fx = this.fotograma(dt);
     if(s.quieto > .45 && !s.pts.some(p=>p.mass === tot)){
-      s.pts.push({mass:tot, x:K*tot}); const gx = 350 + K*tot*9, gy = 340 - tot*(280/520); FX.burst(fx, gx, gy, ["#C1FF00", "#1863DC", "#fff"]); FX.sound("ding");
-      const ids = []; if(s.pts.length >= 3) ids.push("tres"); if(s.pts.some(p=>p.mass === 100) && s.pts.some(p=>p.mass === 200)) ids.push("doble"); if(s.pts.some(p=>Math.abs(p.x - 11) <= .5)) ids.push("once");
+      s.pts.push({mass:tot, x:K*tot}); const gx = 350 + K*tot*22, gy = 340 - tot*(280/520); FX.burst(fx, gx, gy, ["#C1FF00", "#1863DC", "#fff"]); FX.sound("ding");
+      const ids = []; if(s.pts.length >= 3) ids.push("tres"); if(s.pts.some(p=>p.mass === 100) && s.pts.some(p=>p.mass === 200)) ids.push("doble"); if(s.pts.some(p=>Math.abs(p.x - 6) <= .3)) ids.push("seis");
       this.ganar(ids, gx, gy);
     }
     if(s.pts.length >= 3) markRan();
@@ -5339,14 +5339,14 @@ const expResorteV3 = {...expResorte, ...RetosMix, ...JuegoMix,
     // gráfica
     const gx = 350, gy = 60, gw = 260, gh = 280;
     ctx.fillStyle = "rgba(255,255,255,.85)"; roundRect(ctx, gx-34, gy-14, gw+52, gh+54, 12); ctx.fill();
-    ctx.strokeStyle = "#E3EBEE"; ctx.lineWidth = 1; for(let c = 0; c <= 25; c += 5){ const x = gx + c*9; ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, gy+gh); ctx.stroke(); }
+    ctx.strokeStyle = "#E3EBEE"; ctx.lineWidth = 1; for(let c = 0; c <= 12; c += 2){ const x = gx + c*22; ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, gy+gh); ctx.stroke(); }
     for(let m = 0; m <= 500; m += 100){ const y = gy+gh - m*(gh/520); ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx+gw, y); ctx.stroke(); }
     ctx.strokeStyle = "#8FA9B0"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx,gy); ctx.lineTo(gx,gy+gh); ctx.lineTo(gx+gw,gy+gh); ctx.stroke();
-    ctx.fillStyle = COL.muted; ctx.font = F(9,700); ctx.textAlign = "center"; for(let c = 0; c <= 25; c += 5) ctx.fillText(c, gx + c*9, gy+gh+13); ctx.textAlign = "right"; for(let m = 0; m <= 500; m += 100) ctx.fillText(m, gx-5, gy+gh - m*(gh/520) + 3);
+    ctx.fillStyle = COL.muted; ctx.font = F(9,700); ctx.textAlign = "center"; for(let c = 0; c <= 12; c += 2) ctx.fillText(c, gx + c*22, gy+gh+13); ctx.textAlign = "right"; for(let m = 0; m <= 500; m += 100) ctx.fillText(m, gx-5, gy+gh - m*(gh/520) + 3);
     ctx.textAlign = "center"; ctx.fillText("estiramiento (cm)", gx+gw/2, gy+gh+27); ctx.save(); ctx.translate(gx-26, gy+gh/2); ctx.rotate(-Math.PI/2); ctx.fillText("masa (g)", 0, 0); ctx.restore();
     const srt = [...s.pts].sort((a,b)=>a.mass-b.mass);
-    if(srt.length >= 2){ ctx.strokeStyle = "#1863DC"; ctx.lineWidth = 3; ctx.beginPath(); srt.forEach((p,i)=>{ const px = gx + p.x*9, py = gy+gh - p.mass*(gh/520); i ? ctx.lineTo(px,py) : ctx.moveTo(px,py); }); ctx.stroke(); }
-    srt.forEach(p=>{ const px = gx + p.x*9, py = gy+gh - p.mass*(gh/520); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(px,py,6,0,7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke(); });
+    if(srt.length >= 2){ ctx.strokeStyle = "#1863DC"; ctx.lineWidth = 3; ctx.beginPath(); srt.forEach((p,i)=>{ const px = gx + p.x*22, py = gy+gh - p.mass*(gh/520); i ? ctx.lineTo(px,py) : ctx.moveTo(px,py); }); ctx.stroke(); }
+    srt.forEach(p=>{ const px = gx + p.x*22, py = gy+gh - p.mass*(gh/520); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(px,py,6,0,7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke(); });
     // pesa en la mano
     if(s.held) this.dibujarPesa(s.held.m, s.held.x, s.held.y, true);
     ctx.font = F(12,700); ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.fillText(`Masa: ${tot} g  ·  Estiramiento: ${(K*tot).toFixed(1)} cm`, 14, 424);
