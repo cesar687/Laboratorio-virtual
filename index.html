@@ -21,6 +21,7 @@
     --ok:#2b8a3e; --bad:#c92a2a;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
+  [hidden]{display:none !important;} /* que «hidden» siempre oculte, aunque el elemento tenga display propio */
   body{font-family:'Roboto', system-ui, -apple-system, Arial, sans-serif; background:var(--bg); color:var(--ink);}
   header{background:var(--navy); color:#fff; padding:26px 20px 30px; position:relative; overflow:hidden;}
   header::after{content:""; position:absolute; right:-90px; top:-140px; width:320px; height:320px; border-radius:50%; background:rgba(24,99,220,.35);}
