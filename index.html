@@ -5269,7 +5269,7 @@ const JuegoMix = {
 
 /* ---------- Resorte · look de juego y retos (piloto) ---------- */
 const expResorteV3 = {...expResorte, ...RetosMix, ...JuegoMix,
-  name:"Resorte: ¿cuánto estira el peso? (piloto 2)",
+  name:"Resorte: ¿cuánto estira el peso?",
   cardDesc:"Arrastra pesas al resorte, mide cuánto se estira y llena la gráfica. Cumple tres retos con estrellas.",
   PESAS:[10,20,50,100,200,500], COL:{10:"#8FA9B0",20:"#2b8a3e",50:"#1863DC",100:"#7B2D8B",200:"#E8730C",500:"#c92a2a"}, MAXM:500, MAXN:5, SX:150, TOPY:40, BASE:90,
   RETOS:[
@@ -5357,7 +5357,7 @@ const expResorteV3 = {...expResorte, ...RetosMix, ...JuegoMix,
 
 /* ---------- Rampa · look de juego y retos (piloto) ---------- */
 const expRampaV3 = {...expRampa, ...RetosMix, ...JuegoMix,
-  name:"Rampa: ¿resbala o se queda? (piloto 2)",
+  name:"Rampa: ¿resbala o se queda?",
   cardDesc:"Arrastra la punta de la rampa para inclinarla, cambia de material y descubre en qué ángulo empieza a resbalar el bloque.",
   BX:100, BY:384, LEN:420,
   RETOS:[
@@ -5425,7 +5425,7 @@ const expRampaV3 = {...expRampa, ...RetosMix, ...JuegoMix,
 
 /* ---------- Choque de canicas (cuna de Newton) · look de juego y retos (piloto) ---------- */
 const expChoqueV3 = {...expChoque, ...RetosMix, ...JuegoMix,
-  name:"Choque de canicas: ¿quién se mueve? (piloto 2)",
+  name:"Choque de canicas: ¿quién se mueve?",
   cardDesc:"Una cuna de Newton: levanta una o dos bolas, suéltalas y mira cuántas salen del otro lado. Cumple tres retos con estrellas.",
   R:16, L:200, PY:70, GR:1800, GAM:0.1,
   RETOS:[
@@ -5434,9 +5434,9 @@ const expChoqueV3 = {...expChoque, ...RetosMix, ...JuegoMix,
     {id:"aguanta", txt:"Mantén la cuna en movimiento 15 s sin volver a tocarla", ok:"La cuna siguió moviéndose 15 s", pista:"Dale un buen empujón inicial y ten paciencia."}
   ],
   mount(){
-    const s = this.st = {n:4, k:1, th:[], w:[], held:null, rel:null, lanz:0, t:0, mov:false, bn:[], bk:[]};
+    const s = this.st = {n:5, k:1, th:[], w:[], held:null, rel:null, lanz:0, t:0, mov:false, bn:[], bk:[]};
     this.armar();
-    [3,4,5,6].forEach(n=>{ s.bn[n] = ctrlBtn(n + " bolas", n === s.n ? "" : "ghost", ()=>{ s.n = n; if(s.k > n-1) s.k = n-1; this.armar(); this.marcar(); }); });
+    [4,5,6,7].forEach(n=>{ s.bn[n] = ctrlBtn(n + " bolas", n === s.n ? "" : "ghost", ()=>{ s.n = n; if(s.k > n-1) s.k = n-1; this.armar(); this.marcar(); }); });
     [1,2,3].forEach(k=>{ s.bk[k] = ctrlBtn("Lanzar " + k + (k === 1 ? " bola" : " bolas"), k === s.k ? "" : "ghost", ()=>{ if(k <= s.n-1){ s.k = k; this.marcar(); } }); });
     ctrlBtn("🔫 Lanzar", "amber", ()=>{ s.mov = true; this.soltar("L", -0.6); });
     this.iniciarJuego();
@@ -5450,7 +5450,7 @@ const expChoqueV3 = {...expChoque, ...RetosMix, ...JuegoMix,
     loop(dt=>this.tick(dt));
   },
   unmount(){ this.salirJuego(); },
-  marcar(){ const s = this.st; [3,4,5,6].forEach(n=>{ s.bn[n].className = "btn small " + (n === s.n ? "" : "ghost"); }); [1,2,3].forEach(k=>{ s.bk[k].className = "btn small " + (k === s.k ? "" : "ghost"); }); },
+  marcar(){ const s = this.st; [4,5,6,7].forEach(n=>{ s.bn[n].className = "btn small " + (n === s.n ? "" : "ghost"); }); [1,2,3].forEach(k=>{ s.bk[k].className = "btn small " + (k === s.k ? "" : "ghost"); }); },
   armar(){ const s = this.st; s.th = Array(s.n).fill(0); s.w = Array(s.n).fill(0); s.held = null; s.rel = null; },
   px(i){ return 330 - (this.st.n-1)*this.R + 2*this.R*i; },
   bola(i){ const s = this.st; return {x:this.px(i) + this.L*Math.sin(s.th[i]), y:this.PY + this.L*Math.cos(s.th[i])}; },
@@ -5493,7 +5493,7 @@ const expChoqueV3 = {...expChoque, ...RetosMix, ...JuegoMix,
       const gr = ctx.createRadialGradient(b.x - R*.35, b.y - R*.35, 1, b.x, b.y, R); gr.addColorStop(0, "#FFFFFF"); gr.addColorStop(.4, "#B9C7CE"); gr.addColorStop(1, "#5A6A72"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 1.5; ctx.stroke();
       if(heldSet.has(i)){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.globalAlpha = .6 + .4*Math.sin(fx.t*9); ctx.beginPath(); ctx.arc(b.x, b.y, R+5, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
     }
-    Juego.pastilla(`${n} bolas · lanzas ${s.k}`, 110, 22, {px:12, pad:20, h:24});
+    Juego.pastilla(`${n} bolas: lanzas ${s.k} contra ${n - s.k} en reposo`, 170, 22, {px:12, pad:20, h:24});
     if(!s.mov) Juego.ayuda(fx, "👆 Arrastra la primera bola hacia atrás y suéltala", 330, 34);
     this.finFotograma();
   }
@@ -5501,7 +5501,7 @@ const expChoqueV3 = {...expChoque, ...RetosMix, ...JuegoMix,
 
 /* ---------- Palanca (sube y baja) · look de juego y retos (piloto) ---------- */
 const expPalancaV3 = {...expPalanca, ...RetosMix, ...JuegoMix,
-  name:"Sube y baja: encuentra el equilibrio (piloto 2)",
+  name:"Sube y baja: encuentra el equilibrio",
   cardDesc:"Arrastra la caja del lado derecho a lo largo de la tabla y busca el equilibrio. Cumple tres retos con estrellas.",
   CX:330, CY:270, HALF:240, PXM:55,
   RETOS:[
@@ -5560,7 +5560,7 @@ const expPalancaV3 = {...expPalanca, ...RetosMix, ...JuegoMix,
 
 /* ---------- El huevo que entra a la botella · look de juego y retos (piloto) ---------- */
 const expPresionV3 = {...expPresion, ...RetosMix, ...JuegoMix,
-  name:"El huevo que entra a la botella (piloto 2)",
+  name:"El huevo que entra a la botella",
   cardDesc:"Arrastra el fósforo para calentar el aire de la botella, pon el huevo en la boca y observa la presión cuando se enfría.",
   BX:280, BW:100, TOPY:180, BOTY:380, MX:330, HX:150, HY:350, EX:540, EY:358,
   RETOS:[
@@ -5639,7 +5639,7 @@ const expPresionV3 = {...expPresion, ...RetosMix, ...JuegoMix,
 
 /* ---------- El lápiz que se rompe en el agua · look de juego y retos (piloto) ---------- */
 const expLuzV3 = {...expLuz, ...RetosMix, ...JuegoMix,
-  name:"El lápiz que se rompe en el agua (piloto 2)",
+  name:"El lápiz que se rompe en el agua",
   cardDesc:"Arrastra el lápiz para cambiar su inclinación y compara agua, aceite y sin líquido. Cumple tres retos con estrellas.",
   GX:210, GW:240, WY:230, GB:400, EX:330, EY:230,
   LIQ:{agua:{n:1.33, label:"Agua", c1:"#CDEBF5", c2:"#7FC4DD"}, aceite:{n:1.47, label:"Aceite", c1:"#F7E08A", c2:"#E0B53A"}, aire:{n:1.0, label:"Sin líquido", c1:"rgba(0,0,0,0)", c2:"rgba(0,0,0,0)"}},
@@ -5680,16 +5680,16 @@ const expLuzV3 = {...expLuz, ...RetosMix, ...JuegoMix,
     // lápiz real y camino de la luz
     const airLen = 100, waterLen = 130, ax = EX - Math.sin(rad)*airLen, ay = EY - Math.cos(rad)*airLen, rx = EX + Math.sin(rad)*waterLen, ry = EY + Math.cos(rad)*waterLen;
     const radW = Math.asin(Math.min(1, Math.sin(rad)/L.n)), apx = EX + Math.sin(radW)*waterLen, apy = EY + Math.cos(radW)*waterLen;
-    const lapiz = (x1, y1, x2, y2, alfa, punta)=>{ ctx.globalAlpha = alfa; ctx.lineCap = "round"; ctx.strokeStyle = "#8A5A12"; ctx.lineWidth = 13; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.strokeStyle = "#F2C230"; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.lineCap = "butt"; if(punta){ const a = Math.atan2(y2-y1, x2-x1); ctx.fillStyle = "#3A2A18"; ctx.save(); ctx.translate(x2,y2); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-2,-6); ctx.lineTo(14,0); ctx.lineTo(-2,6); ctx.closePath(); ctx.fill(); ctx.restore(); } ctx.globalAlpha = 1; };
-    // parte de arriba (aire) siempre real; la sumergida se ve desplazada
-    lapiz(ax, ay, EX, EY, 1, false); lapiz(EX, EY, apx, apy, 1, true);
-    ctx.setLineDash([5,5]); ctx.strokeStyle = "rgba(24,99,220,.9)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(EX, EY); ctx.lineTo(rx, ry); ctx.stroke(); ctx.setLineDash([]);
-    ctx.globalAlpha = .35; ctx.strokeStyle = "#555"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(EX, EY); ctx.lineTo(rx, ry); ctx.stroke(); ctx.globalAlpha = 1;
+    const lapiz = (x1, y1, x2, y2, alfa, punta, cuerpo, borde)=>{ ctx.globalAlpha = alfa; ctx.lineCap = "round"; ctx.strokeStyle = borde; ctx.lineWidth = 13; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.strokeStyle = cuerpo; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.lineCap = "butt"; if(punta){ const a = Math.atan2(y2-y1, x2-x1); ctx.fillStyle = "#3A2A18"; ctx.save(); ctx.translate(x2,y2); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-2,-6); ctx.lineTo(14,0); ctx.lineTo(-2,6); ctx.closePath(); ctx.fill(); ctx.restore(); } ctx.globalAlpha = 1; };
+    // lápiz real (línea marrón, recto) y lo que ves (la parte sumergida desplazada por la refracción)
+    lapiz(ax, ay, rx, ry, 1, true, "#C9A063", "#7A5A24");
+    lapiz(EX, EY, apx, apy, .55, true, "#F2C230", "#8A5A12");
+    ctx.setLineDash([5,5]); ctx.strokeStyle = "rgba(24,99,220,.95)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(EX, EY); ctx.lineTo(apx, apy); ctx.stroke(); ctx.setLineDash([]);
     // manija para arrastrar
     ctx.globalAlpha = .45 + .25*Math.sin(fx.t*5); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(ax, ay, 18, 0, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = "#1863DC"; ctx.beginPath(); ctx.arc(ax, ay, 9, 0, 7); ctx.fill(); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ax, ay, 3.5, 0, 7); ctx.fill();
     const dif = Math.abs(radW - rad)*180/Math.PI;
     Juego.pastilla(`${L.label} · n = ${L.n.toFixed(2)} · lápiz a ${s.angle}° · se desvía ${dif.toFixed(1)}°`, 330, 24, {px:12, pad:24, h:26});
-    ctx.font = F(11,700); ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.fillText("Lápiz con la parte sumergida desplazada = lo que ves · línea punteada = el lápiz real", 14, 424);
+    ctx.font = F(11,700); ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.fillText("línea marrón = lápiz real (recto) · punteada = camino de la luz que ves", 14, 424);
     if(!s.mov) Juego.ayuda(fx, "👆 Arrastra la punta del lápiz para inclinarlo", 450, 70);
     this.finFotograma();
   }
@@ -5697,7 +5697,7 @@ const expLuzV3 = {...expLuz, ...RetosMix, ...JuegoMix,
 
 /* ---------- Cuerda que vibra (resonancia) · look de juego y retos (piloto) ---------- */
 const expOndaV3 = {...expOnda, ...RetosMix, ...JuegoMix,
-  name:"Cuerda que vibra: encuentra la resonancia (piloto 2)",
+  name:"Cuerda que vibra: encuentra la resonancia",
   cardDesc:"Sintoniza la frecuencia arrastrando la perilla hasta que la cuerda entre en resonancia. Cumple tres retos con estrellas.",
   X0:40, X1:620, MY:190, KX0:90, KX1:570, KY:372,
   RETOS:[
@@ -5755,7 +5755,7 @@ const expOndaV3 = {...expOnda, ...RetosMix, ...JuegoMix,
 
 /* ---------- La moneda que no vuela (inercia) · look de juego y retos (piloto) ---------- */
 const expInerciaV3 = {...expInercia, ...RetosMix, ...JuegoMix,
-  name:"La moneda que no vuela (piloto 2)",
+  name:"La moneda que no vuela",
   cardDesc:"Jala la tarjeta con el dedo (o con el botón) y descubre cuándo la moneda cae al vaso… y cuándo no. Cumple tres retos.",
   CX:330, CUPW:100, CUPTOP:250, CUPH:120, TABLA:372, CARDY:240, MU:405,
   RETOS:[
@@ -5821,14 +5821,14 @@ const expInerciaV3 = {...expInercia, ...RetosMix, ...JuegoMix,
     const coinY = (s.phase === "ready" || s.phase === "pull") ? CARDY - 16 : CARDY - 16 + s.cy, coinX = CX + s.coinX;
     const gr = ctx.createRadialGradient(coinX - 4, coinY - 4, 1, coinX, coinY, 12); gr.addColorStop(0, "#FFF2A8"); gr.addColorStop(.6, "#D8B032"); gr.addColorStop(1, "#8A6D0D"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(coinX, coinY, 12, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.beginPath(); ctx.arc(coinX, coinY, 7.5, 0, 7); ctx.stroke();
     const vi = Math.max(1, Math.min(10, (Math.abs(s.vCard) - 90)/85)), rap = s.held || s.auto || s.phase === "pull";
-    Juego.pastilla(rap ? `Rapidez del tirón: ${vi.toFixed(1)} ${vi >= 6 ? "(rápido ⚡)" : "(lento 🐢)"}` : `Velocidad del tirón: ${s.speed} ${s.speed >= 6 ? "(rápido ⚡)" : "(lento 🐢)"}`, 330, 24, {px:12, pad:22, h:26});
+    Juego.pastilla(rap ? `Rapidez del tirón: ${vi.toFixed(1)} ${vi >= 4 ? "(rápido ⚡)" : "(lento 🐢)"}` : `Velocidad del tirón: ${s.speed} ${s.speed >= 4 ? "(rápido ⚡)" : "(lento 🐢)"}`, 330, 24, {px:12, pad:22, h:26});
     if(s.msg) Juego.pastilla(s.msg, 330, 60, {px:13, pad:28, h:28, bg:"#C1FF00", fg:"#000"});
     if(!s.mov && s.phase === "ready") Juego.ayuda(fx, "👆 Jala la tarjeta con el dedo (rápido o lento)", 330, 110);
     this.finFotograma();
   }
 };
 
-const FISICA_EXPS = [expTiroV3, PILOTO ? expRampaV3 : expRampa, PILOTO ? expResorteV3 : expResorte, PILOTO ? expChoqueV3 : expChoque, PILOTO ? expPresionV3 : expPresion, PILOTO ? expPalancaV3 : expPalanca, PILOTO ? expLuzV3 : expLuz, PILOTO ? expOndaV3 : expOnda];
+const FISICA_EXPS = [expTiroV3, expRampaV3, expResorteV3, expChoqueV3, expPresionV3, expPalancaV3, expLuzV3, expOndaV3];
 /* ---------- QUÍMICA ---------- */
 const expReacterm = {
   id:"reacterm", name:"Caliente o frío: reacciones que cambian la temperatura", icon:"🌡️", cat:"quimica",
@@ -7287,7 +7287,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  expDensV3, PILOTO ? expInerciaV3 : expInercia, expPendV3, expLava, expPH, expReac,
+  expDensV3, expInerciaV3, expPendV3, expLava, expPH, expReac,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
