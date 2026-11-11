@@ -4469,7 +4469,7 @@ function bindDrag(h){
 
 /* ---------- Péndulo ---------- */
 const expPendV2 = {...expPend,
-  name:"Péndulo: mide la gravedad (piloto)",
+  name:"Péndulo: mide la gravedad",
   cardDesc:"Arrastra la masa para soltar el péndulo, cambia el largo y la masa, cronometra tú mismo las oscilaciones y calcula la gravedad de la Tierra.",
   PX:330, PY:60, MAXTH:0.35, // ángulo máximo ≈ 20°: ahí el periodo real difiere menos de 1 % de T = 2π√(L/g)
   st:null,
@@ -4552,7 +4552,7 @@ const expPendV2 = {...expPend,
 
 /* ---------- Tiro parabólico ---------- */
 const expTiroV2 = {...expTiro,
-  name:"Tiro parabólico: ¿dónde cae? (piloto)",
+  name:"Tiro parabólico: ¿dónde cae?",
   cardDesc:"Arrastra la flecha del cañón para apuntar, elige la rapidez, dispara y mide dónde cae sobre la regla. Compara ángulos.",
   PXM:14.2857, // píxeles por metro (G = 140 px/s² ↔ 9.8 m/s²)
   st:null,
@@ -4685,7 +4685,7 @@ const FX = {
 /* ---------- Torre de densidades · look de juego (piloto) ----------
    Misma física, predicción, explicación y registro que expDensV2; cambia la vista y se suman animaciones. */
 const expDensV3 = {...expDensV2,
-  name:"Torre de densidades (piloto 2)",
+  name:"Torre de densidades",
   cardDesc:"Versión con look de juego: salpicaduras, olas, burbujas, rebotes y sonido opcional. Arrastra las botellas y los objetos al vaso. ¿Dónde quedará cada cosa?",
   mount(){
     expDensV2.mount.call(this); // mismos controles y arrastre que la versión actual
@@ -4951,7 +4951,7 @@ const expDensV3 = {...expDensV2,
   }
 };
 
-const FISICA_EXPS = [PILOTO ? expTiroV2 : expTiro, expRampa, expResorte, expChoque, expPresion, expPalanca, expLuz, expOnda];
+const FISICA_EXPS = [expTiroV2, expRampa, expResorte, expChoque, expPresion, expPalanca, expLuz, expOnda];
 /* ---------- QUÍMICA ---------- */
 const expReacterm = {
   id:"reacterm", name:"Caliente o frío: reacciones que cambian la temperatura", icon:"🌡️", cat:"quimica",
@@ -6410,7 +6410,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  PILOTO ? expDensV3 : expDensV2, expInercia, PILOTO ? expPendV2 : expPend, expLava, expPH, expReac,
+  expDensV3, expInercia, expPendV2, expLava, expPH, expReac,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
