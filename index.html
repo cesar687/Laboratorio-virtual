@@ -7387,7 +7387,7 @@ const Sal = {
 
 /* ---------- La regla que cae (piloto) ---------- */
 const expReacV3 = {...expReac, ...RetosMix, ...JuegoMix,
-  name:expReac.name + " (piloto 2)",
+  name:expReac.name,
   cardDesc:"Atrapa la regla en cuanto empiece a caer. La física convierte los centímetros en milisegundos de tu sistema nervioso. Cumple tres retos con estrellas.",
   HY:330,
   RETOS:[
@@ -7445,7 +7445,7 @@ const expReacV3 = {...expReac, ...RetosMix, ...JuegoMix,
 
 /* ---------- Tu corazón después de hacer ejercicio (piloto) ---------- */
 const expCorazonV3 = {...expCorazon, ...RetosMix, ...JuegoMix,
-  name:expCorazon.name + " (piloto 2)",
+  name:expCorazon.name,
   cardDesc:"Elige una actividad, arrastra el estetoscopio al pecho y cuenta tus latidos durante 15 segundos. Cumple tres retos con estrellas.",
   PX:410, PY:330, SD:{x:575, y:120},
   RETOS:[
@@ -7503,7 +7503,7 @@ const expCorazonV3 = {...expCorazon, ...RetosMix, ...JuegoMix,
 
 /* ---------- ¿Cuánto aire caben en tus pulmones? (piloto) ---------- */
 const expPulmonesV3 = {...expPulmones, ...RetosMix, ...JuegoMix,
-  name:expPulmones.name + " (piloto 2)",
+  name:expPulmones.name,
   cardDesc:"Elige un perfil, mantén presionado para soplar el globo con una sola exhalación y compara la capacidad pulmonar. Cumple tres retos con estrellas.",
   BX:450, BY:190, K:27, BTN:{x:120, y:310, r:56},
   RETOS:[
@@ -7565,7 +7565,7 @@ const expPulmonesV3 = {...expPulmones, ...RetosMix, ...JuegoMix,
 
 /* ---------- Encuentra tu punto ciego (piloto) ---------- */
 const expCiegoV3 = {...expCiego, ...RetosMix, ...JuegoMix,
-  name:expCiego.name + " (piloto 2)",
+  name:expCiego.name,
   cardDesc:"Cierra un ojo, mira fija la cruz y arrastra el punto con el dedo: ¿dónde desaparece? Cumple tres retos con estrellas.",
   CX:170, CY:215, X0:220, W:380, B0:52, B1:68,
   RETOS:[
@@ -7618,7 +7618,7 @@ const expCiegoV3 = {...expCiego, ...RetosMix, ...JuegoMix,
 
 /* ---------- Prueba de equilibrio (piloto) ---------- */
 const expEquilibrioV3 = {...expEquilibrio, ...RetosMix, ...JuegoMix,
-  name:expEquilibrio.name + " (piloto 2)",
+  name:expEquilibrio.name,
   cardDesc:"Mantén el equilibrio en un pie: arrastra la base para seguir al cuerpo, primero con los ojos abiertos y luego cerrados. Cumple tres retos con estrellas.",
   FY:372, TOL:30,
   RETOS:[
@@ -7683,7 +7683,7 @@ const expEquilibrioV3 = {...expEquilibrio, ...RetosMix, ...JuegoMix,
 
 /* ---------- ¿Cuántos números recuerdas? (piloto) ---------- */
 const expMemoriaV3 = {...expMemoria, ...RetosMix, ...JuegoMix,
-  name:expMemoria.name + " (piloto 2)",
+  name:expMemoria.name,
   cardDesc:"Mira la secuencia de números, espera a que se oculte y escríbela en el teclado. Cada acierto suma un dígito más. Cumple tres retos con estrellas.",
   RETOS:[
     {id:"cinco", txt:"Recuerda una secuencia de 5 dígitos", ok:"5 dígitos: ya estás en el rango típico", pista:"Repítela mentalmente mientras se muestra."},
@@ -7743,7 +7743,7 @@ const expMemoriaV3 = {...expMemoria, ...RetosMix, ...JuegoMix,
 
 /* ---------- Tus pupilas reaccionan a la luz (piloto) ---------- */
 const expPupilaV3 = {...expPupila, ...RetosMix, ...JuegoMix,
-  name:expPupila.name + " (piloto 2)",
+  name:expPupila.name,
   cardDesc:"Arrastra la palanca de luz y mira cómo reaccionan tus dos pupilas, de la oscuridad a la luz brillante. Cumple tres retos con estrellas.",
   LV:{x:618, y0:360, y1:70}, Z:1.25,
   RETOS:[
@@ -7802,7 +7802,7 @@ const expPupilaV3 = {...expPupila, ...RetosMix, ...JuegoMix,
 
 /* ---------- Fiebre (piloto) ---------- */
 const expFiebreV3 = {...expFiebre, ...RetosMix, ...JuegoMix,
-  name:expFiebre.name + " (piloto 2)",
+  name:expFiebre.name,
   cardDesc:"Arrastra el virus al cuerpo, mira subir la fiebre y luego manda a las defensas. Cumple tres retos con estrellas.",
   BODY:{x:130, y:330}, GR:{x:340, y:70, w:270, h:230},
   RETOS:[
@@ -7870,7 +7870,7 @@ const expFiebreV3 = {...expFiebre, ...RetosMix, ...JuegoMix,
 
 /* ---------- Azúcar en la sangre (piloto) ---------- */
 const expGlucosaV3 = {...expGlucosa, ...RetosMix, ...JuegoMix,
-  name:expGlucosa.name + " (piloto 2)",
+  name:expGlucosa.name,
   cardDesc:"Arrastra distintos alimentos al plato y compara qué tan rápido y brusco sube la glucosa en tu sangre. Cumple tres retos con estrellas.",
   GR:{x:70, y:60, w:540, h:230}, VEL:.8, HMAX:6, ICON:{refresco:"🥤", pan:"🍞", avena:"🥣", frijoles:"🫘"},
   RETOS:[
@@ -7925,7 +7925,7 @@ const expGlucosaV3 = {...expGlucosa, ...RetosMix, ...JuegoMix,
 
 /* ---------- Tu cuello y el celular (piloto) ---------- */
 const expPosturaV3 = {...expPostura, ...RetosMix, ...JuegoMix,
-  name:expPostura.name + " (piloto 2)",
+  name:expPostura.name,
   cardDesc:"Arrastra la cabeza hacia el celular y mira cuánto pesa tu cuello. Cumple tres retos con estrellas.",
   NX:260, NY:300, HL:70,
   RETOS:[
@@ -7976,7 +7976,7 @@ const expPosturaV3 = {...expPostura, ...RetosMix, ...JuegoMix,
   }
 };
 
-const SALUD_EXPS = [PILOTO ? expCorazonV3 : expCorazon, PILOTO ? expPulmonesV3 : expPulmones, PILOTO ? expCiegoV3 : expCiego, PILOTO ? expEquilibrioV3 : expEquilibrio, PILOTO ? expMemoriaV3 : expMemoria, PILOTO ? expFiebreV3 : expFiebre, PILOTO ? expGlucosaV3 : expGlucosa, PILOTO ? expPosturaV3 : expPostura, PILOTO ? expPupilaV3 : expPupila];
+const SALUD_EXPS = [expCorazonV3, expPulmonesV3, expCiegoV3, expEquilibrioV3, expMemoriaV3, expFiebreV3, expGlucosaV3, expPosturaV3, expPupilaV3];
 /* ---------- MEDIO AMBIENTE ---------- */
 const expInvernadero = {
   id:"invernadero", name:"Efecto invernadero: dos botellas al sol", icon:"🌡️", cat:"ambiente",
@@ -8789,7 +8789,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  expDensV3, expInerciaV3, expPendV3, expLavaV3, expPHV3, PILOTO ? expReacV3 : expReac,
+  expDensV3, expInerciaV3, expPendV3, expLavaV3, expPHV3, expReacV3,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
