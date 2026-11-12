@@ -8391,7 +8391,7 @@ const expReciclaje = {
 
 /* ---------- Efecto invernadero (piloto) ---------- */
 const expInvernaderoV3 = {...expInvernadero, ...RetosMix, ...JuegoMix,
-  name:expInvernadero.name + " (piloto 2)",
+  name:expInvernadero.name,
   cardDesc:"Arrastra el sol por la barra de tiempo y compara dos botellas: una abierta con aire normal y otra cerrada con más CO₂. Cumple tres retos con estrellas.",
   TR:{x0:70, x1:590, y:40}, BX:[200, 460], FLOOR:380,
   RETOS:[
@@ -8450,7 +8450,7 @@ const expInvernaderoV3 = {...expInvernadero, ...RetosMix, ...JuegoMix,
 
 /* ---------- Tu huella de carbono (piloto) ---------- */
 const expHuellaV3 = {...expHuella, ...RetosMix, ...JuegoMix,
-  name:expHuella.name + " (piloto 2)",
+  name:expHuella.name,
   cardDesc:"Arrastra dos actividades a la balanza de CO₂ y mira cuál pesa más. Cumple tres retos con estrellas.",
   PANS:[{x:150, y:250}, {x:510, y:250}], PIV:{x:330, y:150},
   RETOS:[
@@ -8505,7 +8505,7 @@ const expHuellaV3 = {...expHuella, ...RetosMix, ...JuegoMix,
 
 /* ---------- El ciclo del agua en una bolsa (piloto) ---------- */
 const expCicloAguaV3 = {...expCicloAgua, ...RetosMix, ...JuegoMix,
-  name:expCicloAgua.name + " (piloto 2)",
+  name:expCicloAgua.name,
   cardDesc:"Arrastra el sol para dar más o menos calor a la bolsa y mira evaporarse, condensarse y «llover» el agua. Cumple tres retos con estrellas.",
   BAG:{x:200, y:60, w:260, h:310}, SUN:{x0:60, x1:600, y:36},
   RETOS:[
@@ -8558,7 +8558,7 @@ const expCicloAguaV3 = {...expCicloAgua, ...RetosMix, ...JuegoMix,
 
 /* ---------- Filtro de agua casero (piloto) ---------- */
 const expFiltroV3 = {...expFiltro, ...RetosMix, ...JuegoMix,
-  name:expFiltro.name + " (piloto 2)",
+  name:expFiltro.name,
   cardDesc:"Arrastra las capas a la botella, vierte el agua sucia y mira qué tan clara sale. Cumple tres retos con estrellas.",
   BT:{x:250, y:50, w:160, h:230}, COLS:{grava:"#8FA9B0", arena:"#E8C84A", carbon:"#3B3B3B", algodon:"#F5F0DC"},
   RETOS:[
@@ -8622,7 +8622,7 @@ const expFiltroV3 = {...expFiltro, ...RetosMix, ...JuegoMix,
 
 /* ---------- Erosión (piloto) ---------- */
 const expErosionV3 = {...expErosion, ...RetosMix, ...JuegoMix,
-  name:expErosion.name + " (piloto 2)",
+  name:expErosion.name,
   cardDesc:"Toca la nube para hacer llover sobre dos charolas —una desnuda y otra con pasto— y compara cuánta tierra se arrastra. Cumple tres retos con estrellas.",
   TX:[190, 470], TY:200, IB:{x0:150, x1:510, y:402},
   RETOS:[
@@ -8691,7 +8691,7 @@ const expErosionV3 = {...expErosion, ...RetosMix, ...JuegoMix,
 
 /* ---------- Isla de calor (piloto) ---------- */
 const expIslaCalorV3 = {...expIslaCalor, ...RetosMix, ...JuegoMix,
-  name:expIslaCalor.name + " (piloto 2)",
+  name:expIslaCalor.name,
   cardDesc:"Arrastra el sol hasta el mediodía y mide con el termómetro infrarrojo la temperatura de asfalto, concreto, pasto y agua. Cumple tres retos con estrellas.",
   ARC:{x0:60, x1:600, y0:190, top:44}, GUN:{x:600, y:392},
   RETOS:[
@@ -8753,7 +8753,7 @@ const expIslaCalorV3 = {...expIslaCalor, ...RetosMix, ...JuegoMix,
 
 /* ---------- Biodegradabilidad (piloto) ---------- */
 const expBiodegradaV3 = {...expBiodegrada, ...RetosMix, ...JuegoMix,
-  name:expBiodegrada.name + " (piloto 2)",
+  name:expBiodegrada.name,
   cardDesc:"Arrastra el reloj del tiempo, de semanas a siglos, y mira cuánto tarda en desaparecer cada material enterrado. Cumple tres retos con estrellas.",
   TL:{x0:130, x1:530, y:402}, ICON:["🍌", "📄", "🚬", "🥫", "🍾"], CHIPS:[["1 mes", .08], ["1 año", 1], ["10 años", 10], ["100 años", 100], ["500 años", 500]],
   RETOS:[
@@ -8808,7 +8808,7 @@ const expBiodegradaV3 = {...expBiodegrada, ...RetosMix, ...JuegoMix,
 
 /* ---------- Atrapa las partículas (piloto) ---------- */
 const expAirePartV3 = {...expAirePart, ...RetosMix, ...JuegoMix,
-  name:expAirePart.name + " (piloto 2)",
+  name:expAirePart.name,
   cardDesc:"Arrastra la trampa de cinta adhesiva a una zona, expónla 24 horas y cuenta las partículas que atrapa. Cumple tres retos con estrellas.",
   ZX:{bajo:120, medio:330, alto:540}, ZY:130, NCAR:{bajo:1, medio:3, alto:6}, ICO:{bajo:"🌳", medio:"🚗", alto:"🚦"},
   RETOS:[
@@ -8872,7 +8872,7 @@ const expAirePartV3 = {...expAirePart, ...RetosMix, ...JuegoMix,
 
 /* ---------- Panel solar (piloto) ---------- */
 const expSolarV3 = {...expSolar, ...RetosMix, ...JuegoMix,
-  name:expSolar.name + " (piloto 2)",
+  name:expSolar.name,
   cardDesc:"Arrastra el panel para inclinarlo y mira cuántos rayos del sol aprovecha. Cumple tres retos con estrellas.",
   PC:{x:300, y:250}, PL:84,
   RETOS:[
@@ -8922,7 +8922,7 @@ const expSolarV3 = {...expSolar, ...RetosMix, ...JuegoMix,
 
 /* ---------- Separa la basura (piloto) ---------- */
 const expReciclajeV3 = {...expReciclaje, ...RetosMix, ...JuegoMix,
-  name:expReciclaje.name + " (piloto 2)",
+  name:expReciclaje.name,
   cardDesc:"Arrastra cada residuo al contenedor correcto y descubre cuáles necesitan un manejo especial. Cumple tres retos con estrellas.",
   ICO:["🍾", "🍌", "🔋", "📄", "💡", "🥚", "🥫", "🛢️"], BX:{organico:120, reciclable:330, especial:540}, BY:330,
   RETOS:[
@@ -8978,7 +8978,7 @@ const expReciclajeV3 = {...expReciclaje, ...RetosMix, ...JuegoMix,
   }
 };
 
-const AMBIENTE_EXPS = [PILOTO ? expInvernaderoV3 : expInvernadero, PILOTO ? expHuellaV3 : expHuella, PILOTO ? expCicloAguaV3 : expCicloAgua, PILOTO ? expFiltroV3 : expFiltro, PILOTO ? expErosionV3 : expErosion, PILOTO ? expIslaCalorV3 : expIslaCalor, PILOTO ? expBiodegradaV3 : expBiodegrada, PILOTO ? expAirePartV3 : expAirePart, PILOTO ? expSolarV3 : expSolar, PILOTO ? expReciclajeV3 : expReciclaje];
+const AMBIENTE_EXPS = [expInvernaderoV3, expHuellaV3, expCicloAguaV3, expFiltroV3, expErosionV3, expIslaCalorV3, expBiodegradaV3, expAirePartV3, expSolarV3, expReciclajeV3];
 /* ---------- ELECTRÓNICA ---------- */
 const expCircuitos = {
   id:"circuitos", name:"Circuito en serie vs en paralelo", icon:"🔗", cat:"electronica",
