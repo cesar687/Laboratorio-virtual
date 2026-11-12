@@ -4774,6 +4774,7 @@ const FX = {
         for(let k = 0; k < 8; k++){ const o = a.createOscillator(), og = a.createGain(), t0 = t + .08 + Math.random()*(dur - .25), f0 = 350 + Math.random()*500;
           o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f0*1.7, t0 + .07); og.gain.setValueAtTime(.07, t0); og.gain.exponentialRampToValueAtTime(.001, t0 + .09); o.connect(og); og.connect(a.destination); o.start(t0); o.stop(t0 + .1); } }
       else if(kind === "plop") tone(320, 950, .11, .22);
+      else if(kind === "beep") tone(660, 660, .13, .13);
       else if(kind === "splash"){ tone(300, 800, .1, .12); const b = a.createBuffer(1, a.sampleRate*.4, a.sampleRate), d = b.getChannelData(0); for(let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/d.length, 2);
         const s = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(); s.buffer = b; g.gain.value = .2; f.type = "lowpass"; f.frequency.value = 1700; s.connect(f); f.connect(g); g.connect(a.destination); s.start(t); }
       else if(kind === "thud") tone(150, 55, .14, .35);
@@ -9377,7 +9378,589 @@ const expGenerador = {
   clase:`Si tienen acceso a un imán de neodimio, alambre de cobre esmaltado enrollado en una bobina de 200+ vueltas, y un multímetro sensible (o LED muy brillante), muevan el imán rápidamente adentro y afuera de la bobina y observen si el multímetro detecta un pequeño voltaje.`
 };
 
-const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectroiman, expLDR, expTransistor, expBateria, expMorse, expGenerador];
+/* ---------- ELECTRÓNICA · look de juego (piloto) ----------
+   Misma predicción, explicación, clase y registro que las versiones originales; cambia la vista, se interactúa con los objetos y se suman retos. */
+const Elec = {
+  // cable (lista de puntos) con electrones que se mueven cuando pasa corriente
+  cable(pts, o){
+    o = o || {}; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#1B1B1B"; ctx.lineWidth = 7; ctx.beginPath(); pts.forEach((p, i)=>{ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke();
+    ctx.strokeStyle = o.on ? "#3A3A3A" : "#555"; ctx.lineWidth = 3; ctx.stroke(); ctx.lineCap = "butt";
+    if(!o.on) return; let L = 0; const seg = []; for(let i = 1; i < pts.length; i++){ const d = Math.hypot(pts[i][0] - pts[i-1][0], pts[i][1] - pts[i-1][1]); seg.push(d); L += d; }
+    const gap = 26, off = ((o.t || 0)*(o.vel || 40)*(o.dir || 1))%gap; ctx.fillStyle = o.col || "#C1FF00"; ctx.strokeStyle = "#000"; ctx.lineWidth = 1.5;
+    for(let d = (off + gap)%gap; d < L; d += gap){ let r = d, i = 0; while(i < seg.length - 1 && r > seg[i]){ r -= seg[i]; i++; } const f = seg[i] ? r/seg[i] : 0, x = pts[i][0] + (pts[i+1][0] - pts[i][0])*f, y = pts[i][1] + (pts[i+1][1] - pts[i][1])*f; ctx.beginPath(); ctx.arc(x, y, 3.6, 0, 7); ctx.fill(); ctx.stroke(); }
+  },
+  pila(x, y, w, h, etiqueta){ // pila vertical: + arriba
+    const g = ctx.createLinearGradient(x - w/2, 0, x + w/2, 0); g.addColorStop(0, "#1863DC"); g.addColorStop(.5, "#5B8DEF"); g.addColorStop(1, "#1863DC"); ctx.fillStyle = g; roundRect(ctx, x - w/2, y - h/2, w, h, 8); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = "#C1FF00"; roundRect(ctx, x - w/4, y - h/2 - 8, w/2, 9, 3); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#fff"; ctx.font = F(15, 800); ctx.textAlign = "center"; ctx.fillText("+", x, y - h/2 + 20*uiScale); ctx.fillText("−", x, y + h/2 - 8*uiScale);
+    if(etiqueta) Juego.pastilla(etiqueta, x, y + h/2 + 22, {px:10, pad:14, h:18});
+  },
+  foco(x, y, on, fundido, t){
+    if(on){ const g = ctx.createRadialGradient(x, y, 4, x, y, 70); g.addColorStop(0, "rgba(255,213,74,.65)"); g.addColorStop(1, "rgba(255,213,74,0)"); ctx.fillStyle = g; ctx.fillRect(x - 70, y - 70, 140, 140); }
+    ctx.fillStyle = on ? "#FFE680" : fundido ? "rgba(90,90,90,.35)" : "rgba(220,225,230,.55)"; ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = on ? "#E8730C" : "#666"; ctx.lineWidth = 2.5; ctx.beginPath(); if(fundido){ ctx.moveTo(x - 8, y + 12); ctx.lineTo(x - 3, y - 2); ctx.moveTo(x + 3, y - 4); ctx.lineTo(x + 8, y + 12); } else { ctx.moveTo(x - 8, y + 12); ctx.lineTo(x - 5, y - 4); ctx.lineTo(x, y + 6); ctx.lineTo(x + 5, y - 4); ctx.lineTo(x + 8, y + 12); } ctx.stroke();
+    ctx.fillStyle = "#444"; roundRect(ctx, x - 12, y + 22, 24, 12, 3); ctx.fill(); ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.beginPath(); ctx.arc(x - 9, y - 10, 4, 0, 7); ctx.fill();
+    if(fundido){ ctx.fillStyle = "#E03131"; ctx.font = F(14, 400); ctx.textAlign = "center"; ctx.fillText("💥", x, y - 30*uiScale); }
+  },
+  palanca(x, y, activa, txtOn, txtOff){ // interruptor deslizable
+    ctx.fillStyle = activa ? "#C1FF00" : "#3A3A3A"; roundRect(ctx, x - 40, y - 17, 80, 34, 17); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = activa ? "#000" : "#fff"; ctx.beginPath(); ctx.arc(activa ? x + 23 : x - 23, y, 12, 0, 7); ctx.fill();
+    ctx.fillStyle = activa ? "#000" : "#aaa"; ctx.font = F(11, 800); ctx.textAlign = "center"; ctx.fillText(activa ? txtOn : txtOff, activa ? x - 12 : x + 12, y + 4*uiScale);
+  },
+  pista(x0, x1, y, v, min, max, etiqueta, fmt){ // control deslizante dibujado en el lienzo
+    const f = (v - min)/(max - min), hx = x0 + f*(x1 - x0); ctx.fillStyle = "rgba(0,0,0,.55)"; roundRect(ctx, x0 - 24, y - 15, x1 - x0 + 48, 30, 15); ctx.fill(); ctx.strokeStyle = "#555"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); ctx.strokeStyle = "#C1FF00"; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(hx, y); ctx.stroke();
+    const g = ctx.createRadialGradient(hx - 3, y - 3, 2, hx, y, 13); g.addColorStop(0, "#F1FFB0"); g.addColorStop(1, "#C1FF00"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(hx, y, 12, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    Juego.pastilla(etiqueta, x0 - 70, y, {px:10, pad:12, h:20}); Juego.pastilla(fmt, x1 + 62, y, {px:11, pad:14, h:22, bg:"#C1FF00", fg:"#000"});
+  }
+};
+
+/* ---------- Circuito en serie vs en paralelo (piloto) ---------- */
+const expCircuitosV3 = {...expCircuitos, ...RetosMix, ...JuegoMix,
+  name:expCircuitos.name + " (piloto 2)",
+  cardDesc:"Arma dos focos en serie o en paralelo, toca un foco para fundirlo y mira qué pasa con el otro. Cumple tres retos con estrellas.",
+  FOCOS:{serie:[[300, 100], [450, 100]], paralelo:[[380, 100], [380, 250]]},
+  RETOS:[
+    {id:"serie", txt:"En SERIE, funde un foco: ¿qué pasa con el otro?", ok:"En serie, si uno se funde se apagan los dos", pista:"Pon el circuito en serie y toca un foco."},
+    {id:"paralelo", txt:"En PARALELO, funde un foco: ¿qué pasa con el otro?", ok:"En paralelo el otro foco sigue encendido", pista:"Cambia a paralelo y toca un foco."},
+    {id:"ambos", txt:"En paralelo, funde los dos focos", ok:"Si fallan todos los caminos, ya no hay corriente", pista:"En paralelo, toca el foco 1 y luego el foco 2."}
+  ],
+  mount(){
+    const s = this.st = {mode:"serie", fused:[false, false], tested:new Set(), moved:false, t:0};
+    ctrlBtn("Circuito en SERIE", "", ()=>this.modo("serie"));
+    ctrlBtn("Circuito en PARALELO", "", ()=>this.modo("paralelo"));
+    ctrlBtn("💥 Fundir foco 1", "ghost", ()=>this.fundir(0));
+    ctrlBtn("🔧 Cambiar focos", "ghost", ()=>{ s.fused = [false, false]; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ if(Math.abs(p.y - 370) <= Math.max(22, 20*sc)){ if(Math.abs(p.x - 200) <= 90) return {t:"m", k:"serie"}; if(Math.abs(p.x - 460) <= 90) return {t:"m", k:"paralelo"}; }
+        const F2 = this.FOCOS[s.mode]; for(let i = 0; i < 2; i++) if(Math.hypot(p.x - F2[i][0], p.y - F2[i][1]) <= Math.max(40, 24*sc)) return {t:"f", i}; return null; },
+      down:(o)=>{ s.moved = true; if(o.t === "m") this.modo(o.k); else this.fundir(o.i); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  modo(m){ const s = this.st; s.mode = m; s.fused = [false, false]; s.tested.add(m); if(s.tested.size >= 2) markRan(); s.moved = true; FX.sound("tick"); },
+  fundir(i){ const s = this.st; if(s.fused[i]){ s.fused[i] = false; return; } s.fused[i] = true; s.moved = true; FX.sound("boom"); s.fx.shake = Math.max(s.fx.shake, 3); FX.burst(s.fx, this.FOCOS[s.mode][i][0], this.FOCOS[s.mode][i][1], ["#FFD54A", "#fff", "#E03131"]);
+    const e = this.enc(), ids = []; if(s.mode === "serie" && !e[0] && !e[1]) ids.push("serie"); if(s.mode === "paralelo" && s.fused[0] !== s.fused[1] && (s.fused[0] ? e[1] : e[0])) ids.push("paralelo"); if(s.mode === "paralelo" && s.fused[0] && s.fused[1]) ids.push("ambos"); if(ids.length) this.ganar(ids, 330, 190); },
+  enc(){ const s = this.st; return s.mode === "serie" ? [!s.fused[0] && !s.fused[1], !s.fused[0] && !s.fused[1]] : [!s.fused[0], !s.fused[1]]; },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), e = this.enc(), hay = e[0] || e[1]; s.t += h;
+    Juego.fondo(0);
+    const ser = s.mode === "serie", F2 = this.FOCOS[s.mode], o = {on:hay, t:s.t, vel:45};
+    Elec.pila(90, 215, 46, 74, "Pila");
+    if(ser){ Elec.cable([[90, 178], [90, 100], [270, 100]], o); Elec.cable([[330, 100], [420, 100]], o); Elec.cable([[480, 100], [580, 100], [580, 330], [90, 330], [90, 252]], o); }
+    else { const a = e[0] || e[1], oa = {on:a, t:s.t, vel:45};
+      Elec.cable([[90, 178], [90, 100], [170, 100]], oa); Elec.cable([[170, 100], [350, 100]], {on:e[0], t:s.t, vel:45}); Elec.cable([[410, 100], [560, 100]], {on:e[0], t:s.t, vel:45});
+      Elec.cable([[170, 100], [170, 250]], {on:e[1], t:s.t, vel:45}); Elec.cable([[170, 250], [350, 250]], {on:e[1], t:s.t, vel:45}); Elec.cable([[410, 250], [560, 250]], {on:e[1], t:s.t, vel:45});
+      Elec.cable([[560, 100], [560, 250]], {on:e[1], t:s.t, vel:45}); Elec.cable([[560, 250], [560, 330], [90, 330], [90, 252]], oa); }
+    F2.forEach(([x, y], i)=>{ Elec.foco(x, y, e[i], s.fused[i], s.t); Juego.pastilla("Foco " + (i + 1), x, y + 58, {px:11, pad:16, h:20}); });
+    [["serie", 200, "Circuito en SERIE"], ["paralelo", 460, "Circuito en PARALELO"]].forEach(([k, x, t])=>{ const sel = s.mode === k; ctx.fillStyle = sel ? "#C1FF00" : "#1B1B1B"; roundRect(ctx, x - 90, 354, 180, 32, 16); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = sel ? "#000" : "#fff"; ctx.font = F(12, 800); ctx.textAlign = "center"; ctx.fillText(t, x, 374); });
+    Juego.pastilla(`Modo: ${s.mode}${s.fused[0] ? " · Foco 1 fundido" : ""}${s.fused[1] ? " · Foco 2 fundido" : ""}`, 330, 24, {px:12, pad:24, h:26});
+    Juego.pastilla(!hay ? "Sin corriente: no hay camino cerrado" : (e[0] !== e[1] ? "¡Un foco apagado y el otro sigue!" : "Corriente en todo el circuito"), 330, 54, {px:11, pad:22, h:24, bg:hay ? "#1863DC" : "#E03131", fg:"#fff"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Toca un foco para fundirlo", 330, 160);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Ley de Ohm (piloto) ---------- */
+const expOhmV3 = {...expOhm, ...RetosMix, ...JuegoMix,
+  name:expOhm.name + " (piloto 2)",
+  cardDesc:"Arrastra las perillas de voltaje y resistencia y mira cómo cambia la corriente y el brillo del foco. Cumple tres retos con estrellas.",
+  VT:{x0:200, x1:500, y:362}, RT:{x0:200, x1:500, y:398},
+  RETOS:[
+    {id:"vdoble", txt:"Duplica el voltaje con la misma resistencia: ¡la corriente se duplica!", ok:"V al doble, I al doble: la Ley de Ohm en acción", pista:"Deja la resistencia quieta y pasa de 3 V a 6 V (o de 6 a 12)."},
+    {id:"rdoble", txt:"Duplica la resistencia con el mismo voltaje: ¡la corriente baja a la mitad!", ok:"R al doble, I a la mitad", pista:"Deja el voltaje quieto y pasa de 100 Ω a 200 Ω (o de 200 a 400)."},
+    {id:"treinta", txt:"Logra una corriente de 30 mA (entre 29 y 31)", ok:"I = V/R = 30 mA", pista:"Con 6 V y 200 Ω da justo 30 mA."}
+  ],
+  mount(){
+    const s = this.st = {v:6, r:200, tested:new Set(), hist:new Set(["6|200"]), moved:false, t:0, held:null};
+    s.slv = ctrlSlider("Voltaje (V)", 1, 12, 1, s.v, v=>this.poner("v", v));
+    s.slr = ctrlSlider("Resistencia (Ω)", 10, 1000, 10, s.r, v=>this.poner("r", v));
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const V = this.VT, R = this.RT; if(p.x >= V.x0 - 20 && p.x <= V.x1 + 20 && Math.abs(p.y - V.y) <= Math.max(16, 22*sc)) return {t:"v"}; if(p.x >= R.x0 - 20 && p.x <= R.x1 + 20 && Math.abs(p.y - R.y) <= Math.max(16, 22*sc)) return {t:"r"}; return null; },
+      down:(o, p)=>{ s.held = o.t; this.fijar(o.t, p.x); }, move:(o, p)=>{ this.fijar(o.t, p.x); }, up:()=>{ s.held = null; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijar(t, x){ const T = t === "v" ? this.VT : this.RT, f = Math.max(0, Math.min(1, (x - T.x0)/(T.x1 - T.x0))); this.poner(t, t === "v" ? Math.round(1 + f*11) : Math.round((10 + f*990)/10)*10); },
+  poner(t, val){
+    const s = this.st, ant = s.v + "|" + s.r; if(t === "v"){ s.v = val; s.slv.value = val; } else { s.r = val; s.slr.value = val; } s.moved = true;
+    if(ant === s.v + "|" + s.r) return; s.tested.add(t + val); if(s.tested.size >= 3) markRan(); s.hist.add(s.v + "|" + s.r);
+    const ids = []; const I = s.v/s.r*1000; if(I >= 29 && I <= 31) ids.push("treinta");
+    s.hist.forEach(k=>{ const [v2, r2] = k.split("|").map(Number); if(r2 === s.r && (v2 === s.v*2 || v2*2 === s.v)) ids.push("vdoble"); if(v2 === s.v && (r2 === s.r*2 || r2*2 === s.r)) ids.push("rdoble"); });
+    if(ids.length) this.ganar(ids, 330, 150);
+  },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), I = s.v/s.r*1000, bright = Math.min(1, I/60); s.t += h;
+    Juego.fondo(0);
+    const vel = 20 + 26*Math.log10(1 + I), o = {on:true, t:s.t, vel};
+    Elec.pila(90, 190, 46, 80, s.v + " V");
+    Elec.cable([[90, 150], [90, 100], [250, 100]], o); Elec.cable([[330, 100], [460, 100]], o); Elec.cable([[520, 100], [580, 100], [580, 270], [90, 270], [90, 230]], o);
+    // resistencia (zigzag) y foco
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 3.5; ctx.fillStyle = "#E8C49A"; roundRect(ctx, 250, 86, 80, 28, 8); ctx.fill(); ctx.stroke(); ctx.strokeStyle = "#7A3B0A"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(258, 100); for(let i = 0; i < 6; i++) ctx.lineTo(266 + i*10, i%2 ? 92 : 108); ctx.lineTo(322, 100); ctx.stroke();
+    Juego.pastilla(s.r + " Ω", 290, 70, {px:12, pad:18, h:22, bg:"#E8C49A", fg:"#000"});
+    Elec.foco(490, 100, bright > .12, false, s.t); ctx.fillStyle = `rgba(255,213,74,${(1 - bright)*.5})`; ctx.beginPath(); ctx.arc(490, 100, 24, 0, 7); ctx.fill();
+    Juego.pastilla(bright >= 1 ? "brillo máximo (≥ 60 mA)" : "brillo " + Math.round(bright*100) + " %", 490, 170, {px:10, pad:14, h:18});
+    Juego.pastilla(`I = V / R = ${s.v} / ${s.r} = ${I.toFixed(1)} mA`, 330, 214, {px:17, pad:34, h:36, bg:"#C1FF00", fg:"#000"});
+    // medidor de corriente (escala logarítmica)
+    ctx.fillStyle = "#fff"; roundRect(ctx, 150, 244, 360, 14, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; roundRect(ctx, 150, 244, 360, 14, 7); ctx.stroke(); const fr = Math.log10(Math.max(1, I))/Math.log10(1200); ctx.fillStyle = "#1863DC"; roundRect(ctx, 152, 246, Math.max(8, 356*fr), 10, 5); ctx.fill();
+    ctx.fillStyle = "#000"; ctx.font = F(9, 700); ctx.textAlign = "center"; [["1 mA", 150], ["10", 150 + 360*Math.log10(10)/Math.log10(1200)], ["100", 150 + 360*Math.log10(100)/Math.log10(1200)], ["1000 mA", 150 + 360*Math.log10(1000)/Math.log10(1200)]].forEach(([t, x])=>ctx.fillText(t, x, 276));
+    Elec.pista(this.VT.x0, this.VT.x1, this.VT.y, s.v, 1, 12, "Voltaje", s.v + " V"); Elec.pista(this.RT.x0, this.RT.x1, this.RT.y, s.r, 10, 1000, "Resistencia", s.r + " Ω");
+    Juego.pastilla(`Voltaje: ${s.v} V   Resistencia: ${s.r} Ω`, 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra las perillas de abajo", 330, 320);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Capacitor: carga y descarga (piloto) ---------- */
+const expCapacitorV3 = {...expCapacitor, ...RetosMix, ...JuegoMix,
+  name:expCapacitor.name + " (piloto 2)",
+  cardDesc:"Mueve el interruptor entre la pila y la descarga y mira cómo se llena y se vacía el capacitor. Cumple tres retos con estrellas.",
+  GR:{x:70, y:240, w:540, h:124}, SW:{x:210, y:80},
+  RETOS:[
+    {id:"carga", txt:"Carga el capacitor casi por completo (más de 8.5 V)", ok:"El capacitor se llenó siguiendo una curva exponencial", pista:"Pon el interruptor en «Pila» y espera."},
+    {id:"descarga", txt:"Déjalo casi vacío otra vez (menos de 0.5 V)", ok:"Descargó poco a poco, también en curva exponencial", pista:"Cambia el interruptor a «Descargar»."},
+    {id:"compara", txt:"Compara la carga con resistencia baja (3 o menos) y alta (8 o más)", ok:"Más resistencia = carga más lenta", pista:"Carga una vez con la resistencia baja y otra con la alta (descarga antes de cada una)."}
+  ],
+  mount(){
+    const s = this.st = {r:5, v:0, target:0, hist:Array(240).fill(0), acc:0, charged:false, dischargedOnce:false, tc:{}, t0:null, moved:false, t:0, held:false};
+    s.sl = ctrlSlider("Resistencia (afecta la rapidez)", 1, 10, 1, s.r, v=>this.poner(v));
+    ctrlBtn("🔋 Conectar a la pila (cargar)", "", ()=>this.cargar());
+    ctrlBtn("🔌 Desconectar (descargar)", "", ()=>this.descargar());
+    this.iniciarJuego();
+    const R = {x0:210, x1:420, y:404};
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const W = this.SW; if(Math.hypot(p.x - W.x, p.y - W.y) <= Math.max(60, 26*sc)) return {t:"sw"}; if(p.x >= R.x0 - 20 && p.x <= R.x1 + 20 && Math.abs(p.y - R.y) <= Math.max(18, 24*sc)) return {t:"r"}; return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "sw") (s.target === 9 ? this.descargar() : this.cargar()); else { s.held = true; this.poner(Math.round(1 + Math.max(0, Math.min(1, (p.x - R.x0)/(R.x1 - R.x0)))*9)); } },
+      move:(o, p)=>{ if(o.t === "r") this.poner(Math.round(1 + Math.max(0, Math.min(1, (p.x - R.x0)/(R.x1 - R.x0)))*9)); }, up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  poner(v){ const s = this.st; s.r = v; s.sl.value = v; s.moved = true; },
+  cargar(){ const s = this.st; s.target = 9; s.moved = true; if(s.v < .5){ s.t0 = {t:s.t, r:s.r}; } else s.t0 = null; FX.sound("tick"); },
+  descargar(){ const s = this.st; s.target = 0; s.moved = true; if(s.charged){ s.dischargedOnce = true; markRan(); } s.t0 = null; FX.sound("tick"); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), tau = s.r*.5; s.t += h;
+    s.v += (s.target - s.v)*Math.min(1, h/tau);
+    const ids = [];
+    if(s.target === 9 && s.v > 8.5){ if(!s.charged){ s.charged = true; } ids.push("carga"); if(s.t0 && s.t0.r === s.r){ s.tc[s.r <= 3 ? "baja" : s.r >= 8 ? "alta" : "media"] = s.t - s.t0.t; s.t0 = null; if(s.tc.baja !== undefined && s.tc.alta !== undefined) ids.push("compara"); } }
+    if(s.charged && s.target === 0 && s.v < .5) ids.push("descarga");
+    if(ids.length) this.ganar(ids, 330, 200);
+    s.acc += h; while(s.acc >= .05){ s.acc -= .05; s.hist.push(s.v); s.hist.shift(); }
+    Juego.fondo(0);
+    const o = {on:Math.abs(s.target - s.v) > .15, t:s.t, vel:30 + 40/tau, dir:s.target === 9 ? 1 : -1, col:s.target === 9 ? "#C1FF00" : "#FF8A5B"};
+    Elec.pila(70, 110, 40, 60, "9 V");
+    Elec.cable([[70, 80], [70, 40], [160, 40]], {on:s.target === 9 && o.on, t:s.t, vel:o.vel}); Elec.cable([[260, 40], [520, 40]], o); Elec.cable([[520, 40], [520, 100]], o); Elec.cable([[520, 160], [520, 195], [70, 195], [70, 142]], o);
+    // resistencia
+    ctx.fillStyle = "#E8C49A"; roundRect(ctx, 330, 26, 80, 28, 8); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.stroke(); ctx.strokeStyle = "#7A3B0A"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(338, 40); for(let i = 0; i < 6; i++) ctx.lineTo(346 + i*10, i%2 ? 32 : 48); ctx.lineTo(402, 40); ctx.stroke();
+    // interruptor
+    const W = this.SW, car = s.target === 9; ctx.fillStyle = "#1B1B1B"; roundRect(ctx, 150, 30, 120, 100, 14); ctx.fill(); ctx.strokeStyle = car ? "#C1FF00" : "#FF8A5B"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 6; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(165, 80); ctx.lineTo(car ? 250 : 250, car ? 52 : 108); ctx.stroke(); ctx.lineCap = "butt"; ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(250, 52, 6, 0, 7); ctx.fill(); ctx.fillStyle = "#FF8A5B"; ctx.beginPath(); ctx.arc(250, 108, 6, 0, 7); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = F(10, 800); ctx.textAlign = "right"; ctx.fillText("Pila", 242, 56); ctx.fillText("Descargar", 242, 112);
+    // capacitor con placas
+    const fr = s.v/9, cx = 520, cy = 130; ctx.fillStyle = "#222"; ctx.fillRect(cx - 34, cy - 24, 68, 6); ctx.fillRect(cx - 34, cy + 18, 68, 6); ctx.fillStyle = `rgba(255,213,74,${.1 + .75*fr})`; ctx.fillRect(cx - 30, cy - 16, 60, 32); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.strokeRect(cx - 30, cy - 18, 60, 36);
+    ctx.fillStyle = "#E03131"; ctx.font = F(11, 800); ctx.textAlign = "center"; for(let i = 0; i < Math.round(fr*5); i++) ctx.fillText("+", cx - 24 + i*12, cy - 8*uiScale); ctx.fillStyle = "#1863DC"; for(let i = 0; i < Math.round(fr*5); i++) ctx.fillText("−", cx - 24 + i*12, cy + 14*uiScale);
+    Juego.pastilla("Capacitor", cx, cy + 50, {px:10, pad:14, h:18}); Juego.pastilla(s.v.toFixed(2) + " V", cx, cy - 46, {px:13, pad:20, h:24, bg:"#C1FF00", fg:"#000"});
+    // pista de resistencia
+    Elec.pista(210, 420, 404, s.r, 1, 10, "Resistencia", "τ = " + (s.r*.5).toFixed(1) + " s");
+    // gráfica
+    const G = this.GR; ctx.fillStyle = "rgba(255,255,255,.93)"; roundRect(ctx, G.x - 40, G.y - 16, G.w + 56, G.h + 44, 12); ctx.fill(); ctx.strokeStyle = "#B7C6CC"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(G.x, G.y); ctx.lineTo(G.x, G.y + G.h); ctx.lineTo(G.x + G.w, G.y + G.h); ctx.stroke();
+    [0, 3, 6, 9].forEach(v=>{ const y = G.y + G.h - v/9*G.h; ctx.fillStyle = "#666"; ctx.font = F(9, 600); ctx.textAlign = "left"; ctx.fillText(v + " V", G.x - 34, y + 3*uiScale); ctx.strokeStyle = "#EEF3F4"; ctx.beginPath(); ctx.moveTo(G.x, y); ctx.lineTo(G.x + G.w, y); ctx.stroke(); });
+    ctx.strokeStyle = "#1863DC"; ctx.lineWidth = 3; ctx.lineJoin = "round"; ctx.beginPath(); s.hist.forEach((v, i)=>{ const x = G.x + i/239*G.w, y = G.y + G.h - v/9*G.h; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.fillStyle = "#666"; ctx.font = F(10, 600); ctx.textAlign = "right"; ctx.fillText("últimos 12 s →", G.x + G.w, G.y + G.h + 16);
+    const tc = Object.entries(s.tc).map(([k, v])=>`${k === "baja" ? "R baja" : k === "alta" ? "R alta" : "R media"}: ${v.toFixed(1)} s`).join("  ·  "); if(tc) Juego.pastilla("Tiempo de carga → " + tc, 330, 258, {px:10, pad:18, h:20, bg:"#C1FF00", fg:"#000"});
+    Juego.pastilla(`Voltaje del capacitor: ${s.v.toFixed(2)} V`, 330, 210, {px:11, pad:20, h:22});
+    if(!s.moved) Juego.ayuda(fx, "👆 Toca el interruptor para cargar", 210, 160);
+    this.finFotograma();
+  }
+};
+
+/* ---------- LED y polaridad (piloto) ---------- */
+const expLEDV3 = {...expLED, ...RetosMix, ...JuegoMix,
+  name:expLED.name + " (piloto 2)",
+  cardDesc:"Voltea el LED, enciende el circuito y descubre en qué sentido deja pasar la corriente. Cumple tres retos con estrellas.",
+  LX:330, LY:110, SW:{x:330, y:380},
+  RETOS:[
+    {id:"enciende", txt:"Enciende el LED con la polaridad correcta", ok:"¡LED encendido! La corriente entró por el ánodo", pista:"Con el LED bien puesto, enciende el interruptor."},
+    {id:"invertido", txt:"Voltea el LED y enciende: ¿alumbra?", ok:"Al revés el LED bloquea la corriente y no enciende", pista:"Toca el LED para voltearlo y enciende el circuito."},
+    {id:"anodo", txt:"Toca la pata larga del LED (el ánodo)", ok:"La pata larga es el ánodo: va hacia el positivo", pista:"Toca una de las dos patitas del LED."}
+  ],
+  mount(){
+    const s = this.st = {reversed:false, on:false, tested:new Set(), flip:0, moved:false, t:0};
+    ctrlBtn("🔄 Invertir polaridad", "", ()=>this.invertir());
+    ctrlBtn("🔛 Encender circuito", "amber", ()=>this.encender());
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ if(Math.abs(p.x - this.SW.x) <= Math.max(50, 22*sc) && Math.abs(p.y - this.SW.y) <= Math.max(24, 22*sc)) return {t:"sw"};
+        const k = s.reversed ? 1 : -1; if(Math.abs(p.x - (this.LX - 34)) <= Math.max(22, 20*sc) && Math.abs(p.y - (this.LY + 94)) <= Math.max(50, 22*sc)) return {t:"pata", larga:!s.reversed}; if(Math.abs(p.x - (this.LX + 34)) <= Math.max(22, 20*sc) && Math.abs(p.y - (this.LY + 94)) <= Math.max(50, 22*sc)) return {t:"pata", larga:s.reversed};
+        if(Math.hypot(p.x - this.LX, p.y - this.LY) <= Math.max(60, 24*sc)) return {t:"led"}; return null; },
+      down:(o)=>{ s.moved = true; if(o.t === "sw") this.encender(); else if(o.t === "led") this.invertir(); else this.pata(o.larga); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  invertir(){ const s = this.st; s.reversed = !s.reversed; s.on = false; s.moved = true; FX.sound("tick"); },
+  encender(){ const s = this.st; s.on = !s.on; s.moved = true; if(s.on){ s.tested.add(s.reversed); if(s.tested.size >= 2) markRan(); const ids = []; if(!s.reversed) ids.push("enciende"); else ids.push("invertido"); FX.sound(s.reversed ? "thud" : "ding"); this.ganar(ids, this.LX, this.LY + 90); } },
+  pata(larga){ const s = this.st; if(larga){ FX.pop(s.fx, this.LX, this.LY + 140, "¡Esa es el ánodo (+)!"); this.ganar(["anodo"], this.LX, this.LY + 120); FX.sound("ding"); } else { FX.pop(s.fx, this.LX, this.LY + 140, "Esa es la corta: el cátodo (−)"); FX.sound("tick"); } },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), lights = s.on && !s.reversed; s.t += h;
+    s.flip += ((s.reversed ? 1 : 0) - s.flip)*Math.min(1, h*10);
+    Juego.fondo(0);
+    const o = {on:lights, t:s.t, vel:50};
+    Elec.pila(90, 215, 46, 80, "Pila");
+    Elec.cable([[90, 175], [90, 70], [270, 70]], o); Elec.cable([[270, 70], [270, 174]], {on:lights, t:s.t, vel:50}); Elec.cable([[390, 70], [560, 70], [560, 330], [90, 330], [90, 258]], o);
+    // LED con patas (la larga es el ánodo)
+    const x = this.LX, y = this.LY, g = lights ? ctx.createRadialGradient(x, y, 6, x, y, 110) : null; if(g){ g.addColorStop(0, "rgba(255,80,80,.6)"); g.addColorStop(1, "rgba(255,80,80,0)"); ctx.fillStyle = g; ctx.fillRect(x - 120, y - 120, 240, 240); }
+    ctx.save(); ctx.translate(x, 0); ctx.scale(1 - 2*s.flip, 1); ctx.translate(-x, 0);
+    ctx.fillStyle = "#999"; ctx.fillRect(x - 38, y + 48, 8, 92); ctx.fillRect(x + 30, y + 48, 8, 66); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.strokeRect(x - 38, y + 48, 8, 92); ctx.strokeRect(x + 30, y + 48, 8, 66);
+    ctx.fillStyle = lights ? "#FF4A4A" : "#B24A4A"; ctx.beginPath(); ctx.moveTo(x - 44, y + 50); ctx.lineTo(x - 44, y - 6); ctx.arc(x, y - 6, 44, Math.PI, 0); ctx.lineTo(x + 44, y + 50); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.beginPath(); ctx.ellipse(x - 18, y - 22, 8, 14, -.4, 0, 7); ctx.fill();
+    ctx.restore();
+    Juego.pastilla(s.reversed ? "pata corta (−) · pata larga (+)" : "pata larga (+) · pata corta (−)", x, y + 158, {px:10, pad:14, h:18, bg:"#1863DC", fg:"#fff"});
+    if(s.on && s.reversed){ ctx.fillStyle = "#E03131"; ctx.font = F(30, 800); ctx.textAlign = "center"; ctx.fillText("✖", x, y + 14*uiScale); }
+    ctx.fillStyle = "#fff"; ctx.font = F(10, 800); ctx.textAlign = "center"; ctx.fillText(s.reversed ? "− Pila +" : "+ Pila −", 90, 300);
+    Elec.palanca(this.SW.x, this.SW.y, s.on, "ON", "OFF");
+    Juego.pastilla(`Polaridad: ${s.reversed ? "invertida" : "correcta"} · ${s.on ? (lights ? "¡LED encendido!" : "No enciende") : "circuito apagado"}`, 330, 24, {px:12, pad:24, h:26, bg:lights ? "#2EAA4A" : s.on ? "#E03131" : "#000", fg:lights || s.on ? "#fff" : "#C1FF00"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Toca el LED para voltearlo o el interruptor para encender", 330, 300);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Electroimán (piloto) ---------- */
+const expElectroimanV3 = {...expElectroiman, ...RetosMix, ...JuegoMix,
+  name:expElectroiman.name + " (piloto 2)",
+  cardDesc:"Toca las pilas para dar corriente, arrastra las vueltas de alambre y mira cuántos clips levanta el electroimán. Cumple tres retos con estrellas.",
+  NX:300, TT:{x0:200, x1:520, y:398},
+  RETOS:[
+    {id:"cuatro", txt:"Levanta 4 clips con el electroimán", ok:"¡4 clips colgando del clavo!", pista:"Sube las vueltas y toca más pilas."},
+    {id:"doble", txt:"Duplica las vueltas con la misma corriente: ¡levanta más clips!", ok:"El doble de vueltas, más fuerza magnética", pista:"Con 2 pilas, prueba 40 vueltas y luego 80."},
+    {id:"max", txt:"Levanta el máximo: 8 clips", ok:"¡Tu electroimán levantó los 8 clips!", pista:"Pon 4 pilas y muchas vueltas."}
+  ],
+  clips(s){ return Math.min(8, Math.round((s.vueltas*s.corriente)/80)); },
+  mount(){
+    const s = this.st = {vueltas:40, corriente:1, tested:new Set(), hist:new Set(["40|1"]), pos:Array.from({length:8}, (_, i)=>({x:470 + (i%4)*26, y:366 - Math.floor(i/4)*10 + (i%3)*2, vy:0})), held:false, moved:false, t:0};
+    s.slv = ctrlSlider("Vueltas de alambre", 10, 200, 10, s.vueltas, v=>this.poner("n", v));
+    s.sli = ctrlSlider("Corriente (pilas en serie)", 1, 4, 1, s.corriente, v=>this.poner("i", v));
+    this.iniciarJuego();
+    const T = this.TT;
+    this._off = bindDrag({
+      hit:(p, sc)=>{ for(let k = 1; k <= 4; k++){ const b = this.pila(k); if(Math.abs(p.x - b.x) <= Math.max(b.w/2 + 8, 22*sc) && Math.abs(p.y - b.y) <= Math.max(b.h/2 + 6, 22*sc)) return {t:"pila", k}; } return (p.x >= T.x0 - 20 && p.x <= T.x1 + 20 && Math.abs(p.y - T.y) <= Math.max(16, 22*sc)) ? {t:"n"} : null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "pila") this.poner("i", o.k); else { s.held = true; this.fijar(p.x); } }, move:(o, p)=>{ if(o.t === "n") this.fijar(p.x); }, up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  pila(k){ return {x:70 + (k - 1)*52, y:200, w:40, h:78}; },
+  fijar(x){ const T = this.TT; this.poner("n", Math.round((10 + Math.max(0, Math.min(1, (x - T.x0)/(T.x1 - T.x0)))*190)/10)*10); },
+  poner(t, v){
+    const s = this.st, ant = s.vueltas + "|" + s.corriente; if(t === "n"){ s.vueltas = v; s.slv.value = v; } else { s.corriente = v; s.sli.value = v; } s.moved = true; if(ant === s.vueltas + "|" + s.corriente) return; FX.sound("tick");
+    s.tested.add(t + v); if(s.tested.size >= 3) markRan(); s.hist.add(s.vueltas + "|" + s.corriente); const c = this.clips(s), ids = []; if(c >= 4) ids.push("cuatro"); if(c >= 8) ids.push("max");
+    s.hist.forEach(k=>{ const [n2, i2] = k.split("|").map(Number); if(i2 === s.corriente && (n2 === s.vueltas*2 || n2*2 === s.vueltas)){ const c2 = this.clips({vueltas:n2, corriente:i2}); if(c2 !== c) ids.push("doble"); } });
+    if(ids.length) this.ganar(ids, 300, 80);
+  },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), nx = this.NX, fuerza = (s.vueltas*s.corriente)/80, n = this.clips(s); s.t += h;
+    // clips: los que están dentro del conteo cuelgan de la punta; los demás vuelven a la mesa
+    s.pos.forEach((c, i)=>{ if(i < n){ const tx = nx + Math.sin(s.t*3 + i)*1.5, ty = 282 + i*13; c.x += (tx - c.x)*Math.min(1, h*7); c.y += (ty - c.y)*Math.min(1, h*7); c.vy = 0; } else { const tx = 470 + (i%4)*26, ty = 366 - Math.floor(i/4)*10 + (i%3)*2; if(c.y < ty - 1 || Math.abs(c.x - tx) > 2){ c.vy += 700*h; c.y = Math.min(ty, c.y + c.vy*h); c.x += (tx - c.x)*Math.min(1, h*3); if(c.y >= ty && c.vy > 30){ c.vy = 0; FX.sound("tick"); } } } });
+    Juego.fondo(0);
+    // mesa
+    ctx.fillStyle = "#5B4630"; ctx.fillRect(0, 380, 660, 50);
+    // líneas de campo
+    if(fuerza > .1){ ctx.strokeStyle = `rgba(24,99,220,${Math.min(.6, .12 + fuerza*.06)})`; ctx.lineWidth = 2; for(let k = 1; k <= 3; k++){ [-1, 1].forEach(sg=>{ ctx.beginPath(); ctx.ellipse(nx, 175, 26 + k*24*Math.min(1.6, .5 + fuerza*.2), 90 + k*10, 0, sg > 0 ? -Math.PI/2 : Math.PI/2, sg > 0 ? Math.PI/2 : Math.PI*1.5); ctx.stroke(); }); } }
+    // clavo y bobina
+    const ng = ctx.createLinearGradient(nx - 6, 0, nx + 6, 0); ng.addColorStop(0, "#7C838A"); ng.addColorStop(.5, "#E2E5E8"); ng.addColorStop(1, "#7C838A"); ctx.fillStyle = ng; ctx.fillRect(nx - 6, 80, 12, 190); ctx.fillRect(nx - 16, 76, 32, 7);
+    const vs = Math.min(24, Math.round(s.vueltas/8)); ctx.strokeStyle = "#E8730C"; ctx.lineWidth = 3; for(let i = 0; i < vs; i++){ const y = 96 + i*6.4; ctx.beginPath(); ctx.ellipse(nx, y, 18, 4.2, 0, 0, 7); ctx.stroke(); }
+    // cables a las pilas
+    const ov = {on:true, t:s.t, vel:10 + 30*s.corriente}, y2 = 96 + (vs - 1)*6.4; Elec.cable([[nx - 18, 96], [250, 96], [250, 156], [226, 156]], ov); Elec.cable([[nx + 18, y2], [360, y2], [360, 360], [40, 360], [40, 266], [70, 266]], ov);
+    // pilas
+    for(let k = 1; k <= 4; k++){ const b = this.pila(k), act = k <= s.corriente; ctx.globalAlpha = act ? 1 : .35; Elec.pila(b.x, b.y, b.w, b.h, null); ctx.globalAlpha = 1; }
+    Juego.pastilla(`${s.corriente} ${s.corriente === 1 ? "pila" : "pilas"} en serie`, 120, 262, {px:11, pad:16, h:20, bg:"#1863DC", fg:"#fff"});
+    // clips
+    s.pos.forEach(c=>{ ctx.strokeStyle = "#8A9099"; ctx.lineWidth = 2.5; roundRect(ctx, c.x - 5, c.y - 8, 10, 16, 5); ctx.stroke(); ctx.beginPath(); ctx.moveTo(c.x - 2, c.y - 3); ctx.lineTo(c.x - 2, c.y + 5); ctx.stroke(); });
+    Juego.pastilla("clips", 508, 392, {px:10, pad:12, h:18});
+    Elec.pista(this.TT.x0, this.TT.x1, this.TT.y, s.vueltas, 10, 200, "Vueltas", s.vueltas + "");
+    Juego.pastilla(`Clips levantados: ${n}`, 330, 24, {px:13, pad:26, h:28, bg:n >= 4 ? "#2EAA4A" : "#000", fg:n >= 4 ? "#fff" : "#C1FF00"});
+    Juego.pastilla("fuerza ∝ vueltas × corriente", 520, 120, {px:10, pad:14, h:18, bg:"#1863DC", fg:"#fff"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Toca pilas y arrastra las vueltas", 330, 340);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Sensor de luz LDR (piloto) ---------- */
+const expLDRV3 = {...expLDR, ...RetosMix, ...JuegoMix,
+  name:expLDR.name + " (piloto 2)",
+  cardDesc:"Arrastra la palanca de luz de la noche al día y mira cuándo la lámpara de la calle «decide» encenderse sola. Cumple tres retos con estrellas.",
+  LV:{x:618, y0:360, y1:70},
+  RETOS:[
+    {id:"noche", txt:"Haz de noche: ¡que se encienda la lámpara!", ok:"Con poca luz el LDR sube su resistencia y la lámpara enciende", pista:"Baja la palanca de luz hasta la noche."},
+    {id:"dia", txt:"Pon pleno día (100 %): resistencia mínima y lámpara apagada", ok:"Con mucha luz el LDR deja pasar más corriente", pista:"Sube la palanca de luz hasta arriba."},
+    {id:"umbral", txt:"Cruza el umbral 4 veces: que se prenda y apague la lámpara", ok:"La lámpara «decide» sola según la luz", pista:"Sube y baja la luz alrededor del 30 %."}
+  ],
+  carta(i){ return {x:130 + i*160, y:398, w:140, h:34}; },
+  mount(){
+    const s = this.st = {luz:50, tested:new Set(), cruces:0, prevOn:false, held:false, moved:false, t:0};
+    s.sl = ctrlSlider("Luz ambiente (0=noche, 100=pleno día)", 0, 100, 5, s.luz, v=>this.poner(v));
+    s.prevOn = s.luz < 30;
+    this.iniciarJuego();
+    const L = this.LV;
+    this._off = bindDrag({
+      hit:(p, sc)=>{ if(Math.abs(p.x - L.x) <= Math.max(30, 22*sc) && p.y >= L.y1 - 18 && p.y <= L.y0 + 18) return {t:"lev"}; for(let i = 0; i < 3; i++){ const b = this.carta(i); if(Math.abs(p.x - b.x) <= Math.max(b.w/2, 22*sc) && Math.abs(p.y - b.y) <= Math.max(b.h/2, 22*sc)) return {t:"c", v:[0, 45, 100][i]}; } return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "lev"){ s.held = true; this.fijar(p.y); } else this.poner(o.v); }, move:(o, p)=>{ if(o.t === "lev") this.fijar(p.y); }, up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijar(y){ const L = this.LV; this.poner(Math.round(Math.max(0, Math.min(100, (L.y0 - y)/(L.y0 - L.y1)*100))/5)*5); },
+  poner(v){ const s = this.st; s.luz = v; s.sl.value = v; s.moved = true; s.tested.add(Math.round(v/20)); if(s.tested.size >= 4) markRan(); const on = v < 30;
+    if(on !== s.prevOn){ s.cruces++; s.prevOn = on; FX.sound(on ? "ding" : "tick"); }
+    const ids = []; if(on) ids.push("noche"); if(v >= 100) ids.push("dia"); if(s.cruces >= 4) ids.push("umbral"); if(ids.length) this.ganar(ids, 330, 130); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), L = this.LV; s.t += h;
+    const R = 1000 - s.luz*9, on = s.luz < 30, k = s.luz*2;
+    ctx.fillStyle = `rgb(${20 + k},${20 + k},${45 + k})`; ctx.fillRect(0, 0, 660, 430);
+    // astros
+    if(s.luz < 50){ ctx.fillStyle = `rgba(255,255,255,${(50 - s.luz)/50})`; for(let i = 0; i < 24; i++){ ctx.beginPath(); ctx.arc((i*97)%620 + 20, 20 + (i*53)%150, 1.4 + (i%3)*.5, 0, 7); ctx.fill(); } ctx.fillStyle = "#F4F1C8"; ctx.beginPath(); ctx.arc(120, 90, 26, 0, 7); ctx.fill(); }
+    if(s.luz > 40){ const sg = ctx.createRadialGradient(120, 90, 6, 120, 90, 90); sg.addColorStop(0, `rgba(255,230,120,${(s.luz - 40)/60})`); sg.addColorStop(1, "rgba(255,230,120,0)"); ctx.fillStyle = sg; ctx.fillRect(20, 0, 200, 200); ctx.fillStyle = "#FFD54A"; ctx.globalAlpha = Math.min(1, (s.luz - 40)/40); ctx.beginPath(); ctx.arc(120, 90, 26, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+    // calle y edificios
+    ctx.fillStyle = `rgb(${40 + k*.5},${44 + k*.5},${60 + k*.5})`; [[40, 190, 70], [130, 160, 90], [470, 175, 80], [560, 150, 90]].forEach(([x, y, w])=>ctx.fillRect(x, y, w, 330 - y)); ctx.fillStyle = "#2B2F3A"; ctx.fillRect(0, 330, 660, 100);
+    // poste y lámpara con haz
+    ctx.strokeStyle = "#DCE7EA"; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(330, 330); ctx.lineTo(330, 140); ctx.lineTo(360, 124); ctx.stroke();
+    if(on){ const cg = ctx.createRadialGradient(360, 130, 6, 360, 130, 160); cg.addColorStop(0, "rgba(255,200,80,.5)"); cg.addColorStop(1, "rgba(255,200,80,0)"); ctx.fillStyle = cg; ctx.beginPath(); ctx.moveTo(360, 130); ctx.lineTo(260, 335); ctx.lineTo(460, 335); ctx.closePath(); ctx.fill(); ctx.fillStyle = cg; ctx.fillRect(200, 0, 320, 330); }
+    ctx.fillStyle = on ? "#FFD54A" : "#555"; ctx.beginPath(); ctx.arc(364, 124, 16, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    // LDR (sensor) en el poste
+    ctx.fillStyle = "#C9A24B"; ctx.beginPath(); ctx.arc(330, 220, 14, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.strokeStyle = "#7A5A12"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(322, 222); ctx.lineTo(327, 214); ctx.lineTo(333, 226); ctx.lineTo(338, 216); ctx.stroke();
+    Juego.pastilla("LDR", 330, 250, {px:10, pad:12, h:18}); Juego.pastilla(`≈ ${R.toFixed(0)} Ω`, 330, 274, {px:13, pad:20, h:24, bg:"#C1FF00", fg:"#000"});
+    // palanca de luz
+    ctx.fillStyle = "rgba(0,0,0,.55)"; roundRect(ctx, L.x - 16, L.y1 - 22, 32, L.y0 - L.y1 + 44, 16); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2; roundRect(ctx, L.x - 16, L.y1 - 22, 32, L.y0 - L.y1 + 44, 16); ctx.stroke(); const hy = L.y0 - s.luz/100*(L.y0 - L.y1); ctx.fillStyle = "#C1FF00"; ctx.fillRect(L.x - 4, hy, 8, L.y0 - hy); ctx.font = F(16, 400); ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText("☀️", L.x, L.y1 - 30); ctx.fillText("🌙", L.x, L.y0 + 36);
+    const hg = ctx.createRadialGradient(L.x - 4, hy - 4, 2, L.x, hy, 18); hg.addColorStop(0, "#F1FFB0"); hg.addColorStop(1, "#C1FF00"); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(L.x, hy, 17, 0, 7); ctx.fill(); ctx.strokeStyle = s.held ? "#fff" : "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    ["🌙 Noche", "🌤 Atardecer", "☀️ Pleno día"].forEach((t, i)=>{ const b = this.carta(i); ctx.fillStyle = "rgba(0,0,0,.7)"; roundRect(ctx, b.x - b.w/2, b.y - b.h/2, b.w, b.h, 14); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#C1FF00"; ctx.font = F(12, 800); ctx.textAlign = "center"; ctx.fillText(t, b.x, b.y + 4*uiScale); });
+    Juego.pastilla(`Luz ambiente: ${s.luz}%`, 330, 24, {px:12, pad:24, h:26});
+    Juego.pastilla(on ? "🔆 Lámpara ENCENDIDA (poca luz detectada)" : "Lámpara apagada (hay suficiente luz de día)", 330, 56, {px:11, pad:22, h:24, bg:on ? "#E8A020" : "#333", fg:"#fff"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra la palanca de luz", 470, 100);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Transistor (piloto) ---------- */
+const expTransistorV3 = {...expTransistor, ...RetosMix, ...JuegoMix,
+  name:expTransistor.name + " (piloto 2)",
+  cardDesc:"Arrastra la perilla de la corriente de base y mira cómo una señal pequeña enciende un motor mucho más grande. Cumple tres retos con estrellas.",
+  TT:{x0:150, x1:480, y:392},
+  RETOS:[
+    {id:"gira", txt:"Haz girar el motor con una corriente de base pequeña", ok:"Una señal débil encendió una carga más grande", pista:"Sube la perilla de la base por encima de 3."},
+    {id:"gana", txt:"Logra que la corriente del motor sea 20 veces mayor que la de la base", ok:"¡Amplificación de 20 veces o más!", pista:"Con base 6 o más ya llegas a 20×."},
+    {id:"apaga", txt:"Baja la base a 3 o menos: el transistor vuelve a apagarse", ok:"Por debajo del umbral el transistor no conduce", pista:"Con el motor girando, baja la perilla."}
+  ],
+  mount(){
+    const s = this.st = {base:0, tested:new Set(), ang:0, encendido:false, held:false, moved:false, t:0};
+    s.sl = ctrlSlider("Corriente de base (µA, escala relativa)", 0, 10, 1, 0, v=>this.poner(v));
+    this.iniciarJuego();
+    const T = this.TT;
+    this._off = bindDrag({
+      hit:(p, sc)=> (p.x >= T.x0 - 20 && p.x <= T.x1 + 20 && Math.abs(p.y - T.y) <= Math.max(18, 24*sc)) ? {} : null,
+      down:(o, p)=>{ s.held = true; this.fijar(p.x); }, move:(o, p)=>{ this.fijar(p.x); }, up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijar(x){ const T = this.TT; this.poner(Math.round(Math.max(0, Math.min(1, (x - T.x0)/(T.x1 - T.x0)))*10)); },
+  poner(v){ const s = this.st; if(v === s.base) return; s.base = v; s.sl.value = v; s.moved = true; s.tested.add(v); if(s.tested.size >= 4) markRan(); const on = v > 3, ids = [];
+    if(on){ s.encendido = true; ids.push("gira"); if((v - 3)*40/v >= 20) ids.push("gana"); FX.sound("ding"); } else if(s.encendido){ ids.push("apaga"); FX.sound("tick"); } if(ids.length) this.ganar(ids, 330, 150); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), umbral = 3, on = s.base > umbral, col = on ? (s.base - umbral)*40 : 0; s.t += h;
+    s.ang += h*(on ? 1000/Math.max(30, 200 - col) : 0);
+    Juego.fondo(0);
+    // batería grande del motor
+    Elec.pila(580, 200, 50, 100, "Batería");
+    Elec.cable([[580, 148], [580, 70], [330, 70], [330, 100]], {on, t:s.t, vel:30 + col*.4});
+    // motor
+    ctx.fillStyle = "#222"; ctx.beginPath(); ctx.arc(330, 140, 40, 0, 7); ctx.fill(); ctx.strokeStyle = on ? "#C1FF00" : "#555"; ctx.lineWidth = 3; ctx.stroke(); ctx.save(); ctx.translate(330, 140); ctx.rotate(s.ang); ctx.strokeStyle = on ? "#C1FF00" : "#777"; ctx.lineWidth = 6; ctx.lineCap = "round"; for(let i = 0; i < 3; i++){ ctx.rotate(Math.PI*2/3); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -26); ctx.stroke(); } ctx.lineCap = "butt"; ctx.restore(); Juego.pastilla("Motor", 330, 196, {px:10, pad:12, h:18});
+    // colector -> transistor -> emisor
+    Elec.cable([[330, 180], [330, 218]], {on, t:s.t, vel:30 + col*.4}); ctx.fillStyle = "#1B1B1B"; ctx.beginPath(); ctx.arc(330, 250, 34, 0, 7); ctx.fill(); ctx.strokeStyle = on ? "#C1FF00" : "#666"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(316, 232); ctx.lineTo(316, 268); ctx.moveTo(316, 242); ctx.lineTo(344, 226); ctx.moveTo(316, 258); ctx.lineTo(344, 274); ctx.stroke(); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.moveTo(344, 274); ctx.lineTo(334, 272); ctx.lineTo(340, 264); ctx.closePath(); ctx.fill();
+    Elec.cable([[330, 284], [330, 330], [580, 330], [580, 250]], {on, t:s.t, vel:30 + col*.4});
+    Elec.cable([[150, 250], [296, 250]], {on:s.base > 0, t:s.t, vel:20 + s.base*5, col:"#FF8A5B"});
+    Juego.pastilla("Base", 230, 228, {px:10, pad:12, h:18}); Juego.pastilla("Colector", 400, 222, {px:10, pad:12, h:18}); Juego.pastilla("Emisor", 400, 300, {px:10, pad:12, h:18});
+    // lecturas
+    Juego.pastilla(`Base: ${s.base}`, 230, 270, {px:12, pad:18, h:22, bg:"#FF8A5B", fg:"#000"}); Juego.pastilla(`Colector: ${col}`, 480, 140, {px:12, pad:18, h:22, bg:"#C1FF00", fg:"#000"});
+    if(on) Juego.pastilla(`Amplifica ×${(col/s.base).toFixed(0)}`, 480, 170, {px:12, pad:18, h:22, bg:"#1863DC", fg:"#fff"});
+    Elec.pista(this.TT.x0, this.TT.x1, this.TT.y, s.base, 0, 10, "Base", s.base + "");
+    Juego.pastilla(`Corriente de base: ${s.base} · ${on ? "¡Transistor ENCENDIDO! motor girando" : "Transistor apagado (bajo el umbral)"}`, 330, 24, {px:12, pad:24, h:26, bg:on ? "#2EAA4A" : "#000", fg:on ? "#fff" : "#C1FF00"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra la perilla de la base", 330, 350);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Batería y consumo (piloto) ---------- */
+const expBateriaV3 = {...expBateria, ...RetosMix, ...JuegoMix,
+  name:expBateria.name + " (piloto 2)",
+  cardDesc:"Arrastra la capacidad de la batería y el consumo del dispositivo, y gasta la batería para ver cuánto dura. Cumple tres retos con estrellas.",
+  CT:{x0:200, x1:500, y:362}, DT:{x0:200, x1:500, y:398},
+  RETOS:[
+    {id:"cinco", txt:"Logra que la batería dure exactamente 5 horas", ok:"2000 mAh ÷ 400 mA = 5 horas, igual que en la predicción", pista:"Divide la capacidad entre el consumo: 2000 mAh y 400 mA dan justo 5 h."},
+    {id:"veinte", txt:"Haz que dure más de 20 horas", ok:"Menos consumo o más capacidad: la batería dura más", pista:"Sube la capacidad o baja el consumo."},
+    {id:"gasta", txt:"Gasta la batería completa con el botón «Gastar»", ok:"La batería se agotó justo cuando decía la fórmula", pista:"Pulsa «Gastar batería» y espera a que la barra llegue a cero."}
+  ],
+  mount(){
+    const s = this.st = {cap:2000, consumo:400, tested:new Set(), carga:1, gasta:false, fin:false, held:null, moved:false, t:0};
+    s.slc = ctrlSlider("Capacidad de la batería (mAh)", 500, 5000, 100, s.cap, v=>this.poner("c", v));
+    s.sld = ctrlSlider("Consumo del dispositivo (mA)", 50, 1000, 25, s.consumo, v=>this.poner("d", v));
+    ctrlBtn("▶ Gastar batería", "amber", ()=>this.gastar());
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const C = this.CT, D = this.DT; if(p.x >= C.x0 - 20 && p.x <= C.x1 + 20 && Math.abs(p.y - C.y) <= Math.max(16, 22*sc)) return {t:"c"}; if(p.x >= D.x0 - 20 && p.x <= D.x1 + 20 && Math.abs(p.y - D.y) <= Math.max(16, 22*sc)) return {t:"d"}; if(Math.hypot(p.x - 330, p.y - 170) <= 110) return {t:"bat"}; return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "bat") this.gastar(); else { s.held = o.t; this.fijar(o.t, p.x); } }, move:(o, p)=>{ if(o.t !== "bat") this.fijar(o.t, p.x); }, up:()=>{ s.held = null; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijar(t, x){ const T = t === "c" ? this.CT : this.DT, f = Math.max(0, Math.min(1, (x - T.x0)/(T.x1 - T.x0))); this.poner(t, t === "c" ? Math.round((500 + f*4500)/100)*100 : Math.round((50 + f*950)/25)*25); },
+  poner(t, v){ const s = this.st; if(t === "c"){ if(v === s.cap) return; s.cap = v; s.slc.value = v; s.tested.add("c" + Math.round(v/500)); } else { if(v === s.consumo) return; s.consumo = v; s.sld.value = v; s.tested.add("d" + Math.round(v/100)); } s.moved = true; if(s.tested.size >= 3) markRan();
+    const hr = s.cap/s.consumo, ids = []; if(Math.abs(hr - 5) < .05) ids.push("cinco"); if(hr > 20) ids.push("veinte"); if(ids.length) this.ganar(ids, 330, 100); },
+  gastar(){ const s = this.st; if(s.gasta) return; s.carga = 1; s.gasta = true; s.fin = false; s.moved = true; FX.sound("tick"); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), horas = s.cap/s.consumo; s.t += h;
+    if(s.gasta){ s.carga = Math.max(0, s.carga - h/8); if(s.carga <= 0){ s.gasta = false; s.fin = true; FX.sound("boom"); this.ganar(["gasta"], 330, 120); } }
+    Juego.fondo(0);
+    // batería grande
+    const bx = 190, by = 90, bw = 280, bh = 120, col = s.carga > .5 ? "#2EAA4A" : s.carga > .2 ? "#E8A020" : "#E03131";
+    ctx.fillStyle = "#1B1B1B"; roundRect(ctx, bx, by, bw, bh, 16); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 4; ctx.stroke(); ctx.fillStyle = "#C1FF00"; roundRect(ctx, bx + bw, by + 35, 16, 50, 4); ctx.fill(); ctx.stroke();
+    if(s.carga > 0){ ctx.fillStyle = col; roundRect(ctx, bx + 8, by + 8, (bw - 16)*s.carga, bh - 16, 10); ctx.fill(); ctx.fillStyle = "rgba(255,255,255,.22)"; roundRect(ctx, bx + 12, by + 12, (bw - 24)*s.carga, 16, 8); ctx.fill(); }
+    ctx.fillStyle = "#fff"; ctx.font = F(22, 800); ctx.textAlign = "center"; ctx.fillText(Math.round(s.carga*100) + " %", bx + bw/2, by + bh/2 + 8*uiScale);
+    // dispositivo con flechas de consumo
+    ctx.fillStyle = "#222"; roundRect(ctx, 520, 100, 70, 100, 10); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = s.gasta ? "#6AA0FF" : "#444"; roundRect(ctx, 526, 110, 58, 76, 5); ctx.fill();
+    const na = Math.max(1, Math.round(s.consumo/200)); for(let i = 0; i < na; i++){ const ph = (s.t*(1.4 + s.consumo/500) + i/na)%1; ctx.fillStyle = s.gasta ? "#FF8A5B" : "rgba(255,138,91,.35)"; ctx.beginPath(); ctx.moveTo(480 - 0, 130 + i*14); ctx.lineTo(500 + ph*0, 130 + i*14); ctx.fill(); ctx.beginPath(); const ax = 474 + ph*40; ctx.moveTo(ax, 126 + i*13); ctx.lineTo(ax + 10, 132 + i*13); ctx.lineTo(ax, 138 + i*13); ctx.closePath(); ctx.fill(); }
+    Juego.pastilla("Dispositivo", 555, 216, {px:10, pad:12, h:18}); Juego.pastilla(s.consumo + " mA", 555, 238, {px:11, pad:14, h:20, bg:"#FF8A5B", fg:"#000"});
+    // duración estimada y reloj
+    const fr = Math.min(1, horas/40); ctx.fillStyle = "#fff"; roundRect(ctx, 130, 268, 400, 16, 8); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; roundRect(ctx, 130, 268, 400, 16, 8); ctx.stroke(); ctx.fillStyle = horas > 15 ? "#2EAA4A" : horas > 5 ? "#E8A020" : "#E03131"; roundRect(ctx, 132, 270, Math.max(8, 396*fr), 12, 6); ctx.fill();
+    ctx.fillStyle = "#000"; ctx.font = F(9, 700); ctx.textAlign = "center"; [0, 10, 20, 30, 40].forEach(v=>ctx.fillText(v + " h" + (v === 40 ? "+" : ""), 130 + v/40*400, 300));
+    Juego.pastilla(`Duración estimada: ${horas.toFixed(1)} horas`, 330, 328, {px:18, pad:36, h:38, bg:"#C1FF00", fg:"#000"});
+    if(s.gasta || s.fin) Juego.pastilla(s.fin ? `¡Batería agotada! Duró ${horas.toFixed(1)} horas` : `Tiempo simulado: ${((1 - s.carga)*horas).toFixed(1)} h`, 330, 60, {px:12, pad:26, h:28, bg:s.fin ? "#E03131" : "#1863DC", fg:"#fff"});
+    Elec.pista(this.CT.x0, this.CT.x1, this.CT.y, s.cap, 500, 5000, "Capacidad", s.cap + " mAh"); Elec.pista(this.DT.x0, this.DT.x1, this.DT.y, s.consumo, 50, 1000, "Consumo", s.consumo + " mA");
+    Juego.pastilla(`Capacidad: ${s.cap} mAh   Consumo: ${s.consumo} mA`, 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra las perillas o toca la batería para gastarla", 330, 250);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Código Morse (piloto) ---------- */
+const expMorseV3 = {...expMorse, ...RetosMix, ...JuegoMix,
+  name:expMorse.name + " (piloto 2)",
+  cardDesc:"Transmite palabras con pulsos de luz o escribe tú mismo con el telégrafo: toque corto = punto, largo = raya. Cumple tres retos con estrellas.",
+  MAP:{A:".-", B:"-...", C:"-.-.", D:"-..", E:".", F:"..-.", G:"--.", H:"....", I:"..", J:".---", K:"-.-", L:".-..", M:"--", N:"-.", O:"---", P:".--.", Q:"--.-", R:".-.", S:"...", T:"-", U:"..-", V:"...-", W:".--", X:"-..-", Y:"-.--", Z:"--.."},
+  KEY:{x:330, y:330, r:52},
+  RETOS:[
+    {id:"palabra", txt:"Transmite una palabra completa con la luz", ok:"Los pulsos de luz formaron un mensaje", pista:"Pulsa «Transmitir SOS» (o la palabra que quieras) y observa."},
+    {id:"s", txt:"Con el telégrafo, escribe la letra S (tres toques cortos)", ok:"S = ··· (tres puntos)", pista:"Toca el botón rojo tres veces rápido y espera un momento."},
+    {id:"sos", txt:"Con el telégrafo, escribe SOS completo", ok:"¡SOS en código Morse! ··· −−− ···", pista:"S: tres toques cortos · O: tres toques largos · S: tres cortos."}
+  ],
+  mount(){
+    const s = this.st = {playing:false, cola:[], onNow:false, sent:new Set(), t:0, sym:null, el:0, pulsos:[], buf:"", msg:"", press:null, silencio:0, moved:false, held:false, w:null};
+    Object.keys(this.CODES).forEach(k=> ctrlBtn("📤 Transmitir " + k, "", ()=>this.enviar(k)));
+    ctrlBtn("🧹 Borrar mensaje", "ghost", ()=>{ s.msg = ""; s.buf = ""; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=> Math.hypot(p.x - this.KEY.x, p.y - this.KEY.y) <= Math.max(this.KEY.r, 24*sc) ? {t:"key"} : null,
+      down:()=>{ if(s.playing) return; s.press = s.t; s.held = true; s.moved = true; s.silencio = 0; FX.sound("beep"); },
+      up:()=>{ s.held = false; if(s.press === null) return; const d = s.t - s.press; s.press = null; s.buf += d < .5 ? "." : "-"; s.silencio = 0; s.pulsos.push({t0:s.t - d, d, tipo:d < .5 ? "." : "-", manual:true}); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  enviar(k){
+    const s = this.st; if(s.playing) return; s.cola = []; this.CODES[k].split(" ").forEach((l, li, arr)=>{ l.split("").forEach((c, ci)=>{ s.cola.push({c, ult:ci === l.length - 1, pal:li === arr.length - 1}); }); });
+    s.playing = true; s.sym = null; s.sent.add(k); s.word = k; s.moved = true; s.pulsos = []; if(s.sent.size >= 2) markRan();
+  },
+  decodificar(sec){ const e = Object.entries(this.MAP).find(([l, c])=>c === sec); return e ? e[0] : "?"; },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), unit = .35; s.t += h;
+    if(s.playing){
+      if(!s.sym){ const n = s.cola.shift(); if(n){ s.sym = n; s.el = 0; s.beep = false; } else { s.playing = false; s.onNow = false; this.ganar(["palabra"], 330, 160); } }
+      if(s.sym){ const dur = s.sym.c === "." ? unit : unit*3, tail = unit*(s.sym.ult ? 3 : 1); if(!s.beep){ s.beep = true; FX.sound("beep"); s.pulsos.push({t0:s.t, d:dur, tipo:s.sym.c}); }
+        s.el += h; s.onNow = s.el < dur; if(s.el >= dur + tail){ s.sym = null; s.onNow = false; } }
+    } else {
+      s.onNow = s.press !== null;
+      if(s.press === null && s.buf){ s.silencio += h; if(s.silencio > .9){ const l = this.decodificar(s.buf); s.msg += l; s.buf = ""; s.silencio = 0; FX.sound(l === "?" ? "thud" : "ding"); const ids = []; if(s.msg.endsWith("S")) ids.push("s"); if(/SOS$/.test(s.msg)) ids.push("sos"); if(ids.length) this.ganar(ids, 330, 160); } }
+      else if(s.press === null && !s.buf && s.msg && !s.msg.endsWith(" ")){ s.silencio += h; if(s.silencio > 2.4) s.msg += " "; } else if(s.press === null){ s.silencio += h; }
+    }
+    Juego.fondo(0);
+    // lámpara
+    const on = s.onNow; if(on){ const g = ctx.createRadialGradient(330, 110, 10, 330, 110, 130); g.addColorStop(0, "rgba(255,213,74,.7)"); g.addColorStop(1, "rgba(255,213,74,0)"); ctx.fillStyle = g; ctx.fillRect(180, 0, 300, 240); }
+    ctx.fillStyle = on ? "#FFE680" : "#3A3A3A"; ctx.beginPath(); ctx.arc(330, 110, 50, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 4; ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.beginPath(); ctx.ellipse(314, 92, 9, 15, -.5, 0, 7); ctx.fill();
+    // línea de tiempo de pulsos
+    ctx.fillStyle = "rgba(0,0,0,.55)"; roundRect(ctx, 40, 186, 580, 34, 17); ctx.fill(); s.pulsos = s.pulsos.filter(p=>s.t - p.t0 < 6.5);
+    s.pulsos.forEach(p=>{ const x1 = 600 - (s.t - p.t0)*80, x0 = x1 + p.d*80; ctx.fillStyle = p.manual ? "#FF8A5B" : "#C1FF00"; roundRect(ctx, Math.max(46, x1), 194, Math.max(0, Math.min(x0, 600) - Math.max(46, x1)), 18, 9); ctx.fill(); });
+    ctx.fillStyle = "#fff"; ctx.font = F(10, 700); ctx.textAlign = "left"; ctx.fillText("· = punto (corto)   — = raya (largo, 3× el punto)", 44, 240);
+    // telégrafo
+    const K = this.KEY, pr = s.press !== null; ctx.fillStyle = "rgba(0,0,0,.3)"; ctx.beginPath(); ctx.ellipse(K.x, K.y + 50, K.r + 14, 10, 0, 0, 7); ctx.fill(); ctx.fillStyle = "#3A3A3A"; roundRect(ctx, K.x - K.r - 12, K.y + 26, (K.r + 12)*2, 24, 8); ctx.fill();
+    const kg = ctx.createRadialGradient(K.x - 12, K.y - 12 + (pr ? 8 : 0), 4, K.x, K.y + (pr ? 8 : 0), K.r); kg.addColorStop(0, pr ? "#FF6B6B" : "#FF9A9A"); kg.addColorStop(1, pr ? "#B22A2A" : "#E03131"); ctx.fillStyle = kg; ctx.beginPath(); ctx.arc(K.x, K.y + (pr ? 8 : 0), K.r - 6, 0, 7); ctx.fill(); ctx.strokeStyle = s.playing ? "#555" : "#000"; ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = "#fff"; ctx.font = F(13, 800); ctx.textAlign = "center"; ctx.fillText(s.playing ? "ESPERA" : "TELÉGRAFO", K.x, K.y + 5*uiScale + (pr ? 8 : 0));
+    // tabla de letras y mensaje
+    const tab = ["S", "O", "H", "L", "A", "U", "Z", "I", "C"]; tab.forEach((l, i)=>{ const x = 70, y = 262 + i*0; }); ctx.fillStyle = "rgba(0,0,0,.65)"; roundRect(ctx, 14, 252, 150, 160, 10); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.font = F(12, 800); ctx.textAlign = "left"; tab.forEach((l, i)=>{ ctx.fillText(`${l}   ${this.MAP[l].replace(/\./g, "·").replace(/-/g, "−")}`, 26, 274 + i*16.5); });
+    if(s.buf) Juego.pastilla(s.buf.replace(/\./g, "·").replace(/-/g, "−"), 330, 266, {px:16, pad:30, h:26, bg:"#FF8A5B", fg:"#000"});
+    Juego.pastilla(`Mensaje: ${s.msg || "—"}`, 520, 330, {px:13, pad:26, h:30, bg:"#1863DC", fg:"#fff"});
+    Juego.pastilla(s.playing ? "Transmitiendo…" : "Elige una palabra o escribe con el telégrafo ↓", 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Mantén el botón rojo: corto = punto, largo = raya", 330, 390);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Generador: mueve un imán (piloto) ---------- */
+const expGeneradorV3 = {...expGenerador, ...RetosMix, ...JuegoMix,
+  name:expGenerador.name + " (piloto 2)",
+  cardDesc:"Arrastra el imán adentro y afuera de la bobina y mira reaccionar la aguja; un imán quieto no genera nada. Cumple tres retos con estrellas.",
+  CX:280, XMIN:90, XMAX:470, GY:350,
+  RETOS:[
+    {id:"aguja", txt:"Mueve el imán por la bobina: ¡que se mueva la aguja!", ok:"El imán en movimiento indujo una corriente", pista:"Arrastra el imán de lado a lado a través de la bobina."},
+    {id:"quieto", txt:"Deja el imán quieto dentro de la bobina: la aguja vuelve a cero", ok:"Un imán quieto no genera electricidad", pista:"Mueve el imán, déjalo dentro de la bobina y no lo muevas."},
+    {id:"rapido", txt:"Muévelo muy rápido: la aguja casi al tope", ok:"Más rápido, más voltaje inducido", pista:"Arrastra el imán de golpe, con un movimiento rápido."}
+  ],
+  mount(){
+    const s = this.st = {speed:50, mx:130, dir:1, auto:false, needle:0, vel:0, tested:new Set(), held:false, xPrev:130, quietoT:0, movio:false, moved:false, t:0};
+    s.sl = ctrlSlider("Velocidad del movimiento", 10, 100, 10, s.speed, v=>{ s.speed = v; });
+    ctrlBtn("🧲 Mover el imán adentro y afuera", "amber", ()=>{ s.auto = true; s.held = false; s.dir = 1; s.mx = this.XMIN + 20; s.moved = true; s.tested.add("b" + Math.round(s.speed/25)); if(s.tested.size >= 2) markRan(); });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=> (Math.abs(p.x - s.mx) <= Math.max(60, 26*sc) && Math.abs(p.y - 200) <= Math.max(36, 24*sc)) ? {dx:s.mx - p.x} : null,
+      down:(o)=>{ s.held = true; s.auto = false; s.dx = o.dx; s.moved = true; }, move:(o, p)=>{ s.mx = Math.max(this.XMIN, Math.min(this.XMAX, p.x + s.dx)); }, up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), CX = this.CX; s.t += h;
+    let v = 0;
+    if(s.auto){ s.mx += s.dir*s.speed*h; if(s.mx > this.XMAX - 40){ s.dir = -1; } if(s.mx < this.XMIN + 20 && s.dir < 0){ s.auto = false; s.dir = 1; } v = s.dir*s.speed; }
+    else if(s.held){ v = (s.mx - s.xPrev)/h; v = s.vel + (v - s.vel)*Math.min(1, h*14); }
+    s.vel = v; s.xPrev = s.mx;
+    const flux = Math.max(-90, Math.min(90, v*.9)); s.needle += (flux - s.needle)*Math.min(1, h*8);
+    if(!s.held && !s.auto) s.vel *= Math.exp(-h*14);
+    if(Math.abs(flux) > 5 && s.held){ s.tested.add("d" + (Math.abs(flux) > 45 ? "h" : "l")); if(s.tested.size >= 2) markRan(); }
+    const ids = []; if(Math.abs(s.needle) > 10){ ids.push("aguja"); s.movio = true; } if(Math.abs(s.needle) > 80) ids.push("rapido");
+    const dentro = s.mx > CX - 40 && s.mx < CX + 40; if(s.movio && dentro && Math.abs(s.needle) < 1.5 && !s.auto){ s.quietoT += h; if(s.quietoT > 1) ids.push("quieto"); } else s.quietoT = 0;
+    if(ids.length) this.ganar(ids, 330, 120);
+    Juego.fondo(0);
+    // bobina (anillos) con cables
+    const cy = 200; ctx.strokeStyle = "#E8730C"; ctx.lineWidth = 4; for(let i = 0; i < 10; i++){ const x = CX - 54 + i*12; ctx.beginPath(); ctx.ellipse(x, cy, 9, 40, 0, 0, 7); ctx.stroke(); }
+    const ov = {on:Math.abs(s.needle) > 6, t:s.t, vel:40 + Math.abs(s.needle), dir:s.needle >= 0 ? 1 : -1};
+    Elec.cable([[CX - 54, cy - 40], [CX - 54, 110], [480, 110], [480, 200]], ov); Elec.cable([[CX + 54, cy + 40], [CX + 54, 290], [480, 290], [480, 260]], ov);
+    // imán arrastrable
+    ctx.fillStyle = "#E03131"; roundRect(ctx, s.mx - 40, cy - 16, 40, 32, 4); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = "#1863DC"; roundRect(ctx, s.mx, cy - 16, 40, 32, 4); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#fff"; ctx.font = F(14, 800); ctx.textAlign = "center"; ctx.fillText("N", s.mx - 20, cy + 5*uiScale); ctx.fillText("S", s.mx + 20, cy + 5*uiScale);
+    if(s.held){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3.5; roundRect(ctx, s.mx - 44, cy - 20, 88, 40, 6); ctx.stroke(); }
+    // galvanómetro
+    const gx = 540, gy = 260; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(gx, gy, 66, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3.5; ctx.stroke();
+    for(let k = -3; k <= 3; k++){ const a = -Math.PI/2 + k*.4; ctx.beginPath(); ctx.moveTo(gx + Math.cos(a)*54, gy + Math.sin(a)*54); ctx.lineTo(gx + Math.cos(a)*62, gy + Math.sin(a)*62); ctx.stroke(); }
+    ctx.save(); ctx.translate(gx, gy); ctx.rotate((s.needle/90)*1.1); ctx.strokeStyle = "#E03131"; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -56); ctx.stroke(); ctx.restore(); ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(gx, gy, 6, 0, 7); ctx.fill();
+    Juego.pastilla("Galvanómetro", gx, gy + 28, {px:10, pad:14, h:18});
+    // foco indicador
+    const br = Math.min(1, Math.abs(s.needle)/70); ctx.fillStyle = `rgba(255,213,74,${.15 + .85*br})`; ctx.beginPath(); ctx.arc(480, 150, 16, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    Juego.pastilla(s.held || s.auto ? `velocidad: ${Math.abs(Math.round(v))}` : "imán quieto", 330, 296, {px:11, pad:18, h:22, bg:s.held || s.auto ? "#C1FF00" : "#333", fg:s.held || s.auto ? "#000" : "#aaa"});
+    Juego.pastilla(s.auto ? "El imán se está moviendo — observa la aguja" : s.held ? "¡Moviendo el imán!" : "Arrastra el imán o pulsa el botón ↓", 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el imán a través de la bobina", 330, 130);
+    this.finFotograma();
+  }
+};
+
+const ELECTRONICA_EXPS = [PILOTO ? expCircuitosV3 : expCircuitos, PILOTO ? expOhmV3 : expOhm, PILOTO ? expCapacitorV3 : expCapacitor, PILOTO ? expLEDV3 : expLED, PILOTO ? expElectroimanV3 : expElectroiman, PILOTO ? expLDRV3 : expLDR, PILOTO ? expTransistorV3 : expTransistor, PILOTO ? expBateriaV3 : expBateria, PILOTO ? expMorseV3 : expMorse, PILOTO ? expGeneradorV3 : expGenerador];
 
 /* ================= home ================= */
 const EXPS = [
