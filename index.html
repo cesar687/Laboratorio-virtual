@@ -8386,7 +8386,599 @@ const expReciclaje = {
   clase:`Revisen el bote de basura de su casa o salón durante un día y clasifiquen cada residuo en orgánico, reciclable o especial. Discutan cuántos de los "especiales" terminan realmente en un punto de acopio adecuado.`
 };
 
-const AMBIENTE_EXPS = [expInvernadero, expHuella, expCicloAgua, expFiltro, expErosion, expIslaCalor, expBiodegrada, expAirePart, expSolar, expReciclaje];
+/* ---------- MEDIO AMBIENTE · look de juego (piloto) ----------
+   Misma predicción, explicación, clase y registro que las versiones originales; cambia la vista, se interactúa con los objetos y se suman retos. */
+
+/* ---------- Efecto invernadero (piloto) ---------- */
+const expInvernaderoV3 = {...expInvernadero, ...RetosMix, ...JuegoMix,
+  name:expInvernadero.name + " (piloto 2)",
+  cardDesc:"Arrastra el sol por la barra de tiempo y compara dos botellas: una abierta con aire normal y otra cerrada con más CO₂. Cumple tres retos con estrellas.",
+  TR:{x0:70, x1:590, y:40}, BX:[200, 460], FLOOR:380,
+  RETOS:[
+    {id:"treinta", txt:"Lleva el sol hasta 30 minutos y compara las botellas", ok:"A los 30 minutos la cerrada ya está más caliente", pista:"Arrastra el sol por la barra hacia la derecha."},
+    {id:"calor", txt:"Haz que la botella cerrada pase de 45 °C", ok:"¡Más de 45 °C! El CO₂ atrapa el calor", pista:"Deja pasar casi toda la hora de sol."},
+    {id:"hora", txt:"Llega a la hora completa (60 min) y mira la diferencia", ok:"Después de una hora la cerrada está 18 °C más caliente", pista:"Lleva el sol hasta el final de la barra."}
+  ],
+  mount(){
+    const s = this.st = {mins:0, tested:new Set(), held:false, moved:false, ph:[[], []], t:0};
+    ctrlBtn("☀️ Avanzar 10 minutos de sol", "amber", ()=>this.poner(Math.min(60, Math.floor(s.mins/10)*10 + 10)));
+    ctrlBtn("🔁 Reiniciar", "ghost", ()=>{ s.mins = 0; s.tested.clear(); });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=> (p.x >= this.TR.x0 - 24 && p.x <= this.TR.x1 + 24 && Math.abs(p.y - this.TR.y) <= Math.max(34, 26*sc)) ? {} : null,
+      down:(o, p)=>{ s.held = true; this.fijar(p.x); }, move:(o, p)=>{ this.fijar(p.x); }, up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijar(x){ const T = this.TR; this.poner(Math.round(Math.max(0, Math.min(60, (x - T.x0)/(T.x1 - T.x0)*60))*2)/2); },
+  poner(m){ const s = this.st; s.mins = m; s.moved = true; if(m > 0) s.tested.add(Math.round(m/10)); if(s.tested.size >= 3) markRan(); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), T = this.TR, FL = this.FLOOR; s.t += h;
+    const tA = 22 + s.mins*.25, tB = 22 + s.mins*.55;
+    const ids = []; if(s.mins >= 30) ids.push("treinta"); if(tB > 45) ids.push("calor"); if(s.mins >= 60) ids.push("hora"); if(ids.length) this.ganar(ids, 330, 200);
+    if(s.mins > 0 && !FX.rm) this.BX.forEach((cx, i)=>{ if(Math.random() < h*7 && s.ph[i].length < 30) s.ph[i].push({x:cx - 32 + Math.random()*64, y:FL - 14, vy:-55 - Math.random()*25, vx:(Math.random()-.5)*18, r:0}); });
+    s.ph.forEach((arr, i)=>{ arr.forEach(q=>{ q.y += q.vy*h; q.x += q.vx*h; if(i === 1 && q.y < 150 && q.vy < 0 && q.r < 2){ q.vy = Math.abs(q.vy)*.9; q.r++; } }); s.ph[i] = arr.filter(q=>q.y > 40 && q.y < FL - 8); });
+    Juego.fondo(FL);
+    const sx = T.x0 + s.mins/60*(T.x1 - T.x0);
+    // barra del tiempo con el sol
+    ctx.fillStyle = "rgba(0,0,0,.5)"; roundRect(ctx, T.x0 - 28, T.y - 18, T.x1 - T.x0 + 56, 36, 18); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2; roundRect(ctx, T.x0 - 28, T.y - 18, T.x1 - T.x0 + 56, 36, 18); ctx.stroke();
+    ctx.fillStyle = "#C1FF00"; ctx.font = F(9, 700); ctx.textAlign = "center"; for(let m = 0; m <= 60; m += 10) ctx.fillText(m, T.x0 + m/60*(T.x1 - T.x0), T.y + 30*uiScale);
+    const sg = ctx.createRadialGradient(sx, T.y, 4, sx, T.y, 40); sg.addColorStop(0, "rgba(255,213,74,.9)"); sg.addColorStop(1, "rgba(255,213,74,0)"); ctx.fillStyle = sg; ctx.fillRect(sx - 40, T.y - 40, 80, 80);
+    ctx.fillStyle = "#FFD54A"; ctx.beginPath(); ctx.arc(sx, T.y, 18, 0, 7); ctx.fill(); ctx.strokeStyle = s.held ? "#fff" : "#000"; ctx.lineWidth = s.held ? 3.5 : 2.5; ctx.stroke();
+    // rayos de luz hacia las botellas
+    ctx.strokeStyle = "rgba(255,213,74,.55)"; ctx.lineWidth = 2; this.BX.forEach(cx=>{ for(let k = -1; k <= 1; k++){ const x1 = sx + k*8, ph = (s.t*1.2 + k*.3)%1; ctx.beginPath(); ctx.moveTo(x1 + (cx - sx)*ph*.0, T.y + 22); ctx.lineTo(cx + k*24, 150); ctx.stroke(); } });
+    // botellas
+    [[0, "Botella abierta", tA, "CO₂ ambiente normal", 4], [1, "Botella cerrada", tB, "+ CO₂ extra, sellada", 14]].forEach(([i, lab, tmp, co2, nco])=>{
+      const cx = this.BX[i], top = 160, bot = FL - 8, calor = Math.max(0, Math.min(1, (tmp - 22)/35));
+      ctx.fillStyle = `rgba(${Math.round(80 + 170*calor)},${Math.round(150 - 80*calor)},${Math.round(230 - 190*calor)},.28)`; roundRect(ctx, cx - 46, top, 92, bot - top, 14); ctx.fill();
+      ctx.save(); ctx.beginPath(); ctx.rect(cx - 46, top, 92, bot - top); ctx.clip();
+      ctx.fillStyle = "rgba(60,60,60,.65)"; for(let k = 0; k < nco; k++){ ctx.beginPath(); ctx.arc(cx - 34 + (k*23)%68 + Math.sin(s.t*1.5 + k)*4, top + 20 + ((k*37)%(bot - top - 40)) + Math.cos(s.t + k)*3, 3.2, 0, 7); ctx.fill(); }
+      ctx.fillStyle = "#E03131"; s.ph[i].forEach(q=>{ ctx.beginPath(); ctx.moveTo(q.x, q.y - 5); ctx.lineTo(q.x - 3, q.y + 3); ctx.lineTo(q.x + 3, q.y + 3); ctx.closePath(); ctx.fill(); }); ctx.restore();
+      ctx.strokeStyle = "rgba(95,125,135,.95)"; ctx.lineWidth = 4; roundRect(ctx, cx - 46, top, 92, bot - top, 14); ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, cx - 38, top + 14, 6, bot - top - 40, 3); ctx.fill();
+      if(i === 1){ ctx.fillStyle = "#555"; roundRect(ctx, cx - 28, top - 14, 56, 16, 5); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke(); }
+      else { ctx.fillStyle = "#000"; ctx.font = F(10, 700); ctx.textAlign = "center"; ctx.fillText("↑ abierta", cx, top - 8); }
+      Juego.pastilla(lab, cx, top - 36, {px:12, pad:20, h:24});
+      Juego.pastilla(tmp.toFixed(1) + " °C", cx, bot - 60, {px:17, pad:26, h:30, bg:calor > .5 ? "#E03131" : calor > .2 ? "#E8A020" : "#1863DC", fg:"#fff"});
+      ctx.fillStyle = "#fff"; ctx.font = F(10, 700); ctx.textAlign = "center"; ctx.fillText(co2, cx, FL + 20*uiScale); });
+    Juego.pastilla(`Minutos de sol: ${s.mins}`, 330, 92, {px:12, pad:24, h:26});
+    if(s.mins > 0) Juego.pastilla("Calor atrapado: ▲ infrarrojo rebota en la cerrada", 330, 120, {px:10, pad:18, h:20, bg:"#E03131", fg:"#fff"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el sol hacia la derecha", 330, 150);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Tu huella de carbono (piloto) ---------- */
+const expHuellaV3 = {...expHuella, ...RetosMix, ...JuegoMix,
+  name:expHuella.name + " (piloto 2)",
+  cardDesc:"Arrastra dos actividades a la balanza de CO₂ y mira cuál pesa más. Cumple tres retos con estrellas.",
+  PANS:[{x:150, y:250}, {x:510, y:250}], PIV:{x:330, y:150},
+  RETOS:[
+    {id:"vuelo", txt:"Pon el vuelo de 2 h contra cargar el celular", ok:"¡Un vuelo pesa unas 167 veces más que cargar el celular un mes!", pista:"Arrastra el vuelo a un platillo y la carga del celular al otro."},
+    {id:"carne", txt:"Compara 1 kg de carne de res con manejar 20 km", ok:"Un kilo de carne emite casi 7 veces más que manejar 20 km", pista:"Pon la carne en un platillo y el auto en el otro."},
+    {id:"todas", txt:"Prueba las seis actividades", ok:"Ya comparaste todas las actividades", pista:"Faltan actividades por poner en la balanza."}
+  ],
+  carta(i){ return {x:62 + i*107, y:392, w:100, h:44}; },
+  ICON:{vuelo:"✈️", celular:"📱", bano:"🚿", papel:"🖨️", auto:"🚗", carne:"🥩"},
+  mount(){
+    const s = this.st = {pan:[null, null], tested:new Set(), held:null, tilt:0, moved:false};
+    Object.keys(this.ACTS).forEach(k=> ctrlBtn(this.ACTS[k].label, "ghost", ()=>this.poner(k, s.pan[0] === null ? 0 : s.pan[1] === null ? 1 : 1)));
+    ctrlBtn("🧹 Vaciar balanza", "ghost", ()=>{ s.pan = [null, null]; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const keys = Object.keys(this.ACTS); for(let i = 0; i < keys.length; i++){ const b = this.carta(i); if(Math.abs(p.x - b.x) <= Math.max(b.w/2, 22*sc) && Math.abs(p.y - b.y) <= Math.max(b.h/2, 22*sc)) return {k:keys[i], x0:p.x, y0:p.y}; }
+        for(let j = 0; j < 2; j++){ const P = this.PANS[j] , c = s.pan[j]; if(c && Math.abs(p.x - P.x) <= 70 && Math.abs(p.y - (P.y + s.tilt*(j ? 1 : -1)*0 )) <= 70) return {k:c, x0:p.x, y0:p.y, from:j}; } return null; },
+      down:(o, p)=>{ s.held = {k:o.k, x:p.x, y:p.y}; s.moved = true; if(o.from !== undefined) s.pan[o.from] = null; },
+      move:(o, p)=>{ if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ const h = s.held; s.held = null; if(!h) return; const toque = Math.hypot(h.x - o.x0, h.y - o.y0) < 8;
+        if(toque && o.from === undefined){ this.poner(h.k, s.pan[0] === null ? 0 : 1); return; }
+        const j = h.x < 330 ? 0 : 1; if(h.y > 90 && h.y < 360) this.poner(h.k, j); else if(o.from !== undefined) FX.dust(s.fx, h.x, 330); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  poner(k, j){ const s = this.st; if(s.pan[1 - j] === k){ s.pan[1 - j] = null; } s.pan[j] = k; s.tested.add(k); if(s.tested.size >= 3) markRan(); s.moved = true; FX.sound("thud"); FX.dust(s.fx, this.PANS[j].x, this.PANS[j].y);
+    const a = s.pan[0], b = s.pan[1]; if(a && b){ const ids = []; const par = [a, b].sort().join(); if(par === "celular,vuelo") ids.push("vuelo"); if(par === "auto,carne") ids.push("carne"); if(s.tested.size >= 6) ids.push("todas"); if(ids.length) this.ganar(ids, 330, 130); }
+    else if(s.tested.size >= 6) this.ganar(["todas"], 330, 130); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), P0 = this.PIV;
+    const a = s.pan[0] ? this.ACTS[s.pan[0]].kg : 0, b = s.pan[1] ? this.ACTS[s.pan[1]].kg : 0;
+    const meta = a && b ? Math.max(-1, Math.min(1, Math.log10(b/a)/1.6)) : (b ? 1 : a ? -1 : 0); s.tilt += (meta*34 - s.tilt)*Math.min(1, h*4);
+    Juego.fondo(0);
+    ctx.strokeStyle = "#333"; ctx.lineWidth = 8; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(P0.x, P0.y); ctx.lineTo(P0.x, 330); ctx.stroke();
+    ctx.fillStyle = "#333"; roundRect(ctx, P0.x - 60, 328, 120, 14, 6); ctx.fill();
+    const ang = s.tilt*Math.PI/180/1.0*.6; ctx.save(); ctx.translate(P0.x, P0.y); ctx.rotate(ang); ctx.strokeStyle = "#000"; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(-190, 0); ctx.lineTo(190, 0); ctx.stroke(); ctx.restore(); ctx.lineCap = "butt";
+    ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(P0.x, P0.y, 10, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    [0, 1].forEach(j=>{ const ex = P0.x + (j ? 190 : -190)*Math.cos(ang), ey = P0.y + (j ? 190 : -190)*Math.sin(ang), k = s.pan[j];
+      ctx.strokeStyle = "#555"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - 60, ey + 80); ctx.moveTo(ex, ey); ctx.lineTo(ex + 60, ey + 80); ctx.stroke();
+      ctx.fillStyle = "#1B1B1B"; ctx.beginPath(); ctx.ellipse(ex, ey + 84, 76, 12, 0, 0, 7); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2.5; ctx.stroke();
+      if(k){ const act = this.ACTS[k]; ctx.font = F(34, 400); ctx.textAlign = "center"; ctx.fillStyle = "#000"; ctx.fillText(this.ICON[k], ex, ey + 70*uiScale); Juego.pastilla(`${act.label}`, ex, ey + 112, {px:10, pad:14, h:20}); Juego.pastilla(`${act.kg} kg CO₂`, ex, ey + 136, {px:12, pad:18, h:22, bg:"#C1FF00", fg:"#000"}); }
+      else Juego.pastilla("suelta aquí", ex, ey + 86, {px:10, pad:14, h:18, bg:"#333", fg:"#aaa"}); });
+    if(a && b){ const mas = b > a ? s.pan[1] : s.pan[0], men = b > a ? s.pan[0] : s.pan[1], r = Math.max(a, b)/Math.min(a, b); Juego.pastilla(`${this.ACTS[mas].label} emite ${r >= 10 ? Math.round(r) : r.toFixed(1)}× más que ${this.ACTS[men].label}`, 330, 70, {px:12, pad:24, h:28, bg:"#000", fg:"#C1FF00"}); }
+    Object.keys(this.ACTS).forEach((k, i)=>{ if(s.held && s.held.k === k && s.pan.indexOf(k) < 0) return; const b2 = this.carta(i); ctx.fillStyle = "#1B1B1B"; roundRect(ctx, b2.x - b2.w/2, b2.y - b2.h/2, b2.w, b2.h, 12); ctx.fill(); ctx.strokeStyle = s.tested.has(k) ? "#C1FF00" : "#444"; ctx.lineWidth = 2; ctx.stroke(); ctx.font = F(18, 400); ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText(this.ICON[k], b2.x - 34, b2.y + 7*uiScale); ctx.font = F(9, 700); const lab = this.ACTS[k].label.split(" "); ctx.fillText(lab.slice(0, Math.ceil(lab.length/2)).join(" "), b2.x + 12, b2.y - 3*uiScale); ctx.fillText(lab.slice(Math.ceil(lab.length/2)).join(" "), b2.x + 12, b2.y + 9*uiScale); });
+    if(s.held){ ctx.font = F(36, 400); ctx.textAlign = "center"; ctx.fillStyle = "#000"; ctx.fillText(this.ICON[s.held.k], s.held.x, s.held.y + 10*uiScale); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.arc(s.held.x, s.held.y, 30, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
+    Juego.pastilla(`Actividades probadas: ${s.tested.size} de 6`, 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra una actividad a la balanza", 330, 330);
+    this.finFotograma();
+  }
+};
+
+/* ---------- El ciclo del agua en una bolsa (piloto) ---------- */
+const expCicloAguaV3 = {...expCicloAgua, ...RetosMix, ...JuegoMix,
+  name:expCicloAgua.name + " (piloto 2)",
+  cardDesc:"Arrastra el sol para dar más o menos calor a la bolsa y mira evaporarse, condensarse y «llover» el agua. Cumple tres retos con estrellas.",
+  BAG:{x:200, y:60, w:260, h:310}, SUN:{x0:60, x1:600, y:36},
+  RETOS:[
+    {id:"uno", txt:"Observa un ciclo completo del agua", ok:"Evaporación, condensación y lluvia: ¡todo en una bolsa!", pista:"Espera a que el agua suba como vapor y vuelva a caer."},
+    {id:"fuerte", txt:"Con el sol al máximo, completa otro ciclo", ok:"Con más calor el ciclo es mucho más rápido", pista:"Arrastra el sol hasta el extremo derecho."},
+    {id:"debil", txt:"Con sol débil (40 o menos), completa un ciclo y compara el tiempo", ok:"Con menos calor el ciclo tarda más", pista:"Arrastra el sol a la izquierda y ten paciencia."}
+  ],
+  mount(){
+    const s = this.st = {sun:60, t:0, cycles:0, tc:0, ultimo:[], held:false, moved:false, gotas:[], clk:0};
+    s.sl = ctrlSlider("Intensidad del sol", 20, 100, 10, s.sun, v=>this.poner(v));
+    this.iniciarJuego();
+    const S = this.SUN;
+    this._off = bindDrag({
+      hit:(p, sc)=> (p.x >= S.x0 - 24 && p.x <= S.x1 + 24 && Math.abs(p.y - S.y) <= Math.max(34, 26*sc)) ? {} : null,
+      down:(o, p)=>{ s.held = true; this.fijar(p.x); }, move:(o, p)=>{ this.fijar(p.x); }, up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijar(x){ const S = this.SUN; this.poner(Math.round((20 + Math.max(0, Math.min(1, (x - S.x0)/(S.x1 - S.x0)))*80)/10)*10); },
+  poner(v){ const s = this.st; s.sun = v; s.sl.value = v; s.moved = true; },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), B = this.BAG, S = this.SUN; s.clk += h;
+    const k = s.sun/60; s.t += h*k; s.tc += h; const cp = s.t%8, vapor = cp < 4;
+    if(Math.floor(s.t/8) > s.cycles){ s.cycles++; s.ultimo.push({t:s.tc, sun:s.sun}); s.ultimo = s.ultimo.slice(-3); const ids = ["uno"]; if(s.sun >= 100) ids.push("fuerte"); if(s.sun <= 40) ids.push("debil"); this.ganar(ids, B.x + B.w/2, 150); FX.sound("ding"); s.tc = 0; if(s.cycles >= 2) markRan(); }
+    Juego.fondo(0);
+    // ventana soleada
+    ctx.fillStyle = "rgba(255,225,120," + (.12 + .28*k/1.67) + ")"; ctx.fillRect(0, 0, 660, 430);
+    const sx = S.x0 + (s.sun - 20)/80*(S.x1 - S.x0);
+    ctx.fillStyle = "rgba(0,0,0,.5)"; roundRect(ctx, S.x0 - 28, S.y - 18, S.x1 - S.x0 + 56, 36, 18); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2; roundRect(ctx, S.x0 - 28, S.y - 18, S.x1 - S.x0 + 56, 36, 18); ctx.stroke();
+    const sg = ctx.createRadialGradient(sx, S.y, 4, sx, S.y, 30 + s.sun*.3); sg.addColorStop(0, "rgba(255,213,74,.95)"); sg.addColorStop(1, "rgba(255,213,74,0)"); ctx.fillStyle = sg; ctx.fillRect(sx - 70, S.y - 70, 140, 140);
+    ctx.fillStyle = "#FFD54A"; ctx.beginPath(); ctx.arc(sx, S.y, 16 + s.sun*.06, 0, 7); ctx.fill(); ctx.strokeStyle = s.held ? "#fff" : "#000"; ctx.lineWidth = s.held ? 3.5 : 2.5; ctx.stroke();
+    ctx.fillStyle = "#C1FF00"; ctx.font = F(9, 700); ctx.textAlign = "center"; ctx.fillText("poco sol", S.x0, S.y + 30*uiScale); ctx.fillText("mucho sol", S.x1, S.y + 30*uiScale);
+    // bolsa
+    const g = ctx.createLinearGradient(B.x, 0, B.x + B.w, 0); g.addColorStop(0, "rgba(255,255,255,.55)"); g.addColorStop(1, "rgba(220,235,245,.5)"); ctx.fillStyle = g; roundRect(ctx, B.x, B.y, B.w, B.h, 24); ctx.fill();
+    ctx.save(); roundRect(ctx, B.x, B.y, B.w, B.h, 24); ctx.clip();
+    const wg = ctx.createLinearGradient(0, B.y + B.h - 50, 0, B.y + B.h); wg.addColorStop(0, "#3B7DD8"); wg.addColorStop(1, "#1B4FA8"); ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(B.x, B.y + B.h); ctx.lineTo(B.x, B.y + B.h - 46); for(let x = B.x; x <= B.x + B.w; x += 8) ctx.lineTo(x, B.y + B.h - 46 + Math.sin(s.clk*2 + x*.06)*2); ctx.lineTo(B.x + B.w, B.y + B.h); ctx.closePath(); ctx.fill();
+    if(vapor){ const pr = cp/4; ctx.fillStyle = "rgba(210,225,235,.75)"; for(let i = 0; i < 10; i++){ const px = B.x + 24 + (i*53 + Math.sin(s.clk*2 + i)*8)%(B.w - 48), py = B.y + B.h - 56 - pr*(B.h - 110) - (i%3)*14; ctx.beginPath(); ctx.arc(px, py, 4 + pr*3, 0, 7); ctx.fill(); } }
+    else { const pr = (cp - 4)/4; for(let i = 0; i < 9; i++){ const px = B.x + 28 + i*26, py = B.y + 22 + pr*(B.h - 100) + (i%3)*8; ctx.fillStyle = "rgba(205,230,245,.95)"; ctx.beginPath(); ctx.ellipse(px, py, 4, 5.5, 0, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(90,130,160,.8)"; ctx.lineWidth = 1; ctx.stroke(); } }
+    ctx.restore(); ctx.strokeStyle = "rgba(95,125,135,.95)"; ctx.lineWidth = 3.5; roundRect(ctx, B.x, B.y, B.w, B.h, 24); ctx.stroke(); ctx.fillStyle = "#C1FF00"; ctx.fillRect(B.x + 30, B.y - 2, B.w - 60, 5);
+    ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, B.x + 12, B.y + 24, 7, B.h - 80, 3); ctx.fill();
+    Juego.pastilla(vapor ? "☀️ El sol evapora el agua… el vapor sube" : "💧 El vapor se condensa arriba y cae como lluvia", 330, 98, {px:12, pad:24, h:26, bg:vapor ? "#E8A020" : "#1863DC", fg:"#fff"});
+    Juego.pastilla("El colorante azul se queda abajo", B.x + B.w/2, B.y + B.h + 18, {px:10, pad:14, h:18, bg:"#1B4FA8", fg:"#fff"});
+    s.ultimo.forEach((c, i)=> Juego.pastilla(`Ciclo: ${c.t.toFixed(1)} s (sol ${c.sun})`, 560, 160 + i*28, {px:11, pad:16, h:22, bg:"#C1FF00", fg:"#000"}));
+    Juego.pastilla(`Ciclos completos observados: ${s.cycles}`, 100, 400, {px:11, pad:16, h:22});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el sol para dar más o menos calor", 330, 140);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Filtro de agua casero (piloto) ---------- */
+const expFiltroV3 = {...expFiltro, ...RetosMix, ...JuegoMix,
+  name:expFiltro.name + " (piloto 2)",
+  cardDesc:"Arrastra las capas a la botella, vierte el agua sucia y mira qué tan clara sale. Cumple tres retos con estrellas.",
+  BT:{x:250, y:50, w:160, h:230}, COLS:{grava:"#8FA9B0", arena:"#E8C84A", carbon:"#3B3B3B", algodon:"#F5F0DC"},
+  RETOS:[
+    {id:"una", txt:"Filtra el agua sucia con al menos una capa", ok:"Hasta una sola capa mejora el aspecto del agua", pista:"Arrastra una capa a la botella y luego la jarra de agua sucia."},
+    {id:"compara", txt:"Compara un filtro de una capa con uno de cuatro", ok:"Más capas, agua más clara", pista:"Filtra con una capa, vacía el filtro y vuelve a probar con las cuatro."},
+    {id:"max", txt:"Logra la máxima claridad (90 %) con las cuatro capas", ok:"90 % más clara… ¡pero aún NO es potable!", pista:"Pon grava, arena, carbón activado y algodón."}
+  ],
+  cap(i){ return {x:70, y:100 + i*70, w:112, h:48}; },
+  mount(){
+    const s = this.st = {stack:[], runs:0, lastClarity:0, held:null, pour:null, vistos:new Set(), moved:false, clk:0, agua:0};
+    Object.keys(this.LAYERS).forEach(k=> ctrlBtn("+ " + this.LAYERS[k].label, "ghost", ()=>this.agregar(k)));
+    ctrlBtn("💧 Verter agua sucia", "", ()=>this.verter());
+    ctrlBtn("🔁 Vaciar filtro", "ghost", ()=>{ s.stack = []; s.lastClarity = 0; s.agua = 0; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(Math.abs(p.x - 560) <= Math.max(44, 22*sc) && Math.abs(p.y - 150) <= Math.max(50, 22*sc)) return {t:"jarra"};
+        const keys = Object.keys(this.LAYERS); for(let i = 0; i < keys.length; i++){ const b = this.cap(i); if(Math.abs(p.x - b.x) <= Math.max(b.w/2, 22*sc) && Math.abs(p.y - b.y) <= Math.max(b.h/2, 22*sc)) return {t:"capa", k:keys[i]}; } return null; },
+      down:(o, p)=>{ s.held = {t:o.t, k:o.k, x:p.x, y:p.y}; s.moved = true; },
+      move:(o, p)=>{ if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ const h = s.held; s.held = null; if(!h) return; const B = this.BT, dentro = h.x > B.x - 30 && h.x < B.x + B.w + 30 && h.y > 20 && h.y < 330;
+        if(!dentro){ FX.dust(s.fx, h.x, Math.min(h.y, 400)); return; } if(h.t === "jarra") this.verter(); else this.agregar(h.k); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  agregar(k){ const s = this.st; if(s.stack.includes(k)){ FX.pop(s.fx, 330, 120, "Esa capa ya está en el filtro"); return; } if(s.stack.length >= 4) return; s.stack.push(k); s.moved = true; FX.dust(s.fx, 330, this.BT.y + 20 + (s.stack.length - 1)*50); FX.sound("thud"); },
+  verter(){
+    const s = this.st; if(s.pour) return; if(!s.stack.length){ FX.pop(s.fx, 330, 150, "Primero pon una capa en el filtro"); return; }
+    const eff = s.stack.reduce((a, k)=>a + this.LAYERS[k].eff, 0); s.pour = {t:0, clar:Math.min(.9, eff), n:s.stack.length}; s.moved = true; FX.sound("pour");
+  },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), B = this.BT; s.clk += h;
+    if(s.pour){ s.pour.t += h; s.agua = Math.min(1, s.pour.t/2.2);
+      if(s.pour.t >= 2.4){ s.lastClarity = s.pour.clar; s.runs++; if(s.runs >= 2) markRan(); s.vistos.add(s.pour.n); const ids = ["una"]; if(s.vistos.has(1) && s.vistos.has(4)) ids.push("compara"); if(s.pour.clar >= .9) ids.push("max"); s.pour = null; FX.sound("ding"); this.ganar(ids, 330, 330); } }
+    Juego.fondo(0);
+    // botella invertida con capas
+    ctx.fillStyle = "rgba(190,225,240,.25)"; ctx.beginPath(); ctx.moveTo(B.x, B.y); ctx.lineTo(B.x + B.w, B.y); ctx.lineTo(B.x + B.w, B.y + B.h); ctx.lineTo(B.x + B.w/2 + 22, B.y + B.h + 22); ctx.lineTo(B.x + B.w/2 - 22, B.y + B.h + 22); ctx.lineTo(B.x, B.y + B.h); ctx.closePath(); ctx.fill();
+    const lh = (B.h - 6)/4; s.stack.forEach((k, i)=>{ ctx.fillStyle = this.COLS[k]; ctx.fillRect(B.x + 4, B.y + 4 + i*lh, B.w - 8, lh - 3); if(k !== "algodon"){ ctx.fillStyle = "rgba(0,0,0,.25)"; for(let q = 0; q < 16; q++){ ctx.beginPath(); ctx.arc(B.x + 12 + (q*37)%(B.w - 24), B.y + 10 + i*lh + (q*17)%(lh - 14), k === "grava" ? 5 : 2, 0, 7); ctx.fill(); } } ctx.fillStyle = k === "carbon" ? "#fff" : "#000"; ctx.font = F(11, 800); ctx.textAlign = "center"; ctx.fillText(this.LAYERS[k].label, B.x + B.w/2, B.y + 4 + i*lh + lh/2 + 4*uiScale); });
+    ctx.strokeStyle = "rgba(95,125,135,.95)"; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(B.x, B.y); ctx.lineTo(B.x, B.y + B.h); ctx.lineTo(B.x + B.w/2 - 22, B.y + B.h + 22); ctx.moveTo(B.x + B.w, B.y); ctx.lineTo(B.x + B.w, B.y + B.h); ctx.lineTo(B.x + B.w/2 + 22, B.y + B.h + 22); ctx.stroke();
+    // vaso receptor
+    const cx = B.x + B.w/2, vy = 318, clar = s.pour ? Math.min(.9, s.pour.clar) : s.lastClarity, lv = s.pour ? s.agua : (s.runs ? 1 : 0), sucio = [150, 110, 60], limpio = [190, 225, 240];
+    const mix = (a, b, t)=>Math.round(a + (b - a)*t), col = `rgb(${mix(sucio[0], limpio[0], clar/.9)},${mix(sucio[1], limpio[1], clar/.9)},${mix(sucio[2], limpio[2], clar/.9)})`;
+    ctx.fillStyle = col; ctx.fillRect(cx - 50, vy + 62 - 62*lv*.8, 100, 62*lv*.8); ctx.strokeStyle = "rgba(95,125,135,.95)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx - 54, vy); ctx.lineTo(cx - 48, vy + 66); ctx.lineTo(cx + 48, vy + 66); ctx.lineTo(cx + 54, vy); ctx.stroke();
+    if(s.pour && s.pour.t < 2.2){ ctx.fillStyle = col; ctx.fillRect(cx - 2, B.y + B.h + 22, 4, vy + 66 - (B.y + B.h + 22) - 62*lv*.8); }
+    if(s.pour && !FX.rm && Math.random() < h*30) FX.add(fx, {k:"d", x:cx - 60 + Math.random()*120, y:B.y + 6, vx:0, vy:40, life:.5, r:2.5, c:"rgb(150,110,60)"});
+    // jarra de agua sucia
+    const jx = 560, jy = 150; if(!(s.held && s.held.t === "jarra")) this.jarra(jx, jy, s.pour ? .6 : 0); Juego.pastilla("Agua sucia", jx, jy + 66, {px:10, pad:14, h:18});
+    if(s.held && s.held.t === "jarra") this.jarra(s.held.x, s.held.y, 0, true);
+    // capas
+    Object.keys(this.LAYERS).forEach((k, i)=>{ if(s.held && s.held.t === "capa" && s.held.k === k) return; const b = this.cap(i), usada = s.stack.includes(k); ctx.globalAlpha = usada ? .35 : 1; ctx.fillStyle = this.COLS[k]; roundRect(ctx, b.x - b.w/2, b.y - b.h/2, b.w, b.h, 10); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = k === "carbon" ? "#fff" : "#000"; ctx.font = F(11, 800); ctx.textAlign = "center"; ctx.fillText(this.LAYERS[k].label, b.x, b.y + 4*uiScale); ctx.globalAlpha = 1; });
+    if(s.held && s.held.t === "capa"){ ctx.fillStyle = this.COLS[s.held.k]; roundRect(ctx, s.held.x - 56, s.held.y - 24, 112, 48, 10); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3.5; ctx.stroke(); }
+    if(s.held && s.held.x > B.x - 30 && s.held.x < B.x + B.w + 30 && s.held.y > 20 && s.held.y < 330){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.strokeRect(B.x - 12, B.y - 12, B.w + 24, B.h + 48); ctx.setLineDash([]); }
+    Juego.pastilla(`Capas armadas: ${s.stack.length}/4`, 330, 24, {px:12, pad:24, h:26});
+    if(s.runs > 0){ Juego.pastilla(`Claridad del agua filtrada: ${Math.round(s.lastClarity*100)} %`, 520, 250, {px:11, pad:18, h:24, bg:"#1863DC", fg:"#fff"}); ctx.fillStyle = "#fff"; roundRect(ctx, 430, 266, 200, 14, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; roundRect(ctx, 430, 266, 200, 14, 7); ctx.stroke(); ctx.fillStyle = "#C1FF00"; roundRect(ctx, 432, 268, Math.max(8, 196*s.lastClarity), 10, 5); ctx.fill(); Juego.pastilla("más clara NO significa potable", 530, 298, {px:10, pad:16, h:20, bg:"#E03131", fg:"#fff"}); }
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra una capa a la botella", 150, 60);
+    this.finFotograma();
+  },
+  jarra(x, y, tilt, brillo){ ctx.save(); ctx.translate(x, y); ctx.rotate(tilt); ctx.fillStyle = "#8A6A3A"; roundRect(ctx, -34, -44, 68, 88, 12); ctx.fill(); ctx.strokeStyle = brillo ? "#C1FF00" : "#000"; ctx.lineWidth = brillo ? 4 : 2.5; ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.3)"; roundRect(ctx, -26, -34, 8, 60, 4); ctx.fill(); ctx.restore(); }
+};
+
+/* ---------- Erosión (piloto) ---------- */
+const expErosionV3 = {...expErosion, ...RetosMix, ...JuegoMix,
+  name:expErosion.name + " (piloto 2)",
+  cardDesc:"Toca la nube para hacer llover sobre dos charolas —una desnuda y otra con pasto— y compara cuánta tierra se arrastra. Cumple tres retos con estrellas.",
+  TX:[190, 470], TY:200, IB:{x0:150, x1:510, y:402},
+  RETOS:[
+    {id:"llueve", txt:"Haz llover una vez y compara las dos charolas", ok:"El agua arrastró tierra de la charola desnuda, no del pasto", pista:"Toca la nube o pulsa «Simular lluvia»."},
+    {id:"mitad", txt:"Haz que la tierra desnuda pierda más de la mitad de su suelo", ok:"Sin plantas, la lluvia se llevó más de la mitad del suelo", pista:"Sube la intensidad de la lluvia y repite."},
+    {id:"pasto", txt:"Deja la tierra desnuda sin suelo mientras el pasto conserva más del 70 %", ok:"Las raíces y las hojas protegen el suelo", pista:"Haz llover con intensidad alta hasta que la desnuda llegue a 100 %."}
+  ],
+  mount(){
+    const s = this.st = {intensity:40, tested:new Set(), lossBare:0, lossGrass:0, vb:0, vg:0, lluvia:0, held:false, moved:false, gotas:[], clk:0};
+    s.sl = ctrlSlider("Intensidad de la lluvia", 10, 100, 10, s.intensity, v=>this.poner(v));
+    ctrlBtn("🌧️ Simular lluvia", "amber", ()=>this.llover());
+    ctrlBtn("🔁 Reiniciar charolas", "ghost", ()=>{ s.lossBare = 0; s.lossGrass = 0; });
+    this.iniciarJuego();
+    const I = this.IB;
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(Math.abs(p.x - 330) <= Math.max(100, 22*sc) && Math.abs(p.y - 62) <= Math.max(44, 22*sc)) return {t:"nube"};
+        if(p.x >= I.x0 - 20 && p.x <= I.x1 + 20 && Math.abs(p.y - I.y) <= Math.max(18, 24*sc)) return {t:"int"}; return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "nube") this.llover(); else { s.held = true; this.fijar(p.x); } },
+      move:(o, p)=>{ if(o.t === "int") this.fijar(p.x); }, up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijar(x){ const I = this.IB; this.poner(Math.round((10 + Math.max(0, Math.min(1, (x - I.x0)/(I.x1 - I.x0)))*90)/10)*10); },
+  poner(v){ const s = this.st; s.intensity = v; s.sl.value = v; s.moved = true; },
+  llover(){
+    const s = this.st; if(s.lluvia > 0) return; s.lluvia = 2; s.moved = true; FX.sound("pour");
+    s.lossBare = Math.min(100, s.lossBare + s.intensity*.5); s.lossGrass = Math.min(100, s.lossGrass + s.intensity*.08); s.tested.add(s.intensity); if(s.tested.size >= 2) markRan();
+  },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h); s.clk += h;
+    if(s.lluvia > 0){ s.lluvia = Math.max(0, s.lluvia - h); const n = s.intensity/100; if(!FX.rm) for(let i = 0; i < 2; i++) if(Math.random() < n*h*50) s.gotas.push({x:130 + Math.random()*400, y:90, vy:260 + Math.random()*120}); }
+    s.vb += (s.lossBare - s.vb)*Math.min(1, h*1.5); s.vg += (s.lossGrass - s.vg)*Math.min(1, h*1.5);
+    s.gotas.forEach(g=>{ g.y += g.vy*h; }); s.gotas = s.gotas.filter(g=>g.y < 280);
+    const ids = []; if(s.lossBare > 0) ids.push("llueve"); if(s.lossBare > 50) ids.push("mitad"); if(s.lossBare >= 100 && s.lossGrass <= 30) ids.push("pasto"); if(ids.length && s.lluvia <= 0) this.ganar(ids, 330, 150);
+    Juego.fondo(0);
+    // nube
+    const nb = s.lluvia > 0 ? "#6B7B8C" : "#C9D3DC"; ctx.fillStyle = nb; [[-70, 6, 30], [-30, -8, 38], [20, -4, 40], [64, 8, 28]].forEach(([dx, dy, r])=>{ ctx.beginPath(); ctx.arc(330 + dx, 60 + dy, r, 0, 7); ctx.fill(); }); ctx.fillRect(264, 60, 130, 28);
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(330 - 30, 52, 38, Math.PI, Math.PI*1.9); ctx.stroke();
+    Juego.pastilla(s.lluvia > 0 ? "🌧️ ¡Lloviendo!" : "Toca la nube para llover", 330, 112, {px:11, pad:18, h:22, bg:"#1863DC", fg:"#fff"});
+    s.gotas.forEach(g=>{ ctx.fillStyle = "rgba(90,150,230,.85)"; ctx.beginPath(); ctx.ellipse(g.x, g.y, 2, 5, 0, 0, 7); ctx.fill(); });
+    // charolas inclinadas
+    [[0, "Tierra desnuda", s.vb, false], [1, "Con cobertura de pasto", s.vg, true]].forEach(([i, lab, loss, pasto])=>{
+      const cx = this.TX[i], cy = this.TY; ctx.save(); ctx.translate(cx, cy); ctx.rotate(.14);
+      ctx.fillStyle = "#6D6D6D"; roundRect(ctx, -100, -10, 200, 80, 8); ctx.fill();
+      const soil = 70*(1 - loss/130); ctx.fillStyle = "#B08D5A"; ctx.fillRect(-96, 66 - soil, 192, soil);
+      ctx.fillStyle = "rgba(0,0,0,.15)"; for(let q = 0; q < 14; q++) ctx.fillRect(-90 + (q*29)%180, 66 - soil + 6 + (q*13)%Math.max(4, soil - 10), 6, 3);
+      if(pasto){ ctx.strokeStyle = "#5C8F2E"; ctx.lineWidth = 3; for(let q = 0; q < 20; q++){ const bx = -92 + q*9.6; ctx.beginPath(); ctx.moveTo(bx, 66 - soil); ctx.lineTo(bx + Math.sin(s.clk*2 + q)*2, 66 - soil - 16); ctx.stroke(); } }
+      ctx.strokeStyle = "#000"; ctx.lineWidth = 3; roundRect(ctx, -100, -10, 200, 80, 8); ctx.stroke(); ctx.restore();
+      // escurrimiento
+      if(s.lluvia > 0 && !FX.rm && Math.random() < h*(pasto ? s.intensity*.012 : s.intensity*.1)) FX.add(fx, {k:"d", x:cx + 96, y:cy + 40, vx:30 + Math.random()*20, vy:20, life:.7, r:2.4, c:pasto ? "rgba(150,120,70,.5)" : "rgba(140,100,50,.9)"});
+      // vaso de sedimento
+      const vx = cx + 118, vy = 290; ctx.fillStyle = "#B08D5A"; ctx.fillRect(vx - 22, vy + 58 - 58*Math.min(1, loss/100), 44, 58*Math.min(1, loss/100)); ctx.strokeStyle = "rgba(95,125,135,.95)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(vx - 24, vy); ctx.lineTo(vx - 20, vy + 60); ctx.lineTo(vx + 20, vy + 60); ctx.lineTo(vx + 24, vy); ctx.stroke();
+      Juego.pastilla(lab, cx, 300, {px:12, pad:20, h:24}); Juego.pastilla(`suelo perdido: ${Math.round(loss)}%`, cx, 330, {px:11, pad:18, h:22, bg:loss > 50 ? "#E03131" : "#C1FF00", fg:loss > 50 ? "#fff" : "#000"}); });
+    // barra de intensidad
+    const I = this.IB, hx = I.x0 + (s.intensity - 10)/90*(I.x1 - I.x0);
+    ctx.fillStyle = "rgba(0,0,0,.55)"; roundRect(ctx, I.x0 - 26, I.y - 16, I.x1 - I.x0 + 52, 32, 16); ctx.fill(); ctx.strokeStyle = "#555"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(I.x0, I.y); ctx.lineTo(I.x1, I.y); ctx.stroke(); ctx.strokeStyle = "#C1FF00"; ctx.beginPath(); ctx.moveTo(I.x0, I.y); ctx.lineTo(hx, I.y); ctx.stroke();
+    const hg = ctx.createRadialGradient(hx - 3, I.y - 3, 2, hx, I.y, 14); hg.addColorStop(0, "#F1FFB0"); hg.addColorStop(1, "#C1FF00"); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, I.y, 13, 0, 7); ctx.fill(); ctx.strokeStyle = s.held ? "#fff" : "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    Juego.pastilla("Intensidad", 90, I.y, {px:10, pad:14, h:20}); Juego.pastilla(String(s.intensity), 570, I.y, {px:12, pad:16, h:22, bg:"#C1FF00", fg:"#000"});
+    Juego.pastilla(`Intensidad de lluvia: ${s.intensity}`, 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Toca la nube para hacer llover", 330, 150);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Isla de calor (piloto) ---------- */
+const expIslaCalorV3 = {...expIslaCalor, ...RetosMix, ...JuegoMix,
+  name:expIslaCalor.name + " (piloto 2)",
+  cardDesc:"Arrastra el sol hasta el mediodía y mide con el termómetro infrarrojo la temperatura de asfalto, concreto, pasto y agua. Cumple tres retos con estrellas.",
+  ARC:{x0:60, x1:600, y0:190, top:44}, GUN:{x:600, y:392},
+  RETOS:[
+    {id:"mediodia", txt:"Lleva el sol hasta el mediodía (lo más alto)", ok:"Al mediodía el sol calienta al máximo", pista:"Arrastra el sol por el arco hasta arriba del todo."},
+    {id:"asfalto", txt:"Mide el asfalto al mediodía: ¡más de 60 °C!", ok:"El asfalto llega a 62 °C, mientras el agua solo a 26 °C", pista:"Arrastra el termómetro infrarrojo sobre el asfalto negro."},
+    {id:"todas", txt:"Mide las cuatro superficies al mediodía", ok:"Ya comparaste asfalto, concreto, pasto y agua", pista:"Con el sol arriba, mide cada superficie con el termómetro."}
+  ],
+  mount(){
+    const s = this.st = {u:0, frac:0, temp:[22, 22, 22, 22], medidas:{}, held:null, sunHeld:false, tNoon:0, moved:false, clk:0};
+    ctrlBtn("☀️ Mediodía: medir superficies", "amber", ()=>{ s.meta = .5; s.moved = true; });
+    ctrlBtn("🌅 Volver al amanecer", "ghost", ()=>{ s.meta = 0; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const sp = this.solPos(s.u); if(Math.hypot(p.x - sp.x, p.y - sp.y) <= Math.max(36, 26*sc)) return {t:"sol"}; if(Math.abs(p.x - this.GUN.x) <= Math.max(36, 22*sc) && Math.abs(p.y - this.GUN.y) <= Math.max(26, 22*sc)) return {t:"gun"}; return null; },
+      down:(o, p)=>{ s.moved = true; s.meta = null; if(o.t === "sol") s.sunHeld = true; else s.held = {x:p.x, y:p.y}; },
+      move:(o, p)=>{ if(o.t === "sol") s.u = Math.max(0, Math.min(1, (p.x - this.ARC.x0)/(this.ARC.x1 - this.ARC.x0))); else if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ s.sunHeld = false; if(o.t !== "gun") return; const h = s.held; s.held = null; if(!h) return; const i = this.MATS.findIndex((m, k)=>Math.abs(h.x - (100 + k*140)) < 62 && h.y > 170 && h.y < 380); if(i >= 0) this.medir(i); else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  solPos(u){ const A = this.ARC, x = A.x0 + u*(A.x1 - A.x0), y = A.y0 - Math.sin(u*Math.PI)*(A.y0 - A.top); return {x, y}; },
+  medir(i){
+    const s = this.st, m = this.MATS[i], t = s.temp[i]; s.medidas[i] = {t:Math.round(t), noon:s.frac >= .97}; FX.sound("tick"); FX.burst(s.fx, 100 + i*140, 200, ["#C1FF00", "#fff"]);
+    const ids = []; if(i === 0 && s.frac >= .97 && Math.round(t) >= 60) ids.push("asfalto"); if(Object.keys(s.medidas).length >= 4 && Object.values(s.medidas).every(q=>q.noon)) ids.push("todas"); if(ids.length) this.ganar(ids, 330, 130);
+  },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h); s.clk += h;
+    if(s.meta !== null && s.meta !== undefined) s.u += (s.meta - s.u)*Math.min(1, h*2.2);
+    s.frac = Math.sin(s.u*Math.PI); if(s.frac > .995) s.frac = 1;
+    this.MATS.forEach((m, i)=>{ const tgt = 22 + (m.max - 22)*s.frac; s.temp[i] += (tgt - s.temp[i])*Math.min(1, h*1.4); });
+    if(s.frac >= .97){ s.tNoon += h; if(s.tNoon >= 1) this.ganar(["mediodia"], 330, 130); if(s.tNoon >= 3) markRan(); }
+    Juego.fondo(0);
+    const sky = ctx.createLinearGradient(0, 0, 0, 320); sky.addColorStop(0, `rgb(${Math.round(120 + 80*s.frac)},${Math.round(160 + 60*s.frac)},${Math.round(230 - 20*s.frac)})`); sky.addColorStop(1, "#EAF3FF"); ctx.fillStyle = sky; ctx.fillRect(0, 0, 660, 320);
+    // arco y sol
+    const A = this.ARC; ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.setLineDash([4, 8]); ctx.lineWidth = 3; ctx.beginPath(); for(let q = 0; q <= 40; q++){ const p = this.solPos(q/40); q ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); } ctx.stroke(); ctx.setLineDash([]);
+    const sp = this.solPos(s.u), sg = ctx.createRadialGradient(sp.x, sp.y, 4, sp.x, sp.y, 70); sg.addColorStop(0, "rgba(255,230,120,.9)"); sg.addColorStop(1, "rgba(255,230,120,0)"); ctx.fillStyle = sg; ctx.fillRect(sp.x - 70, sp.y - 70, 140, 140);
+    ctx.fillStyle = "#FFD54A"; ctx.beginPath(); ctx.arc(sp.x, sp.y, 20, 0, 7); ctx.fill(); ctx.strokeStyle = s.sunHeld ? "#fff" : "#000"; ctx.lineWidth = s.sunHeld ? 3.5 : 2.5; ctx.stroke();
+    Juego.pastilla("mediodía", A.x0 + .5*(A.x1 - A.x0), A.top - 22 < 14 ? 20 : A.top - 22, {px:10, pad:14, h:18, bg:"rgba(0,0,0,.6)", fg:"#C1FF00"});
+    // superficies y termómetros
+    ctx.fillStyle = "#6D7A80"; ctx.fillRect(0, 320, 660, 110);
+    this.MATS.forEach((m, i)=>{
+      const x = 100 + i*140, t = s.temp[i]; ctx.fillStyle = m.color; roundRect(ctx, x - 52, 320, 104, 46, 8); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+      if(i === 2){ ctx.strokeStyle = "#3F7A28"; ctx.lineWidth = 2; for(let q = 0; q < 12; q++){ ctx.beginPath(); ctx.moveTo(x - 46 + q*8.4, 328); ctx.lineTo(x - 46 + q*8.4 + Math.sin(s.clk*2 + q)*2, 316); ctx.stroke(); } }
+      if(i === 3){ ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 2; for(let q = 0; q < 3; q++){ ctx.beginPath(); ctx.moveTo(x - 40, 334 + q*10); ctx.quadraticCurveTo(x - 20, 328 + q*10 + Math.sin(s.clk*2 + q)*2, x, 334 + q*10); ctx.stroke(); } }
+      if(s.frac > .3 && i < 2){ ctx.strokeStyle = `rgba(255,120,60,${.5*s.frac})`; ctx.lineWidth = 2; for(let q = 0; q < 4; q++){ const wx = x - 36 + q*24; ctx.beginPath(); ctx.moveTo(wx, 314); ctx.quadraticCurveTo(wx + 6, 300 - (s.clk*30 + q*10)%20, wx, 286 - (s.clk*30 + q*10)%20); ctx.stroke(); } }
+      ctx.fillStyle = "#fff"; roundRect(ctx, x - 12, 170, 24, 144, 12); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; roundRect(ctx, x - 12, 170, 24, 144, 12); ctx.stroke();
+      const fh = Math.max(4, (t - 15)*2.8); ctx.fillStyle = t > 50 ? "#E03131" : t > 38 ? "#E8A020" : "#1863DC"; ctx.fillRect(x - 7, 310 - fh, 14, fh);
+      Juego.pastilla(m.label, x, 386, {px:11, pad:16, h:22});
+      const q = s.medidas[i]; if(q) Juego.pastilla(`${q.t} °C`, x, 152, {px:15, pad:22, h:28, bg:q.t > 50 ? "#E03131" : "#C1FF00", fg:q.t > 50 ? "#fff" : "#000"}); });
+    // termómetro infrarrojo
+    const G = this.GUN; if(!s.held){ ctx.fillStyle = "#222"; roundRect(ctx, G.x - 30, G.y - 12, 54, 24, 8); ctx.fill(); ctx.fillRect(G.x - 12, G.y + 8, 14, 22); ctx.fillStyle = "#E03131"; ctx.beginPath(); ctx.arc(G.x - 34, G.y, 4, 0, 7); ctx.fill(); Juego.pastilla("Infrarrojo", G.x - 4, G.y - 28, {px:10, pad:12, h:18}); }
+    else { ctx.fillStyle = "#222"; roundRect(ctx, s.held.x - 30, s.held.y - 12, 54, 24, 8); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.stroke(); ctx.strokeStyle = "#E03131"; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(s.held.x - 34, s.held.y); ctx.lineTo(s.held.x - 80, s.held.y + 8); ctx.stroke(); ctx.setLineDash([]); }
+    Juego.pastilla(s.frac >= .97 ? "☀️ Mediodía: ¡mide las superficies!" : s.frac > .1 ? "El sol va subiendo…" : "Arrastra el sol hacia arriba", 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el sol hasta lo más alto", 330, 100);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Biodegradabilidad (piloto) ---------- */
+const expBiodegradaV3 = {...expBiodegrada, ...RetosMix, ...JuegoMix,
+  name:expBiodegrada.name + " (piloto 2)",
+  cardDesc:"Arrastra el reloj del tiempo, de semanas a siglos, y mira cuánto tarda en desaparecer cada material enterrado. Cumple tres retos con estrellas.",
+  TL:{x0:130, x1:530, y:402}, ICON:["🍌", "📄", "🚬", "🥫", "🍾"], CHIPS:[["1 mes", .08], ["1 año", 1], ["10 años", 10], ["100 años", 100], ["500 años", 500]],
+  RETOS:[
+    {id:"platano", txt:"Deja que se descomponga la cáscara de plátano", ok:"La cáscara desaparece en unas 4 semanas", pista:"Mueve el tiempo un poquito hacia la derecha."},
+    {id:"cien", txt:"Llega a 100 años: ¿qué sigue sin descomponerse?", ok:"A los 100 años solo el plástico sigue ahí", pista:"Pulsa «100 años» o arrastra el reloj."},
+    {id:"botella", txt:"Espera a que desaparezca hasta la botella de plástico", ok:"¡La botella tardó 450 años en descomponerse!", pista:"Lleva el reloj hasta el final (500 años)."}
+  ],
+  AN:function(p){ return p <= 1 ? 0 : .05*Math.pow(10000, p/100); },
+  PT:function(y){ return y <= .05 ? 0 : 100*Math.log(y/.05)/Math.log(10000); },
+  fmt(y){ if(y <= 0) return "inicio"; if(y < .2) return `${Math.max(1, Math.round(y*52))} semanas`; if(y < 1) return `${Math.round(y*12)} meses`; if(y < 10) return `${y.toFixed(1)} años`; return `${Math.round(y)} años`; },
+  total(y){ return y < .2 ? `${Math.round(y*52)} semanas` : y < 1 ? `${Math.round(y*12)} meses` : `${y} años`; },
+  mount(){
+    const s = this.st = {p:0, years:0, tested:new Set(), held:false, moved:false, clk:0};
+    s.sl = ctrlSlider("Tiempo transcurrido (de semanas a siglos)", 0, 100, 1, 0, v=>this.poner(v));
+    this.iniciarJuego();
+    const T = this.TL;
+    this._off = bindDrag({
+      hit:(p, sc)=>{ for(let i = 0; i < this.CHIPS.length; i++){ const c = this.chip(i); if(Math.abs(p.x - c.x) <= Math.max(c.w/2, 22*sc) && Math.abs(p.y - c.y) <= Math.max(c.h/2, 20*sc)) return {t:"chip", y:this.CHIPS[i][1]}; }
+        return (p.x >= T.x0 - 20 && p.x <= T.x1 + 20 && Math.abs(p.y - T.y) <= Math.max(18, 24*sc)) ? {t:"t"} : null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "chip") this.poner(this.PT(o.y)); else { s.held = true; this.fijar(p.x); } },
+      move:(o, p)=>{ if(o.t === "t") this.fijar(p.x); }, up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  chip(i){ return {x:110 + i*110, y:366, w:98, h:24}; },
+  fijar(x){ const T = this.TL; this.poner(Math.round(Math.max(0, Math.min(100, (x - T.x0)/(T.x1 - T.x0)*100)))); },
+  poner(p){ const s = this.st; s.p = p; s.years = this.AN(p); s.sl.value = Math.round(p); s.moved = true; s.tested.add(Math.round(p/20)); if(s.tested.size >= 3) markRan();
+    const ids = []; if(s.years >= .08) ids.push("platano"); if(s.years >= 100) ids.push("cien"); if(s.years >= 450) ids.push("botella"); if(ids.length) this.ganar(ids, 330, 130); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), T = this.TL; s.clk += h;
+    Juego.fondo(0);
+    ctx.fillStyle = "#5B4630"; ctx.fillRect(0, 56, 660, 290); ctx.fillStyle = "rgba(0,0,0,.18)"; for(let q = 0; q < 60; q++) ctx.fillRect((q*97)%660, 60 + (q*53)%280, 5, 3);
+    ctx.fillStyle = "#4C8F2E"; ctx.fillRect(0, 48, 660, 10);
+    this.ITEMS.forEach((it, i)=>{
+      const y = 90 + i*52, prog = Math.min(1, s.years/it.years);
+      ctx.fillStyle = "rgba(0,0,0,.35)"; roundRect(ctx, 14, y - 22, 632, 44, 10); ctx.fill();
+      ctx.globalAlpha = Math.max(.08, 1 - prog*.92); ctx.font = F(Math.round(30 - prog*10), 400); ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText(this.ICON[i], 44, y + 10*uiScale); ctx.globalAlpha = 1;
+      ctx.fillStyle = "#fff"; ctx.font = F(11, 800); ctx.textAlign = "left"; ctx.fillText(it.label, 76, y + 4*uiScale);
+      ctx.fillStyle = "#222"; roundRect(ctx, 220, y - 10, 270, 20, 10); ctx.fill(); ctx.fillStyle = prog >= 1 ? "#2EAA4A" : "#C1FF00"; if(prog > 0){ roundRect(ctx, 220, y - 10, Math.max(10, 270*prog), 20, 10); ctx.fill(); }
+      ctx.fillStyle = prog >= 1 ? "#9CF0B1" : "#fff"; ctx.font = F(10, 700); ctx.fillText(prog >= 1 ? "descompuesto" : `${Math.round(prog*100)}% · ~${this.total(it.years)} en total`, 498, y + 4*uiScale); });
+    // reloj del tiempo
+    this.CHIPS.forEach((c, i)=>{ const b = this.chip(i), act = Math.abs(s.years - c[1]) < c[1]*.02; ctx.fillStyle = act ? "#C1FF00" : "#1B1B1B"; roundRect(ctx, b.x - b.w/2, b.y - b.h/2, b.w, b.h, 12); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = act ? "#000" : "#C1FF00"; ctx.font = F(11, 800); ctx.textAlign = "center"; ctx.fillText(c[0], b.x, b.y + 4*uiScale); });
+    ctx.fillStyle = "rgba(0,0,0,.55)"; roundRect(ctx, T.x0 - 28, T.y - 16, T.x1 - T.x0 + 56, 32, 16); ctx.fill(); ctx.strokeStyle = "#555"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(T.x0, T.y); ctx.lineTo(T.x1, T.y); ctx.stroke(); ctx.strokeStyle = "#C1FF00"; ctx.beginPath(); ctx.moveTo(T.x0, T.y); ctx.lineTo(T.x0 + s.p/100*(T.x1 - T.x0), T.y); ctx.stroke();
+    const hx = T.x0 + s.p/100*(T.x1 - T.x0), hg = ctx.createRadialGradient(hx - 3, T.y - 3, 2, hx, T.y, 14); hg.addColorStop(0, "#F1FFB0"); hg.addColorStop(1, "#C1FF00"); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, T.y, 13, 0, 7); ctx.fill(); ctx.strokeStyle = s.held ? "#fff" : "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    Juego.pastilla("⏳", 76, T.y, {px:14, pad:14, h:22}); Juego.pastilla("siglos", 588, T.y, {px:10, pad:14, h:20});
+    Juego.pastilla(`Tiempo transcurrido: ${this.fmt(s.years)}`, 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el reloj del tiempo", 330, 346);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Atrapa las partículas (piloto) ---------- */
+const expAirePartV3 = {...expAirePart, ...RetosMix, ...JuegoMix,
+  name:expAirePart.name + " (piloto 2)",
+  cardDesc:"Arrastra la trampa de cinta adhesiva a una zona, expónla 24 horas y cuenta las partículas que atrapa. Cumple tres retos con estrellas.",
+  ZX:{bajo:120, medio:330, alto:540}, ZY:130, NCAR:{bajo:1, medio:3, alto:6}, ICO:{bajo:"🌳", medio:"🚗", alto:"🚦"},
+  RETOS:[
+    {id:"alto", txt:"Expón la trampa en el crucero (tráfico alto) y cuenta las partículas", ok:"En el crucero la trampa se llena de motitas de hollín", pista:"Arrastra la trampa al crucero y pulsa «Exponer 24 h»."},
+    {id:"compara", txt:"Compara el parque con el crucero", ok:"Más tráfico, muchísimas más partículas", pista:"Mide las dos zonas, una después de la otra."},
+    {id:"todas", txt:"Mide las tres zonas", ok:"Ya conoces el aire del parque, la avenida y el crucero", pista:"Cambia la trampa de zona y expónla otra vez."}
+  ],
+  mount(){
+    const s = this.st = {level:null, running:false, t:0, specks:[], tested:new Set(), res:{}, held:null, moved:false, clk:0, acc:0, cars:Array.from({length:12}, (_, i)=>({x:Math.random(), v:.1 + Math.random()*.15, lane:i%2}))};
+    Object.keys(this.LEVELS).forEach(k=> ctrlBtn(this.LEVELS[k].label, "", ()=>this.zona(k)));
+    ctrlBtn("⏱️ Exponer trampa 24h", "amber", ()=>this.exponer());
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(!s.running && Math.hypot(p.x - 70, p.y - 372) <= Math.max(36, 22*sc)) return {t:"trampa"};
+        if(!s.running && Math.abs(p.x - 560) <= Math.max(70, 22*sc) && Math.abs(p.y - 376) <= Math.max(24, 22*sc)) return {t:"btn"};
+        for(const k of Object.keys(this.ZX)) if(Math.abs(p.x - this.ZX[k]) <= 88 && Math.abs(p.y - this.ZY) <= 62) return {t:"zona", k}; return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "trampa") s.held = {x:p.x, y:p.y}; else if(o.t === "btn") this.exponer(); else this.zona(o.k); },
+      move:(o, p)=>{ if(o.t === "trampa" && s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ if(o.t !== "trampa") return; const h = s.held; s.held = null; if(!h) return; const k = Object.keys(this.ZX).find(q=>Math.abs(h.x - this.ZX[q]) <= 88 && Math.abs(h.y - this.ZY) <= 70); if(k) this.zona(k); else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  zona(k){ const s = this.st; if(s.running) return; s.level = k; s.specks = []; s.t = 0; s.moved = true; FX.sound("thud"); FX.dust(s.fx, this.ZX[k], this.ZY + 40); },
+  exponer(){ const s = this.st; if(s.running) return; if(!s.level){ FX.pop(s.fx, 330, 230, "Primero elige una zona"); return; } s.running = true; s.t = 0; s.specks = []; s.acc = 0; s.tested.add(s.level); if(s.tested.size >= 2) markRan(); s.moved = true; FX.sound("tick"); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h); s.clk += h;
+    if(s.running){ s.t += h; const rate = this.LEVELS[s.level].rate; s.acc += rate*2/4*h*(.8 + Math.random()*.4);
+      while(s.acc >= 1){ s.acc -= 1; s.specks.push({x:Math.random(), y:Math.random(), r:1 + Math.random()*2.5}); }
+      if(s.t >= 4){ s.running = false; s.res[s.level] = s.specks.length; FX.sound("ding"); const ids = []; if(s.level === "alto") ids.push("alto"); if(s.res.bajo !== undefined && s.res.alto !== undefined) ids.push("compara"); if(Object.keys(s.res).length >= 3) ids.push("todas"); this.ganar(ids, 330, 250); } }
+    Juego.fondo(0);
+    // zonas
+    Object.keys(this.ZX).forEach(k=>{
+      const x = this.ZX[k], y = this.ZY, sel = s.level === k, tr = this.LEVELS[k];
+      ctx.fillStyle = k === "bajo" ? "#9FD58A" : "#8E959B"; roundRect(ctx, x - 88, y - 62, 176, 124, 14); ctx.fill(); ctx.strokeStyle = sel ? "#C1FF00" : "#000"; ctx.lineWidth = sel ? 4 : 2; ctx.stroke();
+      ctx.save(); roundRect(ctx, x - 88, y - 62, 176, 124, 14); ctx.clip();
+      if(k !== "bajo"){ ctx.fillStyle = "#555"; ctx.fillRect(x - 88, y + 6, 176, 36); ctx.strokeStyle = "#ddd"; ctx.lineWidth = 2; ctx.setLineDash([12, 10]); ctx.beginPath(); ctx.moveTo(x - 88, y + 24); ctx.lineTo(x + 88, y + 24); ctx.stroke(); ctx.setLineDash([]); }
+      else { ctx.font = F(26, 400); ctx.textAlign = "center"; ctx.fillStyle = "#000"; [-60, -20, 30, 66].forEach((dx, q)=>ctx.fillText("🌳", x + dx, y - 20 + (q%2)*14)); }
+      const nc = this.NCAR[k]; for(let q = 0; q < nc; q++){ const c = s.cars[q], cx = x - 88 + ((c.x + s.clk*c.v)%1)*176, cy = k === "bajo" ? y + 36 : y + 14 + c.lane*18; ctx.fillStyle = ["#E03131", "#1863DC", "#F5A524", "#fff"][q%4]; roundRect(ctx, cx - 11, cy - 5, 22, 10, 4); ctx.fill();
+        if(!FX.rm && k !== "bajo" && Math.random() < h*(k === "alto" ? 2 : 1)) FX.add(fx, {k:"d", x:cx - 12, y:cy - 4, vx:-12, vy:-18, g:-12, life:1.1, r:3 + Math.random()*3, c:"rgba(60,60,60,.4)"}); }
+      ctx.restore();
+      Juego.pastilla(tr.label, x, y + 80, {px:10, pad:14, h:20, bg:sel ? "#C1FF00" : "#000", fg:sel ? "#000" : "#C1FF00"});
+      if(s.res[k] !== undefined) Juego.pastilla(`${s.res[k]} partículas`, x, y - 70 < 22 ? 20 : y - 76, {px:11, pad:16, h:22, bg:"#E03131", fg:"#fff"});
+      if(sel){ ctx.fillStyle = "#F5F0DC"; roundRect(ctx, x - 16, y - 54, 32, 22, 4); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke(); } });
+    // trampa ampliada
+    const cx0 = 180, cy0 = 252, cw = 300, ch = 110;
+    ctx.fillStyle = "#F5F0DC"; roundRect(ctx, cx0, cy0, cw, ch, 10); ctx.fill(); ctx.strokeStyle = "#8FA9B0"; ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = "#333"; s.specks.forEach(p=>{ ctx.beginPath(); ctx.arc(cx0 + 8 + p.x*(cw - 16), cy0 + 8 + p.y*(ch - 16), p.r, 0, 7); ctx.fill(); });
+    Juego.pastilla(s.level ? `Trampa en: ${this.LEVELS[s.level].label}` : "Elige una zona ↑", 330, 232, {px:11, pad:18, h:22, bg:"#1863DC", fg:"#fff"});
+    if(s.running){ ctx.fillStyle = "#fff"; roundRect(ctx, cx0, cy0 + ch + 8, cw, 10, 5); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; roundRect(ctx, cx0, cy0 + ch + 8, cw, 10, 5); ctx.stroke(); ctx.fillStyle = "#C1FF00"; roundRect(ctx, cx0, cy0 + ch + 8, Math.max(8, cw*s.t/4), 10, 5); ctx.fill(); Juego.pastilla(`⏱ ${Math.round(s.t/4*24)} h`, 330, 392, {px:11, pad:16, h:22}); }
+    // trampa para arrastrar y botón
+    if(!(s.held)){ ctx.fillStyle = "#F5F0DC"; roundRect(ctx, 46, 360, 48, 28, 5); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke(); Juego.pastilla("Trampa", 70, 400, {px:10, pad:12, h:18}); }
+    else { ctx.fillStyle = "#F5F0DC"; roundRect(ctx, s.held.x - 24, s.held.y - 14, 48, 28, 5); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3.5; ctx.stroke(); }
+    ctx.fillStyle = s.running ? "#555" : "#C1FF00"; roundRect(ctx, 500, 360, 120, 34, 17); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = "#000"; ctx.font = F(12, 800); ctx.textAlign = "center"; ctx.fillText("⏱ Exponer 24 h", 560, 381);
+    Juego.pastilla(`Partículas atrapadas: ${s.specks.length}`, 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra la trampa a una zona", 200, 330);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Panel solar (piloto) ---------- */
+const expSolarV3 = {...expSolar, ...RetosMix, ...JuegoMix,
+  name:expSolar.name + " (piloto 2)",
+  cardDesc:"Arrastra el panel para inclinarlo y mira cuántos rayos del sol aprovecha. Cumple tres retos con estrellas.",
+  PC:{x:300, y:250}, PL:84,
+  RETOS:[
+    {id:"cero", txt:"Pon el panel perpendicular a los rayos (energía al 100 %)", ok:"De frente, el panel capta toda la luz", pista:"Deja el panel horizontal, de cara al sol."},
+    {id:"sesenta", txt:"Inclina el panel 60°: ¡la energía cae a la mitad!", ok:"A 60° solo llega el 50 %: cos 60° = 0.5", pista:"Arrastra el extremo del panel hacia abajo hasta 60°."},
+    {id:"cuarentacinco", txt:"Encuentra los 45°: la energía baja a 71 %", ok:"A 45° la energía es cos 45° ≈ 0.71", pista:"Busca el punto medio entre 0° y 90°."}
+  ],
+  mount(){
+    const s = this.st = {angle:0, tested:new Set(), held:false, moved:false, clk:0};
+    s.sl = ctrlSlider("Ángulo respecto al rayo del sol (0=perpendicular, 90=de lado)", 0, 90, 1, 0, v=>this.poner(v));
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const r = s.angle*Math.PI/180, ex = this.PC.x + Math.cos(r)*this.PL, ey = this.PC.y + Math.sin(r)*this.PL; return Math.hypot(p.x - ex, p.y - ey) <= Math.max(40, 28*sc) ? {} : null; },
+      down:()=>{ s.held = true; s.moved = true; },
+      move:(o, p)=>{ const a = Math.atan2(p.y - this.PC.y, p.x - this.PC.x)*180/Math.PI; this.poner(Math.round(Math.max(0, Math.min(90, a)))); },
+      up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  poner(v){ const s = this.st; s.angle = v; s.sl.value = v; s.moved = true; s.tested.add(Math.round(v/15)); if(s.tested.size >= 4) markRan();
+    const ids = []; if(v === 0) ids.push("cero"); if(v === 60) ids.push("sesenta"); if(v === 45) ids.push("cuarentacinco"); if(ids.length) this.ganar(ids, 330, 130); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h); s.clk += h; const rad = s.angle*Math.PI/180, power = Math.cos(rad)*100, PC = this.PC, PL = this.PL;
+    Juego.fondo(0);
+    // sol
+    const sg = ctx.createRadialGradient(PC.x, 48, 6, PC.x, 48, 80); sg.addColorStop(0, "rgba(255,213,74,.95)"); sg.addColorStop(1, "rgba(255,213,74,0)"); ctx.fillStyle = sg; ctx.fillRect(PC.x - 90, 0, 180, 130); ctx.fillStyle = "#FFD54A"; ctx.beginPath(); ctx.arc(PC.x, 48, 24, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    // rayos: los que caen sobre el panel se aprovechan
+    const cosr = Math.cos(rad); for(let i = -4; i <= 4; i++){ const x = PC.x + i*20, hit = Math.abs(i*20) <= PL*cosr, yh = hit ? PC.y + Math.tan(rad)*(x - PC.x) : 400; ctx.strokeStyle = hit ? "rgba(255,200,40,.9)" : "rgba(255,200,40,.3)"; ctx.lineWidth = hit ? 3 : 2; ctx.beginPath(); ctx.moveTo(x, 82); ctx.lineTo(x, yh); ctx.stroke(); if(hit){ ctx.fillStyle = "#FFD54A"; ctx.beginPath(); ctx.arc(x, yh, 3, 0, 7); ctx.fill(); } }
+    // soporte y panel
+    ctx.strokeStyle = "#333"; ctx.lineWidth = 8; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(PC.x, PC.y); ctx.lineTo(PC.x, 396); ctx.stroke(); ctx.lineCap = "butt";
+    ctx.save(); ctx.translate(PC.x, PC.y); ctx.rotate(rad); ctx.fillStyle = "#1B2A38"; roundRect(ctx, -PL, -9, PL*2, 18, 4); ctx.fill(); ctx.strokeStyle = "#6AA0FF"; ctx.lineWidth = 2; for(let i = -PL + 14; i < PL; i += 28){ ctx.beginPath(); ctx.moveTo(i, -9); ctx.lineTo(i, 9); ctx.stroke(); } ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; roundRect(ctx, -PL, -9, PL*2, 18, 4); ctx.stroke(); ctx.restore();
+    const ex = PC.x + Math.cos(rad)*PL, ey = PC.y + Math.sin(rad)*PL; ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(ex, ey, 13, 0, 7); ctx.fill(); ctx.strokeStyle = s.held ? "#fff" : "#000"; ctx.lineWidth = s.held ? 3.5 : 2.5; ctx.stroke(); ctx.fillStyle = "#000"; ctx.font = F(12, 800); ctx.textAlign = "center"; ctx.fillText("↻", ex, ey + 4*uiScale);
+    // arco del ángulo
+    if(s.angle > 1){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(PC.x, PC.y, 40, 0, rad); ctx.stroke(); Juego.pastilla(s.angle + "°", PC.x + 60, PC.y + 22 + Math.sin(rad/2)*20, {px:11, pad:12, h:18}); }
+    // foco y medidor
+    const gx = 520, gy = 100, gh = 240, col = power > 70 ? "#2EAA4A" : power > 35 ? "#E8A020" : "#E03131";
+    ctx.fillStyle = "#fff"; roundRect(ctx, gx, gy, 54, gh, 12); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; roundRect(ctx, gx, gy, 54, gh, 12); ctx.stroke(); ctx.fillStyle = col; roundRect(ctx, gx + 3, gy + gh - 3 - (power/100)*(gh - 6), 48, Math.max(6, (power/100)*(gh - 6)), 9); ctx.fill();
+    ctx.fillStyle = "#000"; ctx.font = F(10, 700); ctx.textAlign = "left"; [0, 50, 100].forEach(v=>ctx.fillText(v + "%", gx + 60, gy + gh - 3 - v/100*(gh - 6) + 4*uiScale));
+    const bg = ctx.createRadialGradient(gx + 27, 70, 2, gx + 27, 70, 40); bg.addColorStop(0, `rgba(255,240,120,${.15 + .85*power/100})`); bg.addColorStop(1, "rgba(255,240,120,0)"); ctx.fillStyle = bg; ctx.fillRect(gx - 20, 20, 100, 100); ctx.fillStyle = `rgb(${Math.round(120 + 135*power/100)},${Math.round(120 + 120*power/100)},${Math.round(60 + 20*power/100)})`; ctx.beginPath(); ctx.arc(gx + 27, 70, 17, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    Juego.pastilla(`Ángulo: ${s.angle}° · cos(${s.angle}°) = ${Math.cos(rad).toFixed(2)}`, 330, 24, {px:12, pad:24, h:26});
+    Juego.pastilla(`Energía generada: ${power.toFixed(0)}%`, 330, 396, {px:13, pad:26, h:28, bg:col, fg:"#fff"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el extremo del panel", 440, 210);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Separa la basura (piloto) ---------- */
+const expReciclajeV3 = {...expReciclaje, ...RetosMix, ...JuegoMix,
+  name:expReciclaje.name + " (piloto 2)",
+  cardDesc:"Arrastra cada residuo al contenedor correcto y descubre cuáles necesitan un manejo especial. Cumple tres retos con estrellas.",
+  ICO:["🍾", "🍌", "🔋", "📄", "💡", "🥚", "🥫", "🛢️"], BX:{organico:120, reciclable:330, especial:540}, BY:330,
+  RETOS:[
+    {id:"racha", txt:"Acierta 5 residuos seguidos", ok:"¡Cinco aciertos seguidos!", pista:"Piensa si se composta, se recicla o necesita un punto especial."},
+    {id:"especiales", txt:"Lleva la pila, el foco y el aceite al punto especial", ok:"Esos residuos contaminan si se tiran en la basura normal", pista:"Los que tienen químicos tóxicos van al punto especial."},
+    {id:"ronda", txt:"Termina la ronda con 7 aciertos o más", ok:"¡Sabes separar la basura!", pista:"Fíjate bien en cada residuo antes de soltarlo."}
+  ],
+  nuevaRonda(){ const s = this.st; s.idx = 0; s.order = [...Array(this.ITEMS.length).keys()].sort(()=>Math.random() - .5); s.correct = 0; s.answered = 0; s.lastResult = null; s.msg = ""; s.espOk = new Set(); s.racha = 0; s.held = null; },
+  mount(){
+    const s = this.st = {held:null, moved:false, clk:0, shake:0, binFx:{}};
+    this.nuevaRonda();
+    Object.keys(this.BINS).forEach(k=> ctrlBtn(this.BINS[k], "", ()=>this.responder(k)));
+    ctrlBtn("🔁 Nueva ronda", "ghost", ()=>this.nuevaRonda());
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ if(s.idx >= s.order.length){ return (Math.abs(p.x - 330) <= 110 && Math.abs(p.y - 250) <= 28) ? {t:"nueva"} : null; } return (Math.abs(p.x - 330) <= Math.max(90, 22*sc) && Math.abs(p.y - 150) <= Math.max(70, 22*sc)) ? {t:"item", x0:p.x, y0:p.y} : null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "nueva") this.nuevaRonda(); else s.held = {x:p.x, y:p.y}; },
+      move:(o, p)=>{ if(o.t === "item" && s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ if(o.t !== "item") return; const h = s.held; s.held = null; if(!h) return; const k = Object.keys(this.BX).find(q=>Math.abs(h.x - this.BX[q]) <= 95 && h.y > 250); if(k) this.responder(k); else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  responder(k){
+    const s = this.st; if(s.idx >= s.order.length) return; const ii = s.order[s.idx], item = this.ITEMS[ii], ok = k === item.bin;
+    s.lastResult = ok; s.answered++; s.idx++; s.moved = true; s.binFx[k] = {ok, t:0};
+    if(ok){ s.correct++; s.racha++; if(item.bin === "especial") s.espOk.add(ii); FX.burst(s.fx, this.BX[k], this.BY - 20, ["#C1FF00", "#fff", "#2EAA4A"]); FX.sound("ding"); s.msg = `✔ ¡Correcto! ${item.label} va en ${this.BINS[k]}`; }
+    else { s.racha = 0; FX.sound("thud"); s.shake = .4; s.msg = `✦ No era ese: ${item.label} va en ${this.BINS[item.bin]}`; }
+    if(s.answered >= 5) markRan();
+    const ids = []; if(s.racha >= 5) ids.push("racha"); if(s.espOk.size >= 3) ids.push("especiales"); if(s.idx >= s.order.length && s.correct >= 7) ids.push("ronda"); if(ids.length) this.ganar(ids, 330, 150);
+  },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h); s.clk += h; s.shake = Math.max(0, s.shake - h);
+    Juego.fondo(0);
+    const COL = {organico:"#2EAA4A", reciclable:"#1863DC", especial:"#E8730C"};
+    Object.keys(this.BX).forEach(k=>{
+      const x = this.BX[k], f = s.binFx[k]; if(f) f.t += h; const pop = f && f.t < .35 ? Math.sin(f.t/.35*Math.PI)*8 : 0, hov = s.held && Math.abs(s.held.x - x) <= 95 && s.held.y > 250;
+      ctx.save(); ctx.translate(x, this.BY); ctx.scale(1 + pop/60, 1 + pop/60); ctx.fillStyle = f && f.t < .5 && !f.ok ? "#E03131" : COL[k]; roundRect(ctx, -75, -44 - pop, 150, 100, 12); ctx.fill(); ctx.strokeStyle = hov ? "#C1FF00" : "#000"; ctx.lineWidth = hov ? 5 : 3; ctx.stroke();
+      ctx.fillStyle = "rgba(0,0,0,.3)"; roundRect(ctx, -80, -58 - pop, 160, 18, 6); ctx.fill(); ctx.fillStyle = "#fff"; ctx.font = F(14, 800); ctx.textAlign = "center"; ctx.fillText(this.BINS[k], 0, 22*uiScale); ctx.restore(); });
+    if(s.idx < s.order.length){
+      const ii = s.order[s.idx], it = this.ITEMS[ii], x = s.held ? s.held.x : 330, y = s.held ? s.held.y : 150 + Math.sin(s.clk*2)*3;
+      ctx.fillStyle = "#fff"; roundRect(ctx, x - 90, y - 62, 180, 124, 18); ctx.fill(); ctx.strokeStyle = s.held ? "#C1FF00" : "#000"; ctx.lineWidth = s.held ? 4 : 3; ctx.stroke(); ctx.font = F(52, 400); ctx.textAlign = "center"; ctx.fillStyle = "#000"; ctx.fillText(this.ICO[ii], x, y + 8*uiScale);
+      Juego.pastilla(it.label, x, y + 48, {px:12, pad:20, h:24});
+      Juego.pastilla("¿A qué contenedor va…?", 330, 64, {px:13, pad:26, h:28, bg:"#1863DC", fg:"#fff"});
+    } else {
+      Juego.pastilla(`¡Terminaste la ronda! ${s.correct} de ${s.answered} aciertos`, 330, 160, {px:15, pad:32, h:34, bg:"#C1FF00", fg:"#000"});
+      ctx.fillStyle = "#C1FF00"; roundRect(ctx, 220, 222, 220, 40, 20); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = "#000"; ctx.font = F(14, 800); ctx.textAlign = "center"; ctx.fillText("🔁 Nueva ronda", 330, 248);
+    }
+    if(s.msg) Juego.pastilla(s.msg, 330, s.idx >= s.order.length ? 196 : 232, {px:11, pad:22, h:24, bg:s.lastResult ? "#2EAA4A" : "#E03131", fg:"#fff"});
+    Juego.pastilla(`Aciertos: ${s.correct} / ${s.answered} · quedan ${s.order.length - s.idx}`, 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el residuo al contenedor", 330, 290);
+    this.finFotograma();
+  }
+};
+
+const AMBIENTE_EXPS = [PILOTO ? expInvernaderoV3 : expInvernadero, PILOTO ? expHuellaV3 : expHuella, PILOTO ? expCicloAguaV3 : expCicloAgua, PILOTO ? expFiltroV3 : expFiltro, PILOTO ? expErosionV3 : expErosion, PILOTO ? expIslaCalorV3 : expIslaCalor, PILOTO ? expBiodegradaV3 : expBiodegrada, PILOTO ? expAirePartV3 : expAirePart, PILOTO ? expSolarV3 : expSolar, PILOTO ? expReciclajeV3 : expReciclaje];
 /* ---------- ELECTRÓNICA ---------- */
 const expCircuitos = {
   id:"circuitos", name:"Circuito en serie vs en paralelo", icon:"🔗", cat:"electronica",
