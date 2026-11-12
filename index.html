@@ -7368,7 +7368,615 @@ const expPupila = {
   clase:`En un cuarto con poca luz, que un compañero te ilumine un ojo brevemente con una linterna (sin apuntar directo ni por mucho tiempo) mientras otro observa el tamaño de la pupila antes y después. Comparen ambos ojos: al iluminar uno, el otro también se contrae (reflejo consensual).`
 };
 
-const SALUD_EXPS = [expCorazon, expPulmones, expCiego, expEquilibrio, expMemoria, expFiebre, expGlucosa, expPostura, expPupila];
+/* ---------- SALUD · look de juego (piloto) ----------
+   Misma predicción, explicación, clase y registro que las versiones originales; cambia la vista, se interactúa con los objetos y se suman retos. */
+const Sal = {
+  persona(x, y, pose, t, col){ // monigote animado; y = suelo bajo los pies
+    ctx.strokeStyle = col || "#000"; ctx.lineWidth = 7; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    const ph = t*(pose === "correr" ? 9 : pose === "caminar" ? 5 : pose === "saltar" ? 7 : 0), jump = pose === "saltar" ? Math.abs(Math.sin(ph))*38 : 0;
+    const bob = pose === "reposo" ? Math.sin(t*2)*1.5 : pose === "caminar" ? Math.abs(Math.sin(ph))*3 : pose === "correr" ? Math.abs(Math.sin(ph))*6 : 0;
+    const sw = pose === "reposo" ? 0 : Math.sin(ph)*(pose === "correr" ? .9 : pose === "caminar" ? .5 : .25), hipY = y - 70 - jump - bob, shY = hipY - 55;
+    const ln = (x1, y1, x2, y2)=>{ ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
+    ln(x, hipY, x, shY);
+    [sw, -sw].forEach(a=>{ ln(x, hipY, x + Math.sin(a)*70, hipY + Math.cos(a)*70); });
+    const up = pose === "saltar" ? -2.5 + Math.sin(ph)*.3 : null;
+    [1, -1].forEach(d=>{ const a = up !== null ? up*d*.55 + (d > 0 ? 0 : 0) : -sw*d*1.1; ln(x, shY + 4, x + Math.sin(a)*50, shY + 4 + (up !== null ? -Math.abs(Math.cos(a))*40 : Math.cos(a)*50)); });
+    ctx.fillStyle = "#F5D9B8"; ctx.beginPath(); ctx.arc(x, shY - 26, 19, 0, 7); ctx.fill(); ctx.lineWidth = 3; ctx.stroke(); ctx.lineCap = "butt";
+  }
+};
+
+/* ---------- La regla que cae (piloto) ---------- */
+const expReacV3 = {...expReac, ...RetosMix, ...JuegoMix,
+  name:expReac.name + " (piloto 2)",
+  cardDesc:"Atrapa la regla en cuanto empiece a caer. La física convierte los centímetros en milisegundos de tu sistema nervioso. Cumple tres retos con estrellas.",
+  HY:330,
+  RETOS:[
+    {id:"atrapa", txt:"Atrapa la regla antes de que se caiga entera", ok:"¡Tus dedos reaccionaron a tiempo!", pista:"Toca la pantalla en cuanto la regla empiece a moverse."},
+    {id:"rapido", txt:"Atrápala a menos de 30 cm (menos de 0.25 s)", ok:"Reaccionaste en menos de 0.25 segundos", pista:"Mira la regla, no la mano: toca en cuanto se mueva."},
+    {id:"cinco", txt:"Haz 5 intentos y mira tu promedio", ok:"Con 5 intentos tu promedio es más confiable", pista:"Pulsa «Preparar» para cada nuevo intento."}
+  ],
+  MSG0:"Presiona «Preparar» y atrapa la regla en cuanto caiga.",
+  mount(){
+    const s = this.st = {phase:"idle", t0:0, waitT:0, d:0, results:[], msg:this.MSG0, cerrar:0, moved:false};
+    ctrlBtn("Preparar intento", "amber", ()=>this.preparar());
+    ctrlBtn("Reiniciar todo", "ghost", ()=>{ Object.assign(s, {phase:"idle", d:0, results:[], msg:this.MSG0, cerrar:0}); $("readout").hidden = true; });
+    this.iniciarJuego();
+    cv.addEventListener("pointerdown", this._h = ev=>{
+      const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left)*cv.width/r.width, y = (ev.clientY - r.top)*cv.height/r.height;
+      if((s.phase === "idle" || s.phase === "done") && x > 30 && x < 240 && y > 372 && y < 420){ this.preparar(); return; }
+      if(s.phase === "wait"){ s.phase = "idle"; s.msg = "⚠️ ¡Te adelantaste! La regla aún no caía. Prepara otro intento."; FX.sound("thud"); }
+      else if(s.phase === "fall"){
+        const t = (performance.now() - s.t0)/1000; s.d = Math.min(50, 490.5*t*t); s.phase = "done"; s.cerrar = 0;
+        s.results.push({d:s.d, ms:Math.round(t*1000)}); s.msg = `La atrapaste en ${s.d.toFixed(1)} cm → tiempo de reacción ≈ ${Math.round(t*1000)} ms`;
+        FX.sound("tick"); FX.dust(s.fx, 360, this.HY); this.report(); if(s.results.length >= 3) markRan();
+        const ids = ["atrapa"]; if(s.d < 30) ids.push("rapido"); if(s.results.length >= 5) ids.push("cinco"); this.ganar(ids, 420, 200);
+      }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ cv.removeEventListener("pointerdown", this._h); this.salirJuego(); },
+  preparar(){ const s = this.st; if(s.phase !== "idle" && s.phase !== "done") return; s.phase = "wait"; s.waitT = 1 + Math.random()*2.5; s.d = 0; s.moved = true; s.msg = "Espera… no toques todavía…"; },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), HY = this.HY;
+    if(s.phase === "wait"){ s.waitT -= h; if(s.waitT <= 0){ s.phase = "fall"; s.t0 = performance.now(); s.msg = "¡AHORA! ¡Atrápala (toca la pantalla)!"; FX.sound("ding"); } }
+    if(s.phase === "fall"){ const t = (performance.now() - s.t0)/1000; s.d = 490.5*t*t;
+      if(s.d >= 50){ s.phase = "done"; s.d = 50; s.msg = "💨 Se te fue completa (más de 50 cm). ¡Prepara otro intento!"; s.results.push({d:50, ms:null}); FX.sound("thud"); this.report(); if(s.results.length >= 3) markRan(); if(s.results.length >= 5) this.ganar(["cinco"], 420, 200); } }
+    if(s.phase === "done" && s.d < 50) s.cerrar = Math.min(1, s.cerrar + h*8);
+    // ---- dibujo ----
+    Juego.fondo(0);
+    ctx.fillStyle = s.phase === "fall" ? "rgba(46,170,74,.16)" : s.phase === "wait" ? "rgba(224,49,49,.1)" : "rgba(0,0,0,0)"; ctx.fillRect(0, 0, 660, 430);
+    const px = 5, drop = s.d*px, rTop = HY - 250 + drop, rx = 300;
+    const rg = ctx.createLinearGradient(rx, 0, rx + 46, 0); rg.addColorStop(0, "#F5D77F"); rg.addColorStop(.5, "#FFEBA8"); rg.addColorStop(1, "#E6C25E"); ctx.fillStyle = rg; ctx.fillRect(rx, rTop, 46, 250);
+    ctx.strokeStyle = "#B08D2E"; ctx.lineWidth = 2; ctx.strokeRect(rx, rTop, 46, 250); ctx.fillStyle = "#000"; ctx.font = F(10, 700); ctx.textAlign = "left";
+    for(let cm = 0; cm <= 50; cm += 5){ const y = rTop + 250 - cm*px; ctx.fillRect(rx, y, cm%10 === 0 ? 18 : 10, 2); if(cm%10 === 0) ctx.fillText(cm + "", rx + 22, y + 4*uiScale); }
+    // dedos (se cierran al atrapar)
+    const ab = s.phase === "done" && s.d < 50 ? 22*(1 - s.cerrar) + 2 : 22;
+    [[rx - ab - 48], [rx + 46 + ab]].forEach(([fx0])=>{ ctx.fillStyle = "#E8C49A"; roundRect(ctx, fx0, HY - 12, 48, 24, 10); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 1.5; ctx.stroke(); });
+    ctx.fillStyle = "#000"; ctx.font = F(11, 700); ctx.textAlign = "center"; ctx.fillText("tus dedos", rx + 23, HY + 44*uiScale);
+    if(s.phase === "done" && s.d < 50){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(rx - 40, HY); ctx.lineTo(rx + 90, HY); ctx.stroke(); ctx.setLineDash([]); Juego.pastilla(`${s.d.toFixed(1)} cm`, rx + 150, HY, {px:14, pad:24, h:28, bg:"#C1FF00", fg:"#000"}); }
+    // intentos anteriores
+    s.results.slice(-5).forEach((r, i)=> Juego.pastilla(r.ms === null ? "se cayó" : `${r.d.toFixed(0)} cm · ${r.ms} ms`, 540, 90 + i*28, {px:11, pad:16, h:22, bg:r.ms !== null && r.d < 30 ? "#C1FF00" : "#000", fg:r.ms !== null && r.d < 30 ? "#000" : "#C1FF00"}));
+    Juego.pastilla(s.msg, 330, 24, {px:13, pad:30, h:30, bg:s.phase === "fall" ? "#2EAA4A" : s.phase === "wait" ? "#E03131" : "#000", fg:s.phase === "idle" || s.phase === "done" ? "#C1FF00" : "#fff"});
+    if(s.phase === "idle" || s.phase === "done"){ ctx.fillStyle = "#C1FF00"; roundRect(ctx, 40, 376, 190, 40, 20); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = "#000"; ctx.font = F(14, 800); ctx.textAlign = "center"; ctx.fillText("▶ Preparar intento", 135, 402); }
+    if(!s.moved) Juego.ayuda(fx, "👆 Toca «Preparar» y luego atrapa la regla", 200, 340);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Tu corazón después de hacer ejercicio (piloto) ---------- */
+const expCorazonV3 = {...expCorazon, ...RetosMix, ...JuegoMix,
+  name:expCorazon.name + " (piloto 2)",
+  cardDesc:"Elige una actividad, arrastra el estetoscopio al pecho y cuenta tus latidos durante 15 segundos. Cumple tres retos con estrellas.",
+  PX:410, PY:330, SD:{x:575, y:120},
+  RETOS:[
+    {id:"reposo", txt:"Mide tu pulso en reposo", ok:"En reposo late entre 60 y 100 veces por minuto", pista:"Con «En reposo» elegido, arrastra el estetoscopio al pecho y espera los 15 segundos."},
+    {id:"salto", txt:"Mide tu pulso saltando: ¡más de 150 lpm!", ok:"Saltando el corazón pasa de 150 latidos por minuto", pista:"Elige «Saltando 1 min» y mide con el estetoscopio."},
+    {id:"todas", txt:"Mide las cuatro actividades", ok:"Ya comparaste reposo, caminar, correr y saltar", pista:"Cambia de actividad y mide cada una."}
+  ],
+  mount(){
+    const s = this.st = {act:"reposo", t:0, phase:0, meas:null, tested:new Set(), medidas:{}, lastBpm:null, held:null, moved:false, beatPrev:0};
+    Object.keys(this.ACT).forEach(k=> ctrlBtn(this.ACT[k].label, "", ()=>this.elegir(k)));
+    ctrlBtn("🩺 Medir pulso 15s (×4)", "amber", ()=>this.medir());
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(!s.meas && Math.abs(p.x - this.SD.x) <= Math.max(34, 22*sc) && Math.abs(p.y - this.SD.y) <= Math.max(34, 22*sc)) return {t:"est"};
+        const keys = Object.keys(this.ACT); for(let i = 0; i < keys.length; i++){ const b = this.carta(i); if(Math.abs(p.x - b.x) <= Math.max(b.w/2, 22*sc) && Math.abs(p.y - b.y) <= Math.max(b.h/2, 22*sc)) return {t:"act", k:keys[i]}; } return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "act") this.elegir(o.k); else s.held = {x:p.x, y:p.y}; },
+      move:(o, p)=>{ if(o.t === "est" && s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ if(o.t !== "est") return; const h = s.held; s.held = null; if(!h) return; if(Math.hypot(h.x - this.PX, h.y - (this.PY - 100)) < 90) this.medir(); else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  carta(i){ return {x:105 + i*130, y:395, w:122, h:44}; },
+  elegir(k){ const s = this.st; s.act = k; s.meas = null; s.moved = true; FX.sound("tick"); },
+  medir(){ const s = this.st; if(s.meas) return; s.meas = {t:0, p0:Math.floor(s.phase), c:0}; s.tested.add(s.act); if(s.tested.size >= 2) markRan(); s.moved = true; FX.sound("ding"); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), bpm = this.ACT[s.act].bpm; s.t += h;
+    s.phase += h*bpm/60; const beat = Math.floor(s.phase); if(beat !== s.beatPrev){ s.beatPrev = beat; FX.sound("thud"); }
+    if(s.meas){ s.meas.t += h; s.meas.c = Math.floor(s.phase) - s.meas.p0;
+      if(s.meas.t >= 15){ s.lastBpm = s.meas.c*4; s.medidas[s.act] = s.lastBpm; s.meas = null; FX.burst(fx, this.PX, this.PY - 100, ["#E03131", "#fff", "#C1FF00"]); FX.sound("ding");
+        const ids = []; if(s.act === "reposo") ids.push("reposo"); if(s.act === "saltar" && s.lastBpm >= 150) ids.push("salto"); if(Object.keys(s.medidas).length >= 4) ids.push("todas"); this.ganar(ids, this.PX, this.PY - 120); } }
+    Juego.fondo(404);
+    // corazón grande
+    const pul = 1 + .14*Math.pow(Math.max(0, Math.sin((s.phase%1)*Math.PI)), 6)*1.2, hx = 150, hy = 190;
+    ctx.save(); ctx.translate(hx, hy); ctx.scale(pul*1.15, pul*1.15); const hg = ctx.createRadialGradient(-12, -20, 6, 0, 0, 80); hg.addColorStop(0, "#FF7A7A"); hg.addColorStop(1, "#C92A2A"); ctx.fillStyle = hg;
+    ctx.beginPath(); ctx.moveTo(0, 36); ctx.bezierCurveTo(-90, -40, -70, -100, 0, -45); ctx.bezierCurveTo(70, -100, 90, -40, 0, 36); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.beginPath(); ctx.ellipse(-30, -38, 12, 7, -.6, 0, 7); ctx.fill(); ctx.restore();
+    Juego.pastilla(s.lastBpm !== null ? `Frecuencia cardiaca: ${s.lastBpm} lpm` : "Frecuencia cardiaca: ¿?", hx, 290, {px:12, pad:22, h:26, bg:"#C1FF00", fg:"#000"});
+    // electrocardiograma
+    ctx.fillStyle = "#0B0B0B"; roundRect(ctx, 40, 52, 580, 56, 10); ctx.fill(); ctx.strokeStyle = "#2EE66B"; ctx.lineWidth = 2; ctx.beginPath();
+    for(let x = 0; x <= 560; x += 3){ const tt = s.t - (560 - x)/90, ph = (tt*bpm/60)%1, p = ph < 0 ? ph + 1 : ph; const v = p < .04 ? 0 : p < .08 ? -4 : p < .1 ? 8 : p < .13 ? -26 : p < .16 ? 10 : p < .24 ? -6*Math.sin((p - .16)/.08*Math.PI) : 0; const yy = 84 + v; x ? ctx.lineTo(50 + x, yy) : ctx.moveTo(50 + x, yy); } ctx.stroke();
+    // persona
+    const pose = s.act; Sal.persona(this.PX, this.PY, pose, s.t, "#000");
+    if(s.meas){ Juego.pastilla(`Contando latidos: ${s.meas.c} · ${Math.max(0, 15 - s.meas.t).toFixed(0)} s`, this.PX, 150, {px:12, pad:22, h:26, bg:"#E03131", fg:"#fff"}); }
+    // estetoscopio
+    const E = s.held || this.SD; if(!s.meas){ ctx.strokeStyle = "#444"; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(E.x, E.y - 14, 16, .2, Math.PI - .2); ctx.stroke(); ctx.fillStyle = "#C1FF00"; ctx.beginPath(); ctx.arc(E.x, E.y + 20, 14, 0, 7); ctx.fill(); ctx.strokeStyle = s.held ? "#C1FF00" : "#000"; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = "#000"; ctx.font = F(14, 800); ctx.textAlign = "center"; ctx.fillText("🩺", E.x, E.y + 25*uiScale); if(!s.held) Juego.pastilla("Estetoscopio", E.x, E.y + 52, {px:10, pad:12, h:18}); }
+    if(s.held && Math.hypot(s.held.x - this.PX, s.held.y - (this.PY - 100)) < 90){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.arc(this.PX, this.PY - 100, 90, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
+    // actividades
+    Object.keys(this.ACT).forEach((k, i)=>{ const b = this.carta(i), sel = k === s.act; ctx.fillStyle = sel ? "#C1FF00" : "#1B1B1B"; roundRect(ctx, b.x - b.w/2, b.y - b.h/2, b.w, b.h, 12); ctx.fill(); ctx.strokeStyle = sel ? "#000" : "#444"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = sel ? "#000" : "#fff"; ctx.font = F(11, 800); ctx.textAlign = "center"; ctx.fillText(this.ACT[k].label, b.x, b.y - 2*uiScale); ctx.font = F(10, 600); ctx.fillStyle = sel ? "#333" : "#aaa"; ctx.fillText(s.medidas[k] ? s.medidas[k] + " lpm" : "sin medir", b.x, b.y + 13*uiScale); });
+    Juego.pastilla(`Actividad: ${this.ACT[s.act].label}`, 330, 24, {px:12, pad:22, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el estetoscopio al pecho", 520, 190);
+    this.finFotograma();
+  }
+};
+
+/* ---------- ¿Cuánto aire caben en tus pulmones? (piloto) ---------- */
+const expPulmonesV3 = {...expPulmones, ...RetosMix, ...JuegoMix,
+  name:expPulmones.name + " (piloto 2)",
+  cardDesc:"Elige un perfil, mantén presionado para soplar el globo con una sola exhalación y compara la capacidad pulmonar. Cumple tres retos con estrellas.",
+  BX:450, BY:190, K:27, BTN:{x:120, y:310, r:56},
+  RETOS:[
+    {id:"adulto", txt:"Llena el globo con la capacidad de un adulto (3.5 L)", ok:"Un adulto promedio exhala unos 3.5 litros de una vez", pista:"Elige «Adulto promedio» y mantén presionado el botón hasta que se llene."},
+    {id:"compara", txt:"Compara: llena el globo del niño y el del atleta", ok:"Más entrenamiento, más capacidad pulmonar", pista:"Cambia de perfil y llena el globo de cada uno."},
+    {id:"preciso", txt:"Detente justo en 3 litros (entre 2.8 y 3.2 L)", ok:"¡Buen control de tu respiración!", pista:"Suelta el botón cuando el contador marque 3.0 L."}
+  ],
+  mount(){
+    const s = this.st = {perfil:"adulto", L:0, blow:false, lleno:new Set(), tested:new Set(), moved:false, t:0};
+    Object.keys(this.PERF).forEach(k=> ctrlBtn(this.PERF[k].label, "", ()=>this.elegir(k)));
+    ctrlBtn("💨 Inhalar y exhalar todo en el globo", "amber", ()=>{ s.blow = true; s.auto = true; s.moved = true; });
+    ctrlBtn("🔁 Nuevo globo", "ghost", ()=>{ s.L = 0; s.blow = false; s.auto = false; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(Math.hypot(p.x - this.BTN.x, p.y - this.BTN.y) <= Math.max(this.BTN.r, 22*sc)) return {t:"soplar"};
+        const keys = Object.keys(this.PERF); for(let i = 0; i < keys.length; i++){ const b = this.carta(i); if(Math.abs(p.x - b.x) <= Math.max(b.w/2, 22*sc) && Math.abs(p.y - b.y) <= Math.max(b.h/2, 22*sc)) return {t:"perfil", k:keys[i]}; } return null; },
+      down:(o)=>{ s.moved = true; if(o.t === "soplar"){ s.blow = true; s.auto = false; } else this.elegir(o.k); },
+      move:()=>{},
+      up:(o)=>{ if(o.t === "soplar" && !s.auto) this.soltar(); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  carta(i){ return {x:150 + i*180, y:400, w:168, h:40}; },
+  elegir(k){ const s = this.st; s.perfil = k; s.L = 0; s.blow = false; s.auto = false; s.moved = true; FX.sound("tick"); },
+  soltar(){ const s = this.st; s.blow = false; if(s.L >= 2.8 && s.L <= 3.2) this.ganar(["preciso"], this.BX, this.BY - 40); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), vol = this.PERF[s.perfil].vol, K = this.K; s.t += h;
+    if(s.blow){ s.L = Math.min(vol, s.L + h*1.4); if(!FX.rm && Math.random() < h*14) FX.add(fx, {k:"d", x:210 + Math.random()*16, y:this.BY + 70 + (Math.random()-.5)*10, vx:40 + Math.random()*40, vy:(Math.random()-.5)*20, g:0, life:.4, r:2 + Math.random()*2, c:"rgba(120,170,230,.6)"});
+      if(s.L >= vol){ s.blow = false; s.auto = false; if(!s.lleno.has(s.perfil)){ s.lleno.add(s.perfil); s.tested.add(s.perfil); FX.sound("ding"); if(s.tested.size >= 2) markRan();
+        const ids = []; if(s.perfil === "adulto") ids.push("adulto"); if(s.lleno.has("ninio") && s.lleno.has("atleta")) ids.push("compara"); this.ganar(ids, this.BX, this.BY - 20); }
+        else FX.pop(fx, this.BX, this.BY - 20, "¡Capacidad máxima!"); } }
+    Juego.fondo(0);
+    const r = 18 + s.L*K, cy = this.BY, wob = Math.sin(s.t*3)*(s.blow ? 2 : .4);
+    // cara que sopla
+    ctx.fillStyle = "#F5D9B8"; ctx.beginPath(); ctx.arc(150, this.BY + 55, 44, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(138, this.BY + 45, 4, 0, 7); ctx.arc(164, this.BY + 45, 4, 0, 7); ctx.fill();
+    ctx.fillStyle = "#C2433F"; ctx.beginPath(); ctx.ellipse(s.blow ? 188 : 176, this.BY + 70, s.blow ? 9 : 14, s.blow ? 8 : 4, 0, 0, 7); ctx.fill();
+    // línea de respiración normal
+    ctx.strokeStyle = "#666"; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(this.BX, cy, 18 + .5*K, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "#666"; ctx.font = F(10, 600); ctx.textAlign = "center"; ctx.fillText("respiración normal ≈ 0.5 L", this.BX, cy - 18 - .5*K - 6);
+    // globo
+    const gg = ctx.createRadialGradient(this.BX - r*.35, cy - r*.35, r*.1, this.BX, cy, r*1.05); gg.addColorStop(0, "#7FB5FF"); gg.addColorStop(1, "#1863DC");
+    ctx.fillStyle = gg; ctx.globalAlpha = .93; ctx.beginPath(); ctx.ellipse(this.BX + wob, cy, r*.95, r, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = "rgba(0,0,0,.3)"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.beginPath(); ctx.ellipse(this.BX - r*.4, cy - r*.4, r*.14, r*.26, -.5, 0, 7); ctx.fill();
+    Juego.pastilla(`${s.L.toFixed(1)} L`, this.BX, cy, {px:r > 60 ? 20 : 14, pad:26, h:r > 60 ? 34 : 26, bg:"#000", fg:"#C1FF00"});
+    // medidor de capacidad del perfil
+    ctx.fillStyle = "#fff"; roundRect(ctx, 40, 52, 120, 14, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; roundRect(ctx, 40, 52, 120, 14, 7); ctx.stroke(); ctx.fillStyle = "#C1FF00"; roundRect(ctx, 42, 54, Math.max(8, 116*s.L/5.5), 10, 5); ctx.fill();
+    ctx.fillStyle = "#000"; ctx.font = F(9, 700); ctx.textAlign = "left"; ctx.fillText("0", 40, 82); ctx.textAlign = "right"; ctx.fillText("5.5 L", 160, 82);
+    // botón de soplar
+    const B = this.BTN; ctx.fillStyle = s.blow ? "#2EAA4A" : "#C1FF00"; ctx.beginPath(); ctx.arc(B.x, B.y, B.r, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = "#000"; ctx.font = F(13, 800); ctx.textAlign = "center"; ctx.fillText("💨 Mantén", B.x, B.y - 4*uiScale); ctx.fillText("para soplar", B.x, B.y + 14*uiScale);
+    Object.keys(this.PERF).forEach((k, i)=>{ const b = this.carta(i), sel = k === s.perfil; ctx.fillStyle = sel ? "#C1FF00" : "#1B1B1B"; roundRect(ctx, b.x - b.w/2, b.y - b.h/2, b.w, b.h, 12); ctx.fill(); ctx.strokeStyle = sel ? "#000" : "#444"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = sel ? "#000" : "#fff"; ctx.font = F(11, 800); ctx.textAlign = "center"; ctx.fillText(this.PERF[k].label, b.x, b.y + 4*uiScale); if(s.lleno.has(k)){ ctx.fillStyle = sel ? "#000" : "#C1FF00"; ctx.fillText("✔", b.x + b.w/2 - 14, b.y + 4*uiScale); } });
+    Juego.pastilla(`Perfil: ${this.PERF[s.perfil].label} · capacidad ${vol.toFixed(1)} L`, 330, 24, {px:12, pad:22, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Mantén presionado el botón para soplar", 200, 250);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Encuentra tu punto ciego (piloto) ---------- */
+const expCiegoV3 = {...expCiego, ...RetosMix, ...JuegoMix,
+  name:expCiego.name + " (piloto 2)",
+  cardDesc:"Cierra un ojo, mira fija la cruz y arrastra el punto con el dedo: ¿dónde desaparece? Cumple tres retos con estrellas.",
+  CX:170, CY:215, X0:220, W:380, B0:52, B1:68,
+  RETOS:[
+    {id:"vanish", txt:"Haz que el punto desaparezca", ok:"El punto cayó en tu punto ciego y se «apagó»", pista:"Mira fija la cruz con un solo ojo y arrastra el punto despacio hacia la derecha."},
+    {id:"cruza", txt:"Pásalo por todo el punto ciego y mira cómo reaparece", ok:"El cerebro no lo notaba, pero el punto seguía ahí", pista:"Sigue moviendo el punto hacia la derecha hasta que vuelva a aparecer."},
+    {id:"barrido", txt:"Mira un barrido automático completo", ok:"Viste pasar el punto de punta a punta", pista:"Pulsa «Barrido automático» y mantén la vista fija en la cruz."}
+  ],
+  mount(){
+    const s = this.st = {pos:0, tested:new Set(), auto:false, held:false, adentro:false, entro:false, tVan:0, moved:false, t:0, sweepOk:false};
+    s.sl = ctrlSlider("Posición del punto", 0, 100, 1, 0, v=>this.poner(v));
+    ctrlBtn("▶️ Barrido automático", "amber", ()=>{ s.auto = true; s.pos = 0; s.moved = true; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=> (p.x >= this.X0 - 24 && p.x <= this.X0 + this.W + 24 && Math.abs(p.y - this.CY) <= Math.max(46, 26*sc)) ? {} : null,
+      down:(o, p)=>{ s.held = true; s.auto = false; s.moved = true; this.fijar(p.x); },
+      move:(o, p)=>{ this.fijar(p.x); },
+      up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijar(x){ this.poner(Math.round(Math.max(0, Math.min(100, (x - this.X0)/this.W*100)))); },
+  poner(v){ const s = this.st; s.pos = v; s.sl.value = Math.round(v); s.moved = true; s.tested.add(Math.round(v/10)); if(s.tested.size >= 6) markRan(); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h); s.t += h;
+    if(s.auto){ s.pos += h*30; s.sl.value = Math.round(Math.min(100, s.pos)); if(s.pos > 100){ s.pos = 0; s.auto = false; s.tested.add("auto"); if(s.tested.size >= 6) markRan(); this.ganar(["barrido"], 330, 140); FX.sound("ding"); } else { s.tested.add(Math.round(s.pos/10)); if(s.tested.size >= 6) markRan(); } }
+    const x = this.X0 + s.pos/100*this.W, ya = s.pos > this.B0 && s.pos < this.B1;
+    if(ya !== s.adentro){
+      if(ya){ s.entro = true; FX.sound("tick"); FX.dust(fx, x, this.CY); } else { FX.sound("plop"); if(s.entro && s.pos >= this.B1) this.ganar(["cruza"], x, this.CY - 20); }
+      s.adentro = ya; }
+    if(ya){ s.tVan += h; if(s.tVan >= .4) this.ganar(["vanish"], 440, this.CY - 40); }
+    Juego.fondo(0);
+    // riel del punto
+    ctx.fillStyle = "rgba(0,0,0,.06)"; roundRect(ctx, this.X0 - 24, this.CY - 26, this.W + 48, 52, 26); ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,.15)"; ctx.lineWidth = 2; ctx.setLineDash([3, 6]); ctx.beginPath(); ctx.moveTo(this.X0, this.CY); ctx.lineTo(this.X0 + this.W, this.CY); ctx.stroke(); ctx.setLineDash([]);
+    // cruz de fijación
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(this.CX - 14, this.CY); ctx.lineTo(this.CX + 14, this.CY); ctx.moveTo(this.CX, this.CY - 14); ctx.lineTo(this.CX, this.CY + 14); ctx.stroke(); ctx.lineCap = "butt";
+    // punto (desaparece en el punto ciego)
+    if(!ya){ const g = ctx.createRadialGradient(x - 3, this.CY - 3, 1, x, this.CY, 13); g.addColorStop(0, "#5B8DEF"); g.addColorStop(1, "#1863DC"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, this.CY, 11, 0, 7); ctx.fill(); ctx.strokeStyle = s.held ? "#C1FF00" : "#000"; ctx.lineWidth = s.held ? 3.5 : 2; ctx.stroke(); }
+    else { ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.font = F(12, 700); ctx.textAlign = "center"; ctx.fillText("¿?", x, this.CY + 4*uiScale); }
+    // instrucciones
+    Juego.pastilla("Cierra el ojo izquierdo y mira fija la cruz con el derecho", 330, 24, {px:12, pad:26, h:28});
+    Juego.pastilla("Arrastra el punto hacia la derecha, sin dejar de mirar la cruz", 330, 56, {px:11, pad:22, h:24, bg:"#1863DC", fg:"#fff"});
+    if(ya) Juego.pastilla("¡Aquí debería desaparecer en tu punto ciego real!", 330, 330, {px:13, pad:28, h:30, bg:"#C1FF00", fg:"#000"});
+    Juego.pastilla(`Posición: ${Math.round(s.pos)} %`, 330, 392, {px:11, pad:18, h:22});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el punto con el dedo", 420, 150);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Prueba de equilibrio (piloto) ---------- */
+const expEquilibrioV3 = {...expEquilibrio, ...RetosMix, ...JuegoMix,
+  name:expEquilibrio.name + " (piloto 2)",
+  cardDesc:"Mantén el equilibrio en un pie: arrastra la base para seguir al cuerpo, primero con los ojos abiertos y luego cerrados. Cumple tres retos con estrellas.",
+  FY:372, TOL:30,
+  RETOS:[
+    {id:"abiertos", txt:"Aguanta 20 segundos con los ojos abiertos", ok:"Con la vista, el equilibrio es mucho más fácil", pista:"Elige «ojos abiertos» y mantén la base debajo del cuerpo."},
+    {id:"cerrados10", txt:"Aguanta 10 segundos con los ojos cerrados", ok:"¡Solo con el oído interno y la propiocepción!", pista:"Sigue el vaivén del cuerpo con la base, aunque casi no lo veas."},
+    {id:"cerrados20", txt:"Aguanta 20 segundos con los ojos cerrados", ok:"¡Equilibrio de experto!", pista:"Fíjate en el ritmo del balanceo: se repite."}
+  ],
+  mount(){
+    const s = this.st = {mode:null, t:0, sway:0, fell:false, fallT:0, base:330, off:0, held:false, tries:{abiertos:false, cerrados:false}, best:{abiertos:0, cerrados:0}, moved:false, clk:0};
+    ctrlBtn("👁️ Intentar con ojos abiertos", "", ()=>this.empezar("abiertos"));
+    ctrlBtn("🙈 Intentar con ojos cerrados", "", ()=>this.empezar("cerrados"));
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(!s.mode || s.fell || s.t >= 20){ const m = [205, 455]; for(let i = 0; i < 2; i++) if(Math.abs(p.x - m[i]) <= 100 && Math.abs(p.y - 183) <= 26) return {t:"modo", k:i ? "cerrados" : "abiertos"}; }
+        return (s.mode && p.y >= this.FY - 24 - 14*sc && p.y <= this.FY + 40 + 6*sc) ? {t:"base"} : null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "modo"){ this.empezar(o.k); return; } s.held = true; s.base = Math.max(40, Math.min(620, p.x)); },
+      move:(o, p)=>{ if(o.t === "base") s.base = Math.max(40, Math.min(620, p.x)); },
+      up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  empezar(m){ const s = this.st; s.mode = m; s.t = 0; s.fell = false; s.fallT = 0; s.off = 0; s.base = 330; s.moved = true; s.tries[m] = true; if(s.tries.abiertos && s.tries.cerrados) markRan(); FX.sound("tick"); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), FY = this.FY; s.clk += h;
+    if(s.mode && !s.fell){
+      s.t += h; const amp = s.mode === "cerrados" ? 26 : 8; s.sway = Math.sin(s.t*2.3)*amp + (s.mode === "cerrados" ? Math.sin(s.t*5.1)*10 : 0);
+      const tol = s.mode === "cerrados" ? 16 : this.TOL, dist = Math.abs(330 + s.sway - s.base); if(dist > tol) s.off += h; else s.off = Math.max(0, s.off - h*.5);
+      s.best[s.mode] = Math.max(s.best[s.mode], s.t);
+      if(s.off > .6){ s.fell = true; s.fallT = 0; FX.sound("thud"); fx.shake = Math.max(fx.shake, 3); FX.dust(fx, 330 + s.sway, FY); }
+      const ids = []; if(s.mode === "abiertos" && s.t >= 20) ids.push("abiertos"); if(s.mode === "cerrados" && s.t >= 10) ids.push("cerrados10"); if(s.mode === "cerrados" && s.t >= 20) ids.push("cerrados20");
+      if(ids.length) this.ganar(ids, 330, 150);
+    }
+    if(s.fell) s.fallT += h;
+    Juego.fondo(FY + 26);
+    const cx = 330 + (s.mode ? s.sway : 0), cerr = s.mode === "cerrados";
+    // cuerpo (se ve muy tenue con los ojos cerrados)
+    ctx.save(); ctx.globalAlpha = cerr && !s.fell ? .13 : 1;
+    const lean = s.fell ? Math.min(1.3, s.fallT*2.4) : (s.sway/320);
+    ctx.translate(cx, FY); ctx.rotate(lean); ctx.strokeStyle = s.fell ? "#E03131" : "#000"; ctx.lineWidth = 7; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(0, -140); ctx.lineTo(0, -48); ctx.moveTo(0, -48); ctx.lineTo(8, 0); ctx.moveTo(0, -48); ctx.lineTo(-30, -26); ctx.stroke();
+    ctx.moveTo(0, -120); ctx.beginPath(); ctx.moveTo(0, -120); ctx.lineTo(s.mode ? -34 - Math.abs(s.sway)*.5 : -34, -100); ctx.moveTo(0, -120); ctx.lineTo(s.mode ? 34 + Math.abs(s.sway)*.5 : 34, -100); ctx.stroke();
+    ctx.fillStyle = "#F5D9B8"; ctx.beginPath(); ctx.arc(0, -162, 19, 0, 7); ctx.fill(); ctx.lineWidth = 3; ctx.stroke();
+    if(cerr){ ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-9, -164); ctx.lineTo(-3, -164); ctx.moveTo(3, -164); ctx.lineTo(9, -164); ctx.stroke(); }
+    ctx.lineCap = "butt"; ctx.restore();
+    // base que arrastra la persona
+    const tolD = cerr ? 16 : this.TOL, bx = s.base, dentro = s.mode && !s.fell && Math.abs(cx - bx) <= tolD;
+    ctx.fillStyle = s.mode ? (dentro ? "#2EAA4A" : "#E03131") : "#C1FF00"; roundRect(ctx, bx - tolD, FY + 4, tolD*2, 16, 8); ctx.fill(); ctx.strokeStyle = s.held ? "#fff" : "#000"; ctx.lineWidth = s.held ? 3 : 2; ctx.stroke();
+    ctx.fillStyle = "#000"; ctx.font = F(10, 800); ctx.textAlign = "center"; ctx.fillText("◀ BASE ▶", bx, FY + 17*uiScale);
+    if(cerr && !s.fell){ ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.fillRect(0, 0, 660, 430); }
+    // progreso
+    if(s.mode){ const meta = cerr ? 20 : 20; ctx.fillStyle = "#fff"; roundRect(ctx, 130, 54, 400, 14, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; roundRect(ctx, 130, 54, 400, 14, 7); ctx.stroke(); ctx.fillStyle = s.fell ? "#E03131" : "#C1FF00"; roundRect(ctx, 132, 56, Math.max(8, 396*Math.min(1, s.t/meta)), 10, 5); ctx.fill(); }
+    Juego.pastilla(s.mode ? `Ojos ${s.mode} · tiempo: ${s.t.toFixed(1)} s` : "Elige un modo para empezar ↓", 330, 24, {px:12, pad:24, h:26, bg:cerr ? "#1B1B1B" : "#000"});
+    if(s.fell) Juego.pastilla("¡Te tambaleaste y perdiste el equilibrio!", 330, 110, {px:13, pad:28, h:30, bg:"#E03131", fg:"#fff"});
+    else if(s.mode) Juego.pastilla(dentro ? "Equilibrado ✔" : "¡Corrige! Mueve la base debajo del cuerpo", 330, 90, {px:11, pad:20, h:22, bg:dentro ? "#2EAA4A" : "#E03131", fg:"#fff"});
+    if(!s.mode || s.fell || s.t >= 20){ const m = [["abiertos", "👁️ Ojos abiertos", 205], ["cerrados", "🙈 Ojos cerrados", 455]]; m.forEach(([k, t, x])=>{ ctx.fillStyle = "#C1FF00"; roundRect(ctx, x - 100, 160, 200, 46, 23); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = "#000"; ctx.font = F(14, 800); ctx.textAlign = "center"; ctx.fillText(t, x, 188); }); }
+    if(!s.moved) Juego.ayuda(fx, "👆 Elige un modo y sigue al cuerpo con la base", 330, 250);
+    this.finFotograma();
+  }
+};
+
+/* ---------- ¿Cuántos números recuerdas? (piloto) ---------- */
+const expMemoriaV3 = {...expMemoria, ...RetosMix, ...JuegoMix,
+  name:expMemoria.name + " (piloto 2)",
+  cardDesc:"Mira la secuencia de números, espera a que se oculte y escríbela en el teclado. Cada acierto suma un dígito más. Cumple tres retos con estrellas.",
+  RETOS:[
+    {id:"cinco", txt:"Recuerda una secuencia de 5 dígitos", ok:"5 dígitos: ya estás en el rango típico", pista:"Repítela mentalmente mientras se muestra."},
+    {id:"siete", txt:"Recuerda una secuencia de 7 dígitos", ok:"7 dígitos: justo el promedio de Miller", pista:"Agrúpalos en bloques, como un teléfono: 3-2-2."},
+    {id:"nueve", txt:"Recuerda una secuencia de 9 dígitos", ok:"9 dígitos: ¡en el límite alto de 7±2!", pista:"Forma 3 grupos de 3 números."}
+  ],
+  key(i){ return {x:130 + (i%5)*100, y:318 + Math.floor(i/5)*44, w:84, h:36}; },
+  mount(){
+    const s = this.st = {n:3, seq:[], ent:[], fase:"inicio", t:0, rounds:0, best:0, msg:"", moved:false};
+    ctrlBtn("🔢 Mostrar secuencia", "amber", ()=>this.nueva());
+    ctrlBtn("↺ Empezar otra vez desde 3", "ghost", ()=>{ s.n = 3; s.fase = "inicio"; s.msg = ""; s.ent = []; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(s.fase === "inicio" || s.fase === "resultado"){ if(Math.abs(p.x - 330) <= 120 && Math.abs(p.y - 311) <= 28) return {t:"jugar"}; return null; }
+        if(s.fase !== "teclado") return null;
+        for(let i = 0; i < 12; i++){ const k = this.key(i); if(Math.abs(p.x - k.x) <= Math.max(k.w/2, 20*sc) && Math.abs(p.y - k.y) <= Math.max(k.h/2, 18*sc)) return {t:"k", i}; } return null; },
+      down:(o)=>{ s.moved = true; if(o.t === "jugar") this.nueva(); else this.tecla(o.i); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  nueva(){ const s = this.st; s.seq = Array.from({length:s.n}, ()=>Math.floor(Math.random()*10)); s.ent = []; s.fase = "mostrar"; s.t = 0; s.moved = true; s.msg = ""; FX.sound("tick"); },
+  tecla(i){ const s = this.st; FX.sound("tick");
+    if(i === 10){ s.ent.pop(); return; } if(i === 11){ if(s.ent.length) this.revisar(); return; }
+    if(s.ent.length < s.n) s.ent.push(i); if(s.ent.length === s.n) this.revisar(); },
+  revisar(){
+    const s = this.st, ok = s.ent.length === s.n && s.ent.every((d, i)=>d === s.seq[i]); s.rounds++; if(s.rounds >= 3) markRan();
+    if(ok){ s.best = Math.max(s.best, s.n); s.msg = `¡Correcto! ${s.n} dígitos`; FX.sound("ding"); FX.burst(s.fx, 330, 200, ["#C1FF00", "#fff", "#1863DC"]); const ids = []; if(s.n >= 5) ids.push("cinco"); if(s.n >= 7) ids.push("siete"); if(s.n >= 9) ids.push("nueve"); this.ganar(ids, 330, 170); s.n++; }
+    else { s.msg = "Era: " + s.seq.join(" ") + ". ¡Inténtalo otra vez!"; FX.sound("thud"); }
+    s.fase = "resultado"; s.t = 0;
+  },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h); s.t += h;
+    const dur = Math.max(2.5, s.n*.8); if(s.fase === "mostrar" && s.t >= dur){ s.fase = "teclado"; s.t = 0; FX.sound("tick"); }
+    Juego.fondo(0);
+    const N = s.fase === "inicio" ? s.n : s.seq.length || s.n, w = Math.min(62, 560/N), gap = 8, x0 = 330 - (N*(w + gap) - gap)/2;
+    for(let i = 0; i < N; i++){
+      const x = x0 + i*(w + gap), y = 150; let txt = "•", bg = "#1B1B1B", fg = "#555";
+      if(s.fase === "mostrar"){ txt = s.seq[i]; bg = "#000"; fg = "#C1FF00"; }
+      else if(s.fase === "teclado"){ txt = s.ent[i] !== undefined ? s.ent[i] : ""; bg = "#1B1B1B"; fg = "#fff"; }
+      else if(s.fase === "resultado"){ txt = s.ent[i] !== undefined ? s.ent[i] : ""; const ok = s.ent[i] === s.seq[i]; bg = ok ? "#2EAA4A" : "#E03131"; fg = "#fff"; }
+      ctx.fillStyle = bg; roundRect(ctx, x, y, w, 64, 10); ctx.fill(); ctx.strokeStyle = s.fase === "teclado" && i === s.ent.length ? "#C1FF00" : "rgba(255,255,255,.2)"; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = fg; ctx.font = F(w > 40 ? 30 : 22, 800); ctx.textAlign = "center"; ctx.fillText(txt, x + w/2, y + 42*uiScale); }
+    if(s.fase === "mostrar"){ ctx.fillStyle = "#fff"; roundRect(ctx, 130, 232, 400, 10, 5); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; roundRect(ctx, 130, 232, 400, 10, 5); ctx.stroke(); ctx.fillStyle = "#C1FF00"; roundRect(ctx, 130, 232, Math.max(8, 400*(1 - s.t/dur)), 10, 5); ctx.fill(); }
+    if(s.fase === "teclado"){
+      for(let i = 0; i < 12; i++){ const k = this.key(i), esp = i >= 10; ctx.fillStyle = i === 11 ? "#C1FF00" : i === 10 ? "#444" : "#1B1B1B"; roundRect(ctx, k.x - k.w/2, k.y - k.h/2, k.w, k.h, 10); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = i === 11 ? "#000" : "#fff"; ctx.font = F(esp ? 14 : 18, 800); ctx.textAlign = "center"; ctx.fillText(i === 10 ? "⌫" : i === 11 ? "OK" : i, k.x, k.y + 6*uiScale); } }
+    if(s.fase === "inicio" || s.fase === "resultado"){ ctx.fillStyle = "#C1FF00"; roundRect(ctx, 210, 288, 240, 46, 23); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fillStyle = "#000"; ctx.font = F(15, 800); ctx.textAlign = "center"; ctx.fillText(s.fase === "inicio" ? "▶ Mostrar secuencia" : "▶ Siguiente secuencia", 330, 317); }
+    Juego.pastilla(`Ronda ${s.rounds + 1} · intentando recordar ${s.n} dígitos`, 330, 24, {px:12, pad:24, h:26});
+    Juego.pastilla(s.fase === "mostrar" ? "Memorízalos…" : s.fase === "teclado" ? "Escribe la secuencia" : s.msg || `Mejor racha lograda: ${s.best} dígitos`, 330, 80, {px:12, pad:24, h:26, bg:s.fase === "resultado" ? (s.msg.startsWith("¡Correcto") ? "#2EAA4A" : "#E03131") : "#1863DC", fg:"#fff"});
+    if(s.fase !== "teclado") Juego.pastilla(`Mejor racha: ${s.best} dígitos`, 330, 396, {px:11, pad:18, h:22});
+    if(!s.moved) Juego.ayuda(fx, "👆 Toca «Mostrar secuencia» y memoriza", 330, 260);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Tus pupilas reaccionan a la luz (piloto) ---------- */
+const expPupilaV3 = {...expPupila, ...RetosMix, ...JuegoMix,
+  name:expPupila.name + " (piloto 2)",
+  cardDesc:"Arrastra la palanca de luz y mira cómo reaccionan tus dos pupilas, de la oscuridad a la luz brillante. Cumple tres retos con estrellas.",
+  LV:{x:618, y0:360, y1:70}, Z:1.25,
+  RETOS:[
+    {id:"oscuro", txt:"Deja el cuarto casi a oscuras (luz de 10 % o menos)", ok:"Con poca luz la pupila se dilata para captar más", pista:"Baja la palanca de luz hasta abajo."},
+    {id:"claro", txt:"Pon luz muy brillante (90 % o más)", ok:"Con mucha luz la pupila se contrae para proteger la retina", pista:"Sube la palanca de luz hasta arriba."},
+    {id:"brusco", txt:"Cambio brusco: pasa de oscuro a muy brillante en menos de 1 segundo", ok:"El reflejo es automático e instantáneo", pista:"Toca «Oscuro» y enseguida «Muy brillante»."}
+  ],
+  carta(i){ return {x:150 + i*180, y:398, w:150, h:40}; },
+  mount(){
+    const s = this.st = {light:20, pupil:0, tested:new Set(), t:0, tDark:-99, held:false, moved:false, blink:0};
+    s.sl = ctrlSlider("Luz ambiente (0=oscuro, 100=muy brillante)", 0, 100, 1, s.light, v=>this.poner(v));
+    s.pupil = 26 - s.light/100*16;
+    this.iniciarJuego();
+    const LV = this.LV;
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(Math.abs(p.x - LV.x) <= Math.max(30, 22*sc) && p.y >= LV.y1 - 18 && p.y <= LV.y0 + 18) return {t:"lev"};
+        for(let i = 0; i < 3; i++){ const b = this.carta(i); if(Math.abs(p.x - b.x) <= Math.max(b.w/2, 22*sc) && Math.abs(p.y - b.y) <= Math.max(b.h/2, 22*sc)) return {t:"c", v:[5, 50, 100][i]}; } return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "lev"){ s.held = true; this.fijar(p.y); } else this.poner(o.v); },
+      move:(o, p)=>{ if(o.t === "lev") this.fijar(p.y); },
+      up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijar(y){ const L = this.LV; this.poner(Math.round(Math.max(0, Math.min(100, (L.y0 - y)/(L.y0 - L.y1)*100)))); },
+  poner(v){ const s = this.st; s.light = v; s.sl.value = v; s.moved = true; s.tested.add(Math.round(v/15)); if(s.tested.size >= 4) markRan();
+    if(v <= 10){ s.tDark = s.t; this.ganar(["oscuro"], 330, 150); }
+    if(v >= 90){ const ids = ["claro"]; if(s.t - s.tDark < 1) ids.push("brusco"); this.ganar(ids, 330, 150); } },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), Z = this.Z; s.t += h;
+    const target = 26 - s.light/100*16; s.pupil += (target - s.pupil)*Math.min(1, h*3);
+    s.blink -= h; if(s.blink < -3.5) s.blink = .16;
+    const k = s.light*1.6; ctx.fillStyle = `rgb(${20 + k},${20 + k},${30 + k})`; ctx.fillRect(0, 0, 660, 430);
+    if(s.light > 70){ const gl = ctx.createRadialGradient(618, 60, 10, 618, 60, 320); gl.addColorStop(0, `rgba(255,240,170,${(s.light - 70)/100})`); gl.addColorStop(1, "rgba(255,240,170,0)"); ctx.fillStyle = gl; ctx.fillRect(0, 0, 660, 430); }
+    [190, 470].forEach(ex=>{
+      const ey = 210, close = s.blink > 0 ? 1 - Math.abs(s.blink - .08)/.08 : 0;
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.ellipse(ex, ey, 105, 72, 0, 0, 7); ctx.fill();
+      ctx.save(); ctx.beginPath(); ctx.ellipse(ex, ey, 105, 72, 0, 0, 7); ctx.clip();
+      const ig = ctx.createRadialGradient(ex, ey, 8, ex, ey, 42*Z); ig.addColorStop(0, "#8A5E3B"); ig.addColorStop(1, "#5A3A22"); ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ex, ey, 42*Z, 0, 7); ctx.fill();
+      ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(ex, ey, s.pupil*Z, 0, 7); ctx.fill(); ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.beginPath(); ctx.arc(ex - 12, ey - 14, 6, 0, 7); ctx.fill();
+      if(close > 0){ ctx.fillStyle = "#E8C49A"; ctx.fillRect(ex - 110, ey - 74, 220, 148*close*.5); ctx.fillRect(ex - 110, ey + 74 - 148*close*.5, 220, 148*close*.5); }
+      ctx.restore(); ctx.strokeStyle = "rgba(220,231,234,.95)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(ex, ey, 105, 72, 0, 0, 7); ctx.stroke(); });
+    // palanca de luz
+    const L = this.LV, hy = L.y0 - s.light/100*(L.y0 - L.y1);
+    ctx.fillStyle = "rgba(0,0,0,.55)"; roundRect(ctx, L.x - 16, L.y1 - 22, 32, L.y0 - L.y1 + 44, 16); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2; roundRect(ctx, L.x - 16, L.y1 - 22, 32, L.y0 - L.y1 + 44, 16); ctx.stroke();
+    ctx.fillStyle = "#C1FF00"; ctx.fillRect(L.x - 4, hy, 8, L.y0 - hy); ctx.font = F(16, 400); ctx.textAlign = "center"; ctx.fillText("☀️", L.x, L.y1 - 30); ctx.fillText("🌑", L.x, L.y0 + 36);
+    const hg = ctx.createRadialGradient(L.x - 4, hy - 4, 2, L.x, hy, 18); hg.addColorStop(0, "#F1FFB0"); hg.addColorStop(1, "#C1FF00"); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(L.x, hy, 17, 0, 7); ctx.fill(); ctx.strokeStyle = s.held ? "#fff" : "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    [["🌑 Oscuro"], ["🌤 Normal"], ["☀️ Muy brillante"]].forEach(([t], i)=>{ const b = this.carta(i); ctx.fillStyle = "rgba(0,0,0,.7)"; roundRect(ctx, b.x - b.w/2, b.y - b.h/2, b.w, b.h, 14); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#C1FF00"; ctx.font = F(13, 800); ctx.textAlign = "center"; ctx.fillText(t, b.x, b.y + 5*uiScale); });
+    Juego.pastilla(`Luz ambiente: ${s.light} %`, 330, 24, {px:12, pad:24, h:26});
+    Juego.pastilla(`diámetro de pupila ≈ ${(s.pupil/13).toFixed(1)} (escala relativa)`, 330, 340, {px:12, pad:24, h:26, bg:"#C1FF00", fg:"#000"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra la palanca de luz", 480, 100);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Fiebre (piloto) ---------- */
+const expFiebreV3 = {...expFiebre, ...RetosMix, ...JuegoMix,
+  name:expFiebre.name + " (piloto 2)",
+  cardDesc:"Arrastra el virus al cuerpo, mira subir la fiebre y luego manda a las defensas. Cumple tres retos con estrellas.",
+  BODY:{x:130, y:330}, GR:{x:340, y:70, w:270, h:230},
+  RETOS:[
+    {id:"fiebre", txt:"Provoca una fiebre (38 °C o más)", ok:"El hipotálamo subió el termostato del cuerpo", pista:"Arrastra el virus al cuerpo y espera a que suba la temperatura."},
+    {id:"maximo", txt:"Deja subir la fiebre hasta el máximo (38.8 °C)", ok:"Llegaste al máximo de la simulación: 38.8 °C", pista:"No mandes las defensas todavía: espera a que la curva llegue arriba."},
+    {id:"recupera", txt:"Ayuda al cuerpo a recuperarse (36.6 °C o menos)", ok:"El sistema inmune controló la infección y la temperatura volvió a la normalidad", pista:"Cuando la fiebre esté alta, arrastra las defensas al cuerpo."}
+  ],
+  mount(){
+    const s = this.st = {stage:0, temp:36.5, history:[36.5], t:0, runs:0, held:null, moved:false, clk:0, rec:false};
+    ctrlBtn("🦠 El cuerpo detecta una infección", "", ()=>this.infectar());
+    ctrlBtn("🛡️ El sistema inmune controla la infección", "", ()=>this.defender());
+    ctrlBtn("🔁 Reiniciar", "ghost", ()=>{ s.stage = 0; s.temp = 36.5; s.history = [36.5]; s.t = 0; s.rec = false; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if((s.stage === 0 || s.rec) && Math.abs(p.x - 60) <= Math.max(36, 22*sc) && Math.abs(p.y - 366) <= Math.max(30, 22*sc)) return {t:"virus"};
+        if(s.stage === 1 && Math.abs(p.x - 200) <= Math.max(36, 22*sc) && Math.abs(p.y - 366) <= Math.max(30, 22*sc)) return {t:"def"}; return null; },
+      down:(o, p)=>{ s.held = {t:o.t, x:p.x, y:p.y}; s.moved = true; },
+      move:(o, p)=>{ if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ const h = s.held; s.held = null; if(!h) return; if(Math.hypot(h.x - this.BODY.x, h.y - (this.BODY.y - 80)) < 100){ if(h.t === "virus") this.infectar(); else this.defender(); } else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  infectar(){ const s = this.st; if(s.stage === 0 || s.rec){ s.stage = 1; s.rec = false; s.moved = true; FX.sound("boom"); FX.pop(s.fx, this.BODY.x, 150, "🦠 ¡Infección!"); } },
+  defender(){ const s = this.st; if(s.stage === 1){ s.stage = 2; s.moved = true; FX.sound("ding"); FX.pop(s.fx, this.BODY.x, 150, "🛡️ ¡Defensas!"); } },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h); s.clk += h;
+    if(s.stage === 1) s.temp = Math.min(38.8, s.temp + h*.7);
+    if(s.stage === 2){ s.temp = Math.max(36.5, s.temp - h*.5); if(s.temp <= 36.6 && !s.rec){ s.rec = true; if(s.runs < 1){ s.runs++; markRan(); } this.ganar(["recupera"], this.BODY.x, 150); } }
+    const ids = []; if(s.temp >= 38) ids.push("fiebre"); if(s.temp >= 38.8) ids.push("maximo"); if(ids.length) this.ganar(ids, this.BODY.x, 150);
+    s.t += h; if(s.t > .25){ s.t = 0; s.history.push(s.temp); if(s.history.length > 200) s.history.shift(); }
+    if(!FX.rm && s.stage === 2 && s.temp > 36.7 && Math.random() < h*8) FX.add(fx, {k:"d", x:this.BODY.x + (Math.random()-.5)*50, y:this.BODY.y - 190 + Math.random()*20, vx:(Math.random()-.5)*20, vy:10, g:160, life:.9, r:2.5, c:"rgba(120,190,255,.85)"});
+    Juego.fondo(404);
+    const B = this.BODY, fe = Math.max(0, (s.temp - 36.5)/2.3), jit = s.stage === 1 && !FX.rm ? Math.sin(s.clk*40)*2*fe : 0;
+    const gl = ctx.createRadialGradient(B.x, B.y - 100, 10, B.x, B.y - 100, 150); gl.addColorStop(0, `rgba(224,49,49,${.38*fe})`); gl.addColorStop(1, "rgba(224,49,49,0)"); ctx.fillStyle = gl; ctx.fillRect(0, 0, 330, 430);
+    Sal.persona(B.x + jit, B.y, "reposo", s.clk, fe > .5 ? "#C92A2A" : "#000");
+    ctx.fillStyle = `rgba(224,49,49,${.45*fe})`; ctx.beginPath(); ctx.arc(B.x + jit, B.y - 180, 17, 0, 7); ctx.fill();
+    // virus y glóbulos blancos alrededor
+    if(s.stage === 1) for(let i = 0; i < 7; i++){ const a = s.clk*.8 + i*.9, r = 80 + Math.sin(s.clk*2 + i)*14; ctx.fillStyle = "#7B2D8B"; ctx.beginPath(); ctx.arc(B.x + Math.cos(a)*r, B.y - 100 + Math.sin(a)*r*.8, 7, 0, 7); ctx.fill(); ctx.strokeStyle = "#7B2D8B"; ctx.lineWidth = 2; for(let k = 0; k < 6; k++){ ctx.beginPath(); ctx.moveTo(B.x + Math.cos(a)*r + Math.cos(k)*7, B.y - 100 + Math.sin(a)*r*.8 + Math.sin(k)*7); ctx.lineTo(B.x + Math.cos(a)*r + Math.cos(k)*11, B.y - 100 + Math.sin(a)*r*.8 + Math.sin(k)*11); ctx.stroke(); } }
+    if(s.stage === 2 && !s.rec) for(let i = 0; i < 6; i++){ const a = s.clk*1.2 + i*1.05, r = 78; ctx.fillStyle = "#fff"; ctx.strokeStyle = "#1863DC"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(B.x + Math.cos(a)*r, B.y - 100 + Math.sin(a)*r*.8, 9, 0, 7); ctx.fill(); ctx.stroke(); }
+    // termostato (hipotálamo)
+    const tx = 215, ty = 150; ctx.fillStyle = "#1B1B1B"; ctx.beginPath(); ctx.arc(tx, ty, 34, 0, 7); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2.5; ctx.stroke();
+    const ang = Math.PI*(.8 + 1.4*Math.max(0, Math.min(1, (s.temp - 36)/3))); ctx.strokeStyle = fe > .4 ? "#FF6B6B" : "#C1FF00"; ctx.lineWidth = 3.5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + Math.cos(ang)*26, ty + Math.sin(ang)*26); ctx.stroke(); ctx.lineCap = "butt";
+    Juego.pastilla("Termostato del cerebro", tx, ty + 50, {px:10, pad:14, h:18});
+    // gráfica
+    const G = this.GR; ctx.fillStyle = "rgba(255,255,255,.9)"; roundRect(ctx, G.x - 40, G.y - 14, G.w + 52, G.h + 40, 14); ctx.fill();
+    ctx.strokeStyle = "#B7C6CC"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(G.x, G.y); ctx.lineTo(G.x, G.y + G.h); ctx.lineTo(G.x + G.w, G.y + G.h); ctx.stroke();
+    [36, 37, 38, 39].forEach(v=>{ const y = G.y + G.h - (v - 35)*(G.h/5); ctx.fillStyle = "#666"; ctx.font = F(10, 600); ctx.textAlign = "left"; ctx.fillText(v + "°C", G.x - 36, y + 3*uiScale); ctx.strokeStyle = "#EEF3F4"; ctx.beginPath(); ctx.moveTo(G.x, y); ctx.lineTo(G.x + G.w, y); ctx.stroke(); });
+    const y38 = G.y + G.h - 3*(G.h/5); ctx.strokeStyle = "rgba(224,49,49,.5)"; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(G.x, y38); ctx.lineTo(G.x + G.w, y38); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = "#E03131"; ctx.font = F(9, 700); ctx.textAlign = "right"; ctx.fillText("fiebre ≥ 38 °C", G.x + G.w - 4, y38 - 4);
+    ctx.strokeStyle = fe > .4 ? "#E03131" : "#1863DC"; ctx.lineWidth = 3; ctx.lineJoin = "round"; ctx.beginPath(); s.history.forEach((v, i)=>{ const x = G.x + (i/199)*G.w, y = G.y + G.h - (v - 35)*(G.h/5); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+    // fichas para arrastrar
+    const v0 = s.held && s.held.t === "virus" ? null : {x:60, y:366}, d0 = s.held && s.held.t === "def" ? null : {x:200, y:366};
+    if((s.stage === 0 || s.rec) && v0){ this.ficha(v0.x, v0.y, "🦠", "Virus", "#7B2D8B"); }
+    if(s.stage === 1 && d0){ this.ficha(d0.x, d0.y, "🛡️", "Defensas", "#1863DC"); }
+    if(s.held) this.ficha(s.held.x, s.held.y, s.held.t === "virus" ? "🦠" : "🛡️", "", s.held.t === "virus" ? "#7B2D8B" : "#1863DC", true);
+    if(s.held && Math.hypot(s.held.x - B.x, s.held.y - (B.y - 80)) < 100){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.arc(B.x, B.y - 80, 100, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
+    const labels = ["Cuerpo sano (36.5°C)", "Subiendo la fiebre…", "Bajando, sistema inmune ganando", "Recuperado"];
+    Juego.pastilla(labels[s.rec ? 3 : s.stage] + ` · ${s.temp.toFixed(1)}°C`, 330, 24, {px:12, pad:24, h:26, bg:fe > .4 ? "#E03131" : "#000", fg:fe > .4 ? "#fff" : "#C1FF00"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el virus al cuerpo", 200, 330);
+    this.finFotograma();
+  },
+  ficha(x, y, ico, txt, col, brillo){ ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 26, 0, 7); ctx.fill(); ctx.strokeStyle = brillo ? "#C1FF00" : "#000"; ctx.lineWidth = brillo ? 4 : 2.5; ctx.stroke(); ctx.font = F(22, 400); ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText(ico, x, y + 8*uiScale); if(txt) Juego.pastilla(txt, x, y + 40, {px:10, pad:12, h:18}); }
+};
+
+/* ---------- Azúcar en la sangre (piloto) ---------- */
+const expGlucosaV3 = {...expGlucosa, ...RetosMix, ...JuegoMix,
+  name:expGlucosa.name + " (piloto 2)",
+  cardDesc:"Arrastra distintos alimentos al plato y compara qué tan rápido y brusco sube la glucosa en tu sangre. Cumple tres retos con estrellas.",
+  GR:{x:70, y:60, w:540, h:230}, VEL:.8, HMAX:6, ICON:{refresco:"🥤", pan:"🍞", avena:"🥣", frijoles:"🫘"},
+  RETOS:[
+    {id:"pico", txt:"Prueba el refresco y mira su pico (más de 160 mg/dL)", ok:"El azúcar simple dispara la glucosa en poco tiempo", pista:"Arrastra el refresco al plato y espera a que termine la curva."},
+    {id:"compara", txt:"Compara el refresco con la avena", ok:"La avena sube más despacio y menos que el refresco", pista:"Prueba los dos alimentos, uno después del otro."},
+    {id:"todos", txt:"Prueba los cuatro alimentos", ok:"Ya conoces el efecto de cuatro alimentos en tu glucosa", pista:"Faltan alimentos por probar: arrástralos al plato."}
+  ],
+  carta(i){ return {x:95 + i*130, y:386, w:116, h:46}; },
+  mount(){
+    const s = this.st = {curves:[], active:null, tested:new Set(), done:new Set(), held:null, moved:false, clk:0};
+    Object.keys(this.FOOD).forEach(k=> ctrlBtn(this.FOOD[k].label, "", ()=>this.comer(k)));
+    ctrlBtn("🧹 Borrar curvas", "ghost", ()=>{ s.curves = []; });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const keys = Object.keys(this.FOOD); for(let i = 0; i < keys.length; i++){ const b = this.carta(i); if(Math.abs(p.x - b.x) <= Math.max(b.w/2, 22*sc) && Math.abs(p.y - b.y) <= Math.max(b.h/2, 22*sc)) return {k:keys[i], x0:p.x, y0:p.y}; } return null; },
+      down:(o, p)=>{ s.held = {k:o.k, x:p.x, y:p.y}; s.moved = true; },
+      move:(o, p)=>{ if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ const h = s.held; s.held = null; if(!h) return; const toque = Math.hypot(h.x - o.x0, h.y - o.y0) < 8;
+        if(toque || (h.y < 340 && h.y > 40)) this.comer(h.k); else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  comer(k){
+    const s = this.st; if(s.active){ FX.pop(s.fx, 330, 320, "Espera: aún estás digiriendo"); return; }
+    s.active = {food:k, t:0, pts:[], acc:0}; s.tested.add(k); if(s.tested.size >= 2) markRan(); s.moved = true; FX.sound("plop"); FX.dust(s.fx, 330, 300);
+  },
+  nivel(k, t){ const f = this.FOOD[k], rise = Math.exp(-Math.pow((t - f.tPeak)/(f.tPeak*.6), 2)); return 90 + f.peak*rise; },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h); s.clk += h; const G = this.GR;
+    if(s.active){ const a = s.active, f = this.FOOD[a.food]; a.t += h*this.VEL; a.acc += h; while(a.acc >= .02){ a.acc -= .02; a.pts.push(this.nivel(a.food, a.t - a.acc*this.VEL)); }
+      if(a.t > f.tPeak*3){ const pico = Math.max(...a.pts); s.curves.push({food:a.food, pts:a.pts, pico}); s.done.add(a.food); if(s.curves.length > 8) s.curves.shift(); s.active = null; FX.sound("ding");
+        const ids = []; if(a.food === "refresco" && pico >= 160) ids.push("pico"); if(s.done.has("refresco") && s.done.has("avena")) ids.push("compara"); if(s.done.size >= 4) ids.push("todos"); this.ganar(ids, G.x + G.w/2, G.y + 40); } }
+    Juego.fondo(0);
+    ctx.fillStyle = "rgba(255,255,255,.92)"; roundRect(ctx, G.x - 46, G.y - 24, G.w + 62, G.h + 62, 14); ctx.fill();
+    ctx.strokeStyle = "#B7C6CC"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(G.x, G.y); ctx.lineTo(G.x, G.y + G.h); ctx.lineTo(G.x + G.w, G.y + G.h); ctx.stroke();
+    ctx.fillStyle = "#666"; ctx.font = F(10, 600); ctx.textAlign = "left"; ctx.fillText("glucosa (mg/dL)", G.x - 40, G.y - 10); ctx.textAlign = "right"; ctx.fillText("tiempo (horas) →", G.x + G.w, G.y + G.h + 30);
+    [80, 120, 160, 200].forEach(v=>{ const y = G.y + G.h - (v - 80)*(G.h/120); ctx.textAlign = "left"; ctx.fillStyle = "#666"; ctx.fillText(v, G.x - 32, y + 3*uiScale); ctx.strokeStyle = "#EEF3F4"; ctx.beginPath(); ctx.moveTo(G.x, y); ctx.lineTo(G.x + G.w, y); ctx.stroke(); });
+    for(let hr = 0; hr <= this.HMAX; hr++){ ctx.fillStyle = "#666"; ctx.textAlign = "center"; ctx.fillText(hr, G.x + hr/this.HMAX*G.w, G.y + G.h + 14); }
+    const curva = (pts, color, alpha, lw)=>{ ctx.strokeStyle = color; ctx.globalAlpha = alpha; ctx.lineWidth = lw; ctx.lineJoin = "round"; ctx.beginPath(); pts.forEach((v, i)=>{ const x = G.x + (i*.02*this.VEL/this.HMAX)*G.w, y = G.y + G.h - (v - 80)*(G.h/120); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.globalAlpha = 1; };
+    s.curves.forEach(c=>{ curva(c.pts, this.FOOD[c.food].color, .9, 3); const ip = c.pts.indexOf(c.pico), x = G.x + (ip*.02*this.VEL/this.HMAX)*G.w, y = G.y + G.h - (c.pico - 80)*(G.h/120); ctx.fillStyle = this.FOOD[c.food].color; ctx.beginPath(); ctx.arc(x, y, 4, 0, 7); ctx.fill(); ctx.font = F(10, 800); ctx.textAlign = "left"; ctx.fillText(Math.round(c.pico), x + 7, y - 4); });
+    if(s.active) curva(s.active.pts, this.FOOD[s.active.food].color, 1, 4);
+    // plato y alimentos
+    Object.keys(this.FOOD).forEach((k, i)=>{ if(s.held && s.held.k === k) return; const b = this.carta(i), f = this.FOOD[k]; ctx.fillStyle = "#1B1B1B"; roundRect(ctx, b.x - b.w/2, b.y - b.h/2, b.w, b.h, 12); ctx.fill(); ctx.strokeStyle = f.color; ctx.lineWidth = 3; ctx.stroke(); ctx.font = F(20, 400); ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText(this.ICON[k], b.x - 34, b.y + 7*uiScale); ctx.font = F(11, 800); ctx.fillText(f.label, b.x + 14, b.y + 4*uiScale); if(s.done.has(k)){ ctx.fillStyle = "#C1FF00"; ctx.fillText("✔", b.x + b.w/2 - 10, b.y - 8*uiScale); } });
+    if(s.held){ const f = this.FOOD[s.held.k]; ctx.fillStyle = "#1B1B1B"; ctx.beginPath(); ctx.arc(s.held.x, s.held.y, 30, 0, 7); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3.5; ctx.stroke(); ctx.font = F(26, 400); ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText(this.ICON[s.held.k], s.held.x, s.held.y + 9*uiScale);
+      if(s.held.y < 340 && s.held.y > 40){ ctx.strokeStyle = "#C1FF00"; ctx.setLineDash([8, 6]); ctx.strokeRect(G.x - 46, G.y - 24, G.w + 62, G.h + 62); ctx.setLineDash([]); } }
+    Juego.pastilla(s.active ? `Digiriendo: ${this.FOOD[s.active.food].label}…` : "Elige un alimento ↓", 330, 24, {px:12, pad:24, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra un alimento a la gráfica (o tócalo)", 330, 200);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Tu cuello y el celular (piloto) ---------- */
+const expPosturaV3 = {...expPostura, ...RetosMix, ...JuegoMix,
+  name:expPostura.name + " (piloto 2)",
+  cardDesc:"Arrastra la cabeza hacia el celular y mira cuánto pesa tu cuello. Cumple tres retos con estrellas.",
+  NX:260, NY:300, HL:70,
+  RETOS:[
+    {id:"treinta", txt:"Inclina el cuello 30° y mira la carga", ok:"A 30° tu cuello soporta unos 18 kg", pista:"Arrastra la cabeza hacia adelante y abajo."},
+    {id:"sesenta", txt:"Llega a 60°: ¿cuánto pesa tu cuello?", ok:"A 60° la carga llega a unos 27 kg: más de 5 veces el peso de la cabeza", pista:"Sigue inclinando hasta el tope (60°)."},
+    {id:"corrige", txt:"Corrige tu postura: inclina 45° o más y vuelve a 10° o menos", ok:"Con el cuello recto la carga baja a casi 5 kg", pista:"Primero inclínate mucho y luego sube la cabeza."}
+  ],
+  mount(){
+    const s = this.st = {angle:0, tested:new Set(), held:false, alto:false, moved:false, clk:0};
+    s.sl = ctrlSlider("Ángulo de inclinación del cuello (°)", 0, 60, 1, 0, v=>this.poner(v));
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ const r = s.angle*Math.PI/180, hx = this.NX + Math.sin(r)*this.HL, hy = this.NY - Math.cos(r)*this.HL; return Math.hypot(p.x - hx, p.y - hy) <= Math.max(36, 26*sc) ? {} : null; },
+      down:()=>{ s.held = true; s.moved = true; },
+      move:(o, p)=>{ const a = Math.atan2(p.x - this.NX, this.NY - p.y)*180/Math.PI; this.poner(Math.round(Math.max(0, Math.min(60, a)))); },
+      up:()=>{ s.held = false; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  poner(v){ const s = this.st; s.angle = v; s.sl.value = v; s.moved = true; s.tested.add(Math.round(v/10)); if(s.tested.size >= 4) markRan();
+    const ids = []; if(v >= 30) ids.push("treinta"); if(v >= 60) ids.push("sesenta"); if(v >= 45) s.alto = true; if(s.alto && v <= 10) ids.push("corrige");
+    if(ids.length) this.ganar(ids, 430, 170); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h); s.clk += h; const rad = s.angle*Math.PI/180, NX = this.NX, NY = this.NY, load = this.load(s.angle);
+    Juego.fondo(0);
+    // torso y hombros
+    const sg = ctx.createLinearGradient(NX - 70, 0, NX + 70, 0); sg.addColorStop(0, "#1863DC"); sg.addColorStop(.5, "#5B8DEF"); sg.addColorStop(1, "#1863DC"); ctx.fillStyle = sg; roundRect(ctx, NX - 62, NY + 8, 124, 130, 26); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.strokeStyle = "#E8C49A"; ctx.lineWidth = 16; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(NX, NY + 10); ctx.lineTo(NX + Math.sin(rad)*this.HL*.9, NY - Math.cos(rad)*this.HL*.9); ctx.stroke(); ctx.lineCap = "butt";
+    const hx = NX + Math.sin(rad)*this.HL, hy = NY - Math.cos(rad)*this.HL;
+    // brazo y celular (siempre a la misma altura)
+    const px = NX + 95, py = NY + 20; ctx.strokeStyle = "#E8C49A"; ctx.lineWidth = 14; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(NX + 52, NY + 40); ctx.lineTo(NX + 74, NY + 82); ctx.lineTo(px + 6, py + 34); ctx.stroke(); ctx.lineCap = "butt";
+    ctx.save(); ctx.translate(px + 4, py + 14); ctx.rotate(-.5); ctx.fillStyle = "#111"; roundRect(ctx, -14, -26, 28, 52, 5); ctx.fill(); ctx.fillStyle = "#6AA0FF"; roundRect(ctx, -11, -22, 22, 42, 3); ctx.fill(); ctx.restore();
+    ctx.setLineDash([4, 5]); ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx + 12, hy + 4); ctx.lineTo(px, py + 4); ctx.stroke(); ctx.setLineDash([]);
+    // cabeza
+    ctx.fillStyle = "#F5D9B8"; ctx.beginPath(); ctx.arc(hx, hy, 26, 0, 7); ctx.fill(); ctx.strokeStyle = s.held ? "#C1FF00" : "#000"; ctx.lineWidth = s.held ? 4 : 2.5; ctx.stroke(); ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(hx + 10, hy + 2, 3, 0, 7); ctx.fill();
+    ctx.fillStyle = "#3A2A1C"; ctx.beginPath(); ctx.arc(hx - 4, hy - 8, 22, Math.PI*1.05, Math.PI*1.95); ctx.fill();
+    // carga efectiva: barra y bolsas de 5 kg
+    const bx = 440, by = 360, bw = 120, top = 80, hh = (load/27)*(by - top), col = load > 20 ? "#E03131" : load > 12 ? "#E8A020" : "#2EAA4A";
+    ctx.fillStyle = "rgba(255,255,255,.92)"; roundRect(ctx, bx - 14, top - 30, bw + 28, by - top + 56, 12); ctx.fill(); ctx.strokeStyle = "#B7C6CC"; ctx.lineWidth = 2; ctx.strokeRect(bx, top, bw, by - top);
+    ctx.fillStyle = col; ctx.fillRect(bx, by - hh, bw, hh);
+    for(let k = 5; k <= 25; k += 5){ const y = by - (k/27)*(by - top); ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(bx, y); ctx.lineTo(bx + bw, y); ctx.stroke(); ctx.fillStyle = "#444"; ctx.font = F(9, 600); ctx.textAlign = "left"; ctx.fillText(k + " kg", bx + bw + 4, y + 3*uiScale); }
+    ctx.fillStyle = "#000"; ctx.font = F(20, 800); ctx.textAlign = "center"; ctx.fillText(load.toFixed(0) + " kg", bx + bw/2, top - 8);
+    Juego.pastilla(`Ángulo del cuello: ${s.angle}°`, 330, 24, {px:12, pad:24, h:26});
+    Juego.pastilla(`Carga efectiva estimada: ${load.toFixed(0)} kg (${(load/5).toFixed(1)}× tu cabeza)`, 330, 396, {px:12, pad:24, h:26, bg:col, fg:"#fff"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra la cabeza hacia el celular", 200, 170);
+    this.finFotograma();
+  }
+};
+
+const SALUD_EXPS = [PILOTO ? expCorazonV3 : expCorazon, PILOTO ? expPulmonesV3 : expPulmones, PILOTO ? expCiegoV3 : expCiego, PILOTO ? expEquilibrioV3 : expEquilibrio, PILOTO ? expMemoriaV3 : expMemoria, PILOTO ? expFiebreV3 : expFiebre, PILOTO ? expGlucosaV3 : expGlucosa, PILOTO ? expPosturaV3 : expPostura, PILOTO ? expPupilaV3 : expPupila];
 /* ---------- MEDIO AMBIENTE ---------- */
 const expInvernadero = {
   id:"invernadero", name:"Efecto invernadero: dos botellas al sol", icon:"🌡️", cat:"ambiente",
@@ -8181,7 +8789,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  expDensV3, expInerciaV3, expPendV3, expLavaV3, expPHV3, expReac,
+  expDensV3, expInerciaV3, expPendV3, expLavaV3, expPHV3, PILOTO ? expReacV3 : expReac,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
