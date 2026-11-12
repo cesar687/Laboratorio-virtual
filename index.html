@@ -6229,7 +6229,7 @@ const Q = {
 
 /* ---------- Lámpara de lava (piloto) ---------- */
 const expLavaV3 = {...expLava, ...RetosMix, ...JuegoMix,
-  name:expLava.name + " (piloto 2)",
+  name:expLava.name,
   cardDesc:"Arrastra la pastilla al frasco con agua y aceite, mira subir y bajar las gotas de «lava» y cumple tres retos con estrellas.",
   B:{x:250, y:60, w:160, bot:390}, WT:290, OT:80,
   RETOS:[
@@ -6326,7 +6326,7 @@ const expLavaV3 = {...expLava, ...RetosMix, ...JuegoMix,
 
 /* ---------- pH con col morada (piloto) ---------- */
 const expPHV3 = {...expPH, ...RetosMix, ...JuegoMix, dom:false,
-  name:expPH.name + " (piloto 2)",
+  name:expPH.name,
   cardDesc:"Arrastra cada líquido al vaso con té de col morada, mira cómo cambia de color y construye tu escala de pH. Cumple tres retos con estrellas.",
   GL:{x:100, y:100, w:140, h:180}, NIVEL:150,
   COLS:["#F6E05E", "#E7C9A0", "#5A3220", "#D9442B", "#3B2417", "#F5F5F0", "#BFE6F5", "#E6E6E6", "#7DD3FC", "#A7F3D0"],
@@ -6419,7 +6419,7 @@ const expPHV3 = {...expPH, ...RetosMix, ...JuegoMix, dom:false,
 
 /* ---------- Reacciones que calientan o enfrían (piloto) ---------- */
 const expReactermV3 = {...expReacterm, ...RetosMix, ...JuegoMix,
-  name:expReacterm.name + " (piloto 2)",
+  name:expReacterm.name,
   cardDesc:"Arrastra una mezcla al vaso y mira en el termómetro si la reacción calienta o enfría. Cumple tres retos con estrellas.",
   V:{x:380, top:130, w:170, h:170}, TX:90, TY:50, TH:270, KCOL:{bicarb:"#1863DC", cal:"#E8730C", sal:"#0E7C86"},
   RETOS:[
@@ -6507,7 +6507,7 @@ const expReactermV3 = {...expReacterm, ...RetosMix, ...JuegoMix,
 
 /* ---------- Electrólisis (piloto) ---------- */
 const expElectroV3 = {...expElectro, ...RetosMix, ...JuegoMix,
-  name:expElectro.name + " (piloto 2)",
+  name:expElectro.name,
   cardDesc:"Arrastra la perilla de la fuente de poder, enciende la corriente y llena los tubos con hidrógeno y oxígeno. Cumple tres retos con estrellas.",
   TK:{x0:170, x1:490, y:398}, SW:{x:570, y:398}, HMAX:240, CX:227, AX:447, TTOP:100, TBOT:250,
   RETOS:[
@@ -6595,7 +6595,7 @@ const expElectroV3 = {...expElectro, ...RetosMix, ...JuegoMix,
 
 /* ---------- Solubilidad (piloto) ---------- */
 const expSolubV3 = {...expSolub, ...RetosMix, ...JuegoMix,
-  name:"¿Cuánta azúcar se disuelve? Solubilidad y temperatura (piloto 2)",
+  name:"¿Cuánta azúcar se disuelve? Solubilidad y temperatura",
   cardDesc:"Arrastra la temperatura del termómetro y cucharadas de azúcar al vaso hasta encontrar el punto de saturación. Cumple tres retos con estrellas.",
   GX:250, GY:70, GW:160, GH:280, MAXC:14, TH:{x:80, y0:340, y1:100},
   RETOS:[
@@ -6678,7 +6678,7 @@ const expSolubV3 = {...expSolub, ...RetosMix, ...JuegoMix,
 
 /* ---------- El clavo que se oxida (piloto) ---------- */
 const expOxidaV3 = {...expOxida, ...RetosMix, ...JuegoMix,
-  name:expOxida.name + " (piloto 2)",
+  name:expOxida.name,
   cardDesc:"Mete un clavo en cada frasco, deja pasar los días y compara cuál se oxida primero. Cumple tres retos con estrellas.",
   JX:[130, 330, 530], JTOP:44, JH:244, TL:{x0:150, x1:510, y:398},
   RETOS:[
@@ -6766,7 +6766,7 @@ const expOxidaV3 = {...expOxida, ...RetosMix, ...JuegoMix,
 
 /* ---------- Levadura que infla un globo (piloto) ---------- */
 const expFermentoV3 = {...expFermento, ...RetosMix, ...JuegoMix,
-  name:expFermento.name + " (piloto 2)",
+  name:expFermento.name,
   cardDesc:"Ajusta el azúcar y la temperatura, suelta el sobre de levadura en la botella y mira cómo se infla el globo. Cumple tres retos con estrellas.",
   BX:300, TH:{x:70, y0:330, y1:100}, PK:{x:190, y:372}, BOWL:{x:560, y:372},
   RETOS:[
@@ -6858,7 +6858,7 @@ const expFermentoV3 = {...expFermento, ...RetosMix, ...JuegoMix,
 
 /* ---------- Cromatografía (piloto) ---------- */
 const expCromatoV3 = {...expCromato, ...RetosMix, ...JuegoMix,
-  name:expCromato.name + " (piloto 2)",
+  name:expCromato.name,
   cardDesc:"Elige un marcador, baja la tira de papel al agua sin mojar el punto y mira cómo se separan los colores escondidos. Cumple tres retos con estrellas.",
   SX:330, SWD:50, YB:330, LEN:290, WL:358, DIP:44, MAL:58,
   PENS:{negro:"#222222", verde:"#2b8a3e", cafe:"#8A5A2B"},
@@ -6932,7 +6932,7 @@ const expCromatoV3 = {...expCromato, ...RetosMix, ...JuegoMix,
 
 /* ---------- Apaga la vela sin soplar (piloto) ---------- */
 const expVelaV3 = {...expVela, ...RetosMix, ...JuegoMix,
-  name:expVela.name + " (piloto 2)",
+  name:expVela.name,
   cardDesc:"Arrastra un vaso sobre la vela encendida y mide cuánto tarda en apagarse. Compara tamaños y cumple tres retos con estrellas.",
   CX:300, PY:380, ESC:.5,
   RETOS:[
@@ -7018,7 +7018,7 @@ const expVelaV3 = {...expVela, ...RetosMix, ...JuegoMix,
   }
 };
 
-const QUIMICA_EXPS = [PILOTO ? expReactermV3 : expReacterm, PILOTO ? expElectroV3 : expElectro, PILOTO ? expSolubV3 : expSolub, PILOTO ? expOxidaV3 : expOxida, PILOTO ? expFermentoV3 : expFermento, PILOTO ? expCromatoV3 : expCromato, PILOTO ? expVelaV3 : expVela];
+const QUIMICA_EXPS = [expReactermV3, expElectroV3, expSolubV3, expOxidaV3, expFermentoV3, expCromatoV3, expVelaV3];
 /* ---------- SALUD ---------- */
 const expCorazon = {
   id:"corazon", name:"Tu corazón después de hacer ejercicio", icon:"❤️", cat:"salud",
@@ -8181,7 +8181,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  expDensV3, expInerciaV3, expPendV3, PILOTO ? expLavaV3 : expLava, PILOTO ? expPHV3 : expPH, expReac,
+  expDensV3, expInerciaV3, expPendV3, expLavaV3, expPHV3, expReac,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
