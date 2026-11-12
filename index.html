@@ -4759,12 +4759,22 @@ const FX = {
     fx.pops.forEach(q=>q.t += dt); fx.pops = fx.pops.filter(q=>q.t < q.life);
   },
   sound(kind){
-    if(!this.snd.on) return; const now = performance.now(); if(now - (this.snd.last[kind] || 0) < 90) return; this.snd.last[kind] = now;
+    if(!this.snd.on) return; const now = performance.now(); if(now - (this.snd.last[kind] || 0) < (kind === "pour" ? 700 : 90)) return; this.snd.last[kind] = now;
     try{
       const a = this.snd.ctx || (this.snd.ctx = new (window.AudioContext || window.webkitAudioContext)()), t = a.currentTime;
       const tone = (f0, f1, dur, vol)=>{ const o = a.createOscillator(), g = a.createGain(); o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t+dur);
         g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t+dur); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+dur); };
-      if(kind === "splash"){ const b = a.createBuffer(1, a.sampleRate*.18, a.sampleRate), d = b.getChannelData(0); for(let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/d.length, 2);
+      if(kind === "pour"){ // líquido cayendo: ruido filtrado que gorgotea + burbujitas
+        const dur = .9, b = a.createBuffer(1, a.sampleRate*dur, a.sampleRate), d = b.getChannelData(0); for(let i = 0; i < d.length; i++) d[i] = Math.random()*2-1;
+        const s = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(), lfo = a.createOscillator(), lg = a.createGain();
+        s.buffer = b; f.type = "bandpass"; f.Q.value = 1.3; f.frequency.setValueAtTime(900, t); f.frequency.linearRampToValueAtTime(1500, t + dur*.5); f.frequency.linearRampToValueAtTime(700, t + dur);
+        g.gain.setValueAtTime(.001, t); g.gain.linearRampToValueAtTime(.2, t + .08); g.gain.setValueAtTime(.2, t + dur - .25); g.gain.linearRampToValueAtTime(.001, t + dur);
+        lfo.frequency.value = 13; lg.gain.value = .07; lfo.connect(lg); lg.connect(g.gain); lfo.start(t); lfo.stop(t + dur);
+        s.connect(f); f.connect(g); g.connect(a.destination); s.start(t);
+        for(let k = 0; k < 8; k++){ const o = a.createOscillator(), og = a.createGain(), t0 = t + .08 + Math.random()*(dur - .25), f0 = 350 + Math.random()*500;
+          o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f0*1.7, t0 + .07); og.gain.setValueAtTime(.07, t0); og.gain.exponentialRampToValueAtTime(.001, t0 + .09); o.connect(og); og.connect(a.destination); o.start(t0); o.stop(t0 + .1); } }
+      else if(kind === "plop") tone(320, 950, .11, .22);
+      else if(kind === "splash"){ tone(300, 800, .1, .12); const b = a.createBuffer(1, a.sampleRate*.4, a.sampleRate), d = b.getChannelData(0); for(let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/d.length, 2);
         const s = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(); s.buffer = b; g.gain.value = .2; f.type = "lowpass"; f.frequency.value = 1700; s.connect(f); f.connect(g); g.connect(a.destination); s.start(t); }
       else if(kind === "thud") tone(150, 55, .14, .35);
       else if(kind === "ding"){ tone(880, 880, .3, .16); tone(1320, 1320, .3, .09); }
@@ -4859,7 +4869,7 @@ const expDensV3 = {...expDensV2,
       b.pouring = active && Math.abs(b.angle) > 1.2 && b.mx > G.x+10 && b.mx < G.x+G.w-10 && b.my < surface - 2 && b.my > G.y - 150;
       if(b.pouring){
         b.rem = Math.max(0, b.rem - dt/2.4); fx.pourT += dt; fx.wave = Math.max(fx.wave, .5);
-        if(fx.pourT > .07){ fx.pourT = 0; FX.splash(fx, b.mx, surface, b.color, .12); if(Math.random() < .3) FX.sound("splash"); }
+        if(fx.pourT > .07){ fx.pourT = 0; FX.splash(fx, b.mx, surface, b.color, .12); FX.sound("pour"); }
       }
       if(b.auto && !b.pouring && b.rem > 0.001 && Math.abs(b.x-tx) < 4 && Math.abs(b.angle) > 1.6 && b.my >= surface - 2){ b.auto = false; }
     });
@@ -6211,7 +6221,804 @@ const expVela = {
   clase:`Con una vela pequeña, un plato con un poco de agua y vasos de vidrio de al menos dos tamaños distintos (con supervisión de un adulto por el fuego), midan con un cronómetro cuánto tarda en apagarse cada uno.`
 };
 
-const QUIMICA_EXPS = [expReacterm, expElectro, expSolub, expOxida, expFermento, expCromato, expVela];
+/* ---------- QUÍMICA · look de juego (piloto) ----------
+   Misma predicción, explicación, clase y registro que las versiones originales; cambia la vista, se arrastran los objetos y se suman retos. */
+const Q = {
+  chispa(fx, x, y, c){ if(FX.rm) return; FX.add(fx, {k:"d", x, y, vx:(Math.random()-.5)*50, vy:-40-Math.random()*30, life:.3, r:1.6+Math.random()*1.4, c:c || "rgba(255,255,255,.85)"}); }
+};
+
+/* ---------- Lámpara de lava (piloto) ---------- */
+const expLavaV3 = {...expLava, ...RetosMix, ...JuegoMix,
+  name:expLava.name + " (piloto 2)",
+  cardDesc:"Arrastra la pastilla al frasco con agua y aceite, mira subir y bajar las gotas de «lava» y cumple tres retos con estrellas.",
+  B:{x:250, y:60, w:160, bot:390}, WT:290, OT:80,
+  RETOS:[
+    {id:"fondo", txt:"Haz que la pastilla llegue hasta el agua", ok:"La pastilla llegó al agua y empezó a burbujear", pista:"Arrastra la pastilla sobre el frasco y suéltala."},
+    {id:"etiq", txt:"Activa las etiquetas de densidad y mira volver a caer una gota", ok:"Viste por qué la gota sube y luego vuelve a caer", pista:"Pulsa «Etiquetas de densidad» y espera a que una gota suba y caiga."},
+    {id:"muchas", txt:"Cuenta 25 gotas que suben y vuelven a caer", ok:"¡25 gotas completaron el viaje!", pista:"Una pastilla da para bastantes gotas; si se agota, suelta otra."}
+  ],
+  mount(){
+    const s = this.st = {tabs:[], bubbles:[], drops:[], labels:false, viajes:0, held:null, tReac:0, glow:0, moved:false};
+    ctrlBtn("Soltar media pastilla", "amber", ()=>this.soltar(this.B.x + this.B.w/2));
+    ctrlBtn("Etiquetas de densidad", "ghost", ()=>{ s.labels = !s.labels; });
+    ctrlBtn("Reiniciar", "ghost", ()=>{ this._keep = true; this.unmount(); $("controls").innerHTML = ""; $("readout").hidden = true; this.mount(); });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=> (Math.abs(p.x - 90) <= Math.max(26, 22*sc) && Math.abs(p.y - 384) <= Math.max(20, 22*sc)) ? {} : null,
+      down:(o, p)=>{ s.held = {x:p.x, y:p.y}; s.moved = true; },
+      move:(o, p)=>{ if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:()=>{ const h = s.held; s.held = null; if(!h) return; const B = this.B;
+        if(h.x > B.x - 6 && h.x < B.x + B.w + 6 && h.y < B.bot - 30) this.soltar(Math.max(B.x + 20, Math.min(B.x + B.w - 20, h.x)), Math.max(62, h.y));
+        else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  soltar(x, y){
+    const s = this.st, fx = s.fx;
+    if(s.tabs.filter(t=>t.life > 0).length >= 3){ FX.pop(fx, this.B.x + this.B.w/2, 110, "Espera: ya hay 3 pastillas"); return; }
+    s.tabs.push({x, y:y || 62, life:6, emitT:0}); s.moved = true; FX.sound("tick");
+  },
+  tick(dt){
+    const s = this.st, B = this.B, WT = this.WT, OT = this.OT, h = Math.min(dt, .05), fx = this.fotograma(h);
+    let reac = false;
+    s.tabs.forEach(t=>{
+      if(t.y < B.bot - 16){
+        const y0 = t.y; t.y += 220*h;
+        if(y0 < OT && t.y >= OT){ FX.splash(fx, t.x, OT + 4, "#E8C84A", .3); FX.sound("plop"); }
+        if(y0 < WT && t.y >= WT){ FX.splash(fx, t.x, WT + 4, "#D6336C", .25); }
+        if(t.y >= B.bot - 16){ t.y = B.bot - 16; this.ganar(["fondo"], t.x, B.bot - 40); }
+      } else if(t.life > 0){
+        reac = true; t.life -= h; t.emitT -= h;
+        if(t.emitT <= 0){ t.emitT = .12;
+          s.bubbles.push({x:Math.max(B.x + 14, Math.min(B.x + B.w - 14, t.x + (Math.random()-.5)*70)), y:B.bot - 20, vy:-(60 + Math.random()*50), r:4 + Math.random()*4, drop:Math.random() < .75}); }
+      }
+    });
+    s.tabs = s.tabs.filter(t=>t.life > 0 || t.y < B.bot - 16);
+    s.bubbles.forEach(b=>{ b.y += b.vy*h; if(b.y <= OT + 14){ if(b.drop) s.drops.push({x:b.x, y:b.y + 6, vy:0}); Q.chispa(fx, b.x, OT + 10); b.dead = true; } });
+    s.bubbles = s.bubbles.filter(b=>!b.dead);
+    s.drops.forEach(g=>{ g.vy += 140*h; g.y += g.vy*h;
+      if(g.y >= WT + 8){ g.dead = true; s.viajes++; FX.splash(fx, g.x, WT + 4, "#D6336C", .12);
+        const ids = []; if(s.labels) ids.push("etiq"); if(s.viajes >= 25) ids.push("muchas"); if(ids.length) this.ganar(ids, g.x, WT - 20); } });
+    s.drops = s.drops.filter(g=>!g.dead);
+    if(reac){ s.tReac += h; if(s.tReac >= 4) markRan(); }
+    s.glow += ((reac ? 1 : 0) - s.glow)*Math.min(1, h*3);
+    // ---- dibujo ----
+    Juego.fondo(404);
+    if(s.glow > .02){ const gl = ctx.createRadialGradient(B.x + B.w/2, B.bot - 30, 10, B.x + B.w/2, B.bot - 30, 250); gl.addColorStop(0, `rgba(214,51,108,${.32*s.glow})`); gl.addColorStop(1, "rgba(214,51,108,0)"); ctx.fillStyle = gl; ctx.fillRect(0, 0, 660, 430); }
+    ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.beginPath(); ctx.ellipse(B.x + B.w/2, B.bot + 10, B.w/2 + 14, 6, 0, 0, 7); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.rect(B.x, B.y, B.w, B.bot - B.y); ctx.clip();
+    const og = ctx.createLinearGradient(0, OT, 0, WT); og.addColorStop(0, "rgba(246,222,110,.75)"); og.addColorStop(1, "rgba(232,190,60,.6)"); ctx.fillStyle = og; ctx.fillRect(B.x, OT, B.w, WT - OT);
+    const wg = ctx.createLinearGradient(0, WT, 0, B.bot); wg.addColorStop(0, "#E0457F"); wg.addColorStop(1, "#B0215A"); ctx.fillStyle = wg; ctx.globalAlpha = .92;
+    ctx.beginPath(); ctx.moveTo(B.x, B.bot); ctx.lineTo(B.x, WT); for(let x = B.x; x <= B.x + B.w; x += 8) ctx.lineTo(x, WT + Math.sin(fx.t*2 + x*.06)*(1.2 + s.glow*1.6)); ctx.lineTo(B.x + B.w, B.bot); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    s.bubbles.forEach(b=>{
+      ctx.fillStyle = b.y > WT ? "rgba(255,255,255,.85)" : "rgba(255,255,255,.65)"; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.beginPath(); ctx.arc(b.x - b.r*.3, b.y - b.r*.3, b.r*.3, 0, 7); ctx.fill();
+      if(b.drop && b.y < WT){ ctx.fillStyle = "rgba(224,69,127,.95)"; ctx.beginPath(); ctx.arc(b.x, b.y + b.r + 3, b.r*.95, 0, 7); ctx.fill(); }
+    });
+    s.drops.forEach(g=>{ ctx.fillStyle = "rgba(224,69,127,.95)"; ctx.beginPath(); ctx.arc(g.x, g.y, 4.8, 0, 7); ctx.fill(); ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.beginPath(); ctx.arc(g.x - 1.5, g.y - 1.5, 1.4, 0, 7); ctx.fill(); });
+    s.tabs.forEach(t=>{ ctx.fillStyle = "#F4F6F8"; roundRect(ctx, t.x - 14, t.y, 28, 10, 4); ctx.fill(); ctx.strokeStyle = "#9AA5AD"; ctx.lineWidth = 1; ctx.stroke();
+      if(t.y >= B.bot - 16 && t.life > 0){ ctx.fillStyle = "rgba(255,255,255,.8)"; for(let i = 0; i < 4; i++){ ctx.beginPath(); ctx.arc(t.x - 12 + ((fx.t*30 + i*9)%26), t.y - 3 - ((fx.t*40 + i*13)%12), 1.6, 0, 7); ctx.fill(); } } });
+    ctx.restore();
+    // frasco de vidrio
+    ctx.strokeStyle = "rgba(95,125,135,.9)"; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(B.x - 2, B.y); ctx.lineTo(B.x - 2, B.bot + 2); ctx.lineTo(B.x + B.w + 2, B.bot + 2); ctx.lineTo(B.x + B.w + 2, B.y); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, B.x + 8, B.y + 14, 7, B.bot - B.y - 50, 3); ctx.fill();
+    ctx.fillStyle = "#C1FF00"; ctx.fillRect(B.x - 6, B.y - 5, B.w + 12, 4);
+    if(s.labels){
+      Juego.pastilla("Aceite · ρ ≈ 0.92 g/mL", 540, 175, {px:12, pad:20, h:24});
+      Juego.pastilla("Agua coloreada · ρ ≈ 1.00 g/mL", 540, 335, {px:12, pad:20, h:24});
+      Juego.pastilla("Burbuja de CO₂ + gota:", 540, 218, {px:12, pad:20, h:24, bg:"#C1FF00", fg:"#000"});
+      Juego.pastilla("menos densa que el aceite → sube", 540, 246, {px:12, pad:20, h:24, bg:"#C1FF00", fg:"#000"});
+    }
+    // estante con la pastilla para arrastrar
+    ctx.fillStyle = "#F4F6F8"; roundRect(ctx, 66, 376, 48, 16, 6); ctx.fill(); ctx.strokeStyle = "#9AA5AD"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.fillStyle = "rgba(0,0,0,.12)"; ctx.fillRect(88, 378, 2, 12);
+    Juego.pastilla("Media pastilla", 90, 360, {px:11, pad:14, h:20});
+    if(s.held){
+      const B2 = this.B, dentro = s.held.x > B2.x - 6 && s.held.x < B2.x + B2.w + 6 && s.held.y < B2.bot - 30;
+      if(dentro){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.strokeRect(B2.x - 8, B2.y - 8, B2.w + 16, B2.bot - B2.y + 16); ctx.setLineDash([]); }
+      ctx.fillStyle = "#fff"; roundRect(ctx, s.held.x - 18, s.held.y - 8, 36, 16, 6); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.stroke();
+    }
+    Juego.pastilla(`Gotas que ya subieron y cayeron: ${s.viajes}`, 330, 24, {px:12, pad:22, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra la pastilla al frasco", 150, 330);
+    this.finFotograma();
+  }
+};
+
+/* ---------- pH con col morada (piloto) ---------- */
+const expPHV3 = {...expPH, ...RetosMix, ...JuegoMix, dom:false,
+  name:expPH.name + " (piloto 2)",
+  cardDesc:"Arrastra cada líquido al vaso con té de col morada, mira cómo cambia de color y construye tu escala de pH. Cumple tres retos con estrellas.",
+  GL:{x:100, y:100, w:140, h:180}, NIVEL:150,
+  COLS:["#F6E05E", "#E7C9A0", "#5A3220", "#D9442B", "#3B2417", "#F5F5F0", "#BFE6F5", "#E6E6E6", "#7DD3FC", "#A7F3D0"],
+  RETOS:[
+    {id:"duo", txt:"Prueba una sustancia ácida y una básica", ok:"Ya viste cómo cambia el color con un ácido y con una base", pista:"El limón es ácido; el jabón o el bicarbonato son básicos."},
+    {id:"tres", txt:"Prueba el limón, el vinagre y el refresco", ok:"Las tres sustancias de la predicción están en tu escala", pista:"Arrastra esas tres botellas al vaso, una por una."},
+    {id:"verde", txt:"Haz que el té se ponga verde o amarillo (pH 10 o más)", ok:"¡Una base fuerte pone el té verde!", pista:"Busca el jabón de manos o el limpiador con amoniaco."}
+  ],
+  pos(i){ return {x:330 + (i%5)*66, y:140 + Math.floor(i/5)*105, w:46, h:66}; },
+  px(ph){ return 40 + (ph - 1)/13*580; },
+  mount(){
+    this.tested = new Map(); this._marks = [];
+    const s = this.st = {ph:7, meta:7, nombre:"Té de col morada (neutro)", held:null, pour:null, used:new Set(), moved:false, shown:0};
+    ctrlBtn("Vaciar el vaso", "ghost", ()=>{ s.meta = 7; s.nombre = "Té de col morada (neutro)"; });
+    ctrlBtn("Reiniciar", "ghost", ()=>{ this._keep = true; this.unmount(); $("controls").innerHTML = ""; $("readout").hidden = true; this.mount(); });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ for(let i = 0; i < this.subs.length; i++){ const b = this.pos(i); if(Math.abs(p.x - b.x) <= Math.max(b.w/2 + 6, 22*sc) && Math.abs(p.y - b.y) <= Math.max(b.h/2 + 6, 22*sc)) return {i, x0:p.x, y0:p.y}; } return null; },
+      down:(o, p)=>{ s.held = {i:o.i, x:p.x, y:p.y}; s.moved = true; },
+      move:(o, p)=>{ if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ const h = s.held; s.held = null; if(!h) return; const G = this.GL, toque = Math.hypot(h.x - o.x0, h.y - o.y0) < 8;
+        if(toque || (h.x > G.x - 40 && h.x < G.x + G.w + 40 && h.y > 40 && h.y < G.y + G.h + 10)) this.verter(h.i); else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  verter(i){
+    const s = this.st, fx = s.fx, sub = this.subs[i], G = this.GL;
+    s.meta = sub.ph; s.nombre = `${sub.n} · pH ≈ ${sub.ph}`; s.pour = {i, t:0}; s.used.add(i);
+    FX.splash(fx, G.x + G.w/2, this.NIVEL, this.COLS[i], .4); FX.sound("pour");
+    if(!this.tested.has(sub.n)){
+      this.tested.set(sub.n, sub.ph);
+      const near = row=>this._marks.some(k=>k.row === row && Math.abs(k.ph - sub.ph) < 1.5), row = !near(0) ? 0 : (!near(1) ? 1 : 2);
+      this._marks.push({ph:sub.ph, row, short:sub.short});
+    }
+    if(this.tested.size >= 4) markRan();
+    setReadout(`Sustancias probadas: <b>${this.tested.size} / ${this.subs.length}</b>. Cada una queda marcada en la escala de abajo.`);
+    const t = this.tested, ph = [...t.values()], ids = [];
+    if(ph.some(v=>v < 6.5) && ph.some(v=>v > 7.5)) ids.push("duo");
+    if(t.has("Jugo de limón") && t.has("Vinagre") && t.has("Refresco de cola")) ids.push("tres");
+    if(sub.ph >= 10) ids.push("verde");
+    if(ids.length) this.ganar(ids, G.x + G.w/2, this.NIVEL - 10);
+  },
+  botella(i, x, y, tilt, brillo){
+    const sub = this.subs[i], c = this.COLS[i], w = 46, h = 66;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(tilt || 0);
+    const g = ctx.createLinearGradient(-w/2, 0, w/2, 0); g.addColorStop(0, FX.mix(c, -.12)); g.addColorStop(.35, FX.mix(c, .25)); g.addColorStop(1, FX.mix(c, -.2));
+    ctx.fillStyle = g; roundRect(ctx, -w/2, -h/2 + 14, w, h - 14, 9); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.4)"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = g; roundRect(ctx, -9, -h/2, 18, 18, 4); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#222"; roundRect(ctx, -11, -h/2 - 4, 22, 7, 3); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.88)"; roundRect(ctx, -w/2 + 4, -4, w - 8, 24, 4); ctx.fill();
+    ctx.fillStyle = "#000"; ctx.font = F(10, 800); ctx.textAlign = "center"; ctx.fillText(sub.short, 0, 12*uiScale + 0);
+    if(brillo){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; roundRect(ctx, -w/2 - 3, -h/2 - 6, w + 6, h + 9, 10); ctx.stroke(); }
+    ctx.restore();
+  },
+  tick(dt){
+    const s = this.st, G = this.GL, h = Math.min(dt, .05), fx = this.fotograma(h);
+    s.ph += (s.meta - s.ph)*Math.min(1, h*3.2); if(Math.abs(s.meta - s.ph) < .01) s.ph = s.meta;
+    if(s.pour){ s.pour.t += h; if(s.pour.t > .8) s.pour = null; }
+    Juego.fondo(0);
+    const col = this.phColor(s.ph), cx = G.x + G.w/2;
+    // vaso con té
+    ctx.fillStyle = "rgba(0,0,0,.22)"; ctx.beginPath(); ctx.ellipse(cx, G.y + G.h + 8, G.w/2 + 8, 5, 0, 0, 7); ctx.fill();
+    const lg = ctx.createLinearGradient(0, this.NIVEL, 0, G.y + G.h); lg.addColorStop(0, col); lg.addColorStop(1, FX.mix("#" + col.match(/\d+/g).map(v=>(+v).toString(16).padStart(2, "0")).join(""), -.25));
+    ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(G.x + 4, this.NIVEL); for(let x = G.x + 4; x <= G.x + G.w - 4; x += 8) ctx.lineTo(x, this.NIVEL + Math.sin(fx.t*2.4 + x*.07)*(1.2 + (s.pour ? 2.2 : 0))); ctx.lineTo(G.x + G.w - 4, G.y + G.h - 2); ctx.lineTo(G.x + 4, G.y + G.h - 2); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "rgba(95,125,135,.9)"; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(G.x, G.y); ctx.lineTo(G.x + 6, G.y + G.h); ctx.lineTo(G.x + G.w - 6, G.y + G.h); ctx.lineTo(G.x + G.w, G.y); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, G.x + 14, G.y + 10, 6, G.h - 40, 3); ctx.fill();
+    if(s.pour){ const c = this.COLS[s.pour.i], k = Math.min(1, s.pour.t/.25); ctx.fillStyle = c; ctx.globalAlpha = s.pour.t > .55 ? Math.max(0, 1 - (s.pour.t - .55)/.25) : 1; ctx.fillRect(cx - 4, 48, 8, (this.NIVEL - 48)*k); ctx.globalAlpha = 1; this.botella(s.pour.i, cx + 6, 40, -.9); }
+    Juego.pastilla(s.nombre, cx, G.y + G.h + 36, {px:11, pad:18, h:24, bg:"#000", fg:"#fff"});
+    // botellas
+    this.subs.forEach((sub, i)=>{
+      if(s.held && s.held.i === i) return; const b = this.pos(i); this.botella(i, b.x, b.y);
+      ctx.fillStyle = s.used.has(i) ? "#000" : "#666"; ctx.font = F(10, s.used.has(i) ? 800 : 500); ctx.textAlign = "center";
+      ctx.fillText(s.used.has(i) ? `pH ${sub.ph}` : "pH ¿?", b.x, b.y + b.h/2 + 14*uiScale);
+      if(s.used.has(i)){ ctx.fillStyle = "#1863DC"; ctx.font = F(9, 700); ctx.fillText(sub.ph < 6.5 ? "ácido" : sub.ph <= 7.5 ? "neutro" : "básico", b.x, b.y + b.h/2 + 25*uiScale); }
+    });
+    // escala de pH
+    const bar = ctx.createLinearGradient(this.px(1), 0, this.px(14), 0); for(let p = 1; p <= 14; p += .5) bar.addColorStop((p - 1)/13, this.phColor(p));
+    ctx.fillStyle = bar; roundRect(ctx, 40, 330, 580, 16, 8); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = "#000"; ctx.font = F(10, 700); ctx.textAlign = "left"; ctx.fillText("pH 1 · muy ácido", 40, 324); ctx.textAlign = "center"; ctx.fillText("7 · neutro", this.px(7), 324); ctx.textAlign = "right"; ctx.fillText("14 · muy básico", 620, 324);
+    // marca del té actual en la escala
+    const mx = this.px(Math.max(1, Math.min(14, s.ph))); ctx.fillStyle = "#000"; ctx.beginPath(); ctx.moveTo(mx - 6, 352); ctx.lineTo(mx + 6, 352); ctx.lineTo(mx, 346); ctx.closePath(); ctx.fill();
+    this._marks.forEach(m=>{ const x = this.px(m.ph), y = 362 + m.row*14; ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, 346); ctx.lineTo(x, y - 8); ctx.stroke();
+      ctx.fillStyle = "#1863DC"; ctx.beginPath(); ctx.arc(x, 347, 3.5, 0, 7); ctx.fill(); ctx.fillStyle = "#000"; ctx.font = F(10, 700); ctx.textAlign = "center"; ctx.fillText(m.short, x, y + 2); });
+    if(s.held){ this.botella(s.held.i, s.held.x, s.held.y, .15, true); const dentro = s.held.x > G.x - 40 && s.held.x < G.x + G.w + 40 && s.held.y < G.y + G.h + 10; if(dentro){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.strokeRect(G.x - 10, G.y - 12, G.w + 20, G.h + 24); ctx.setLineDash([]); } }
+    Juego.pastilla(`Sustancias probadas: ${this.tested.size} de ${this.subs.length}`, 330, 24, {px:12, pad:22, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra una botella al vaso (o tócala)", 330, 296);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Reacciones que calientan o enfrían (piloto) ---------- */
+const expReactermV3 = {...expReacterm, ...RetosMix, ...JuegoMix,
+  name:expReacterm.name + " (piloto 2)",
+  cardDesc:"Arrastra una mezcla al vaso y mira en el termómetro si la reacción calienta o enfría. Cumple tres retos con estrellas.",
+  V:{x:380, top:130, w:170, h:170}, TX:90, TY:50, TH:270, KCOL:{bicarb:"#1863DC", cal:"#E8730C", sal:"#0E7C86"},
+  RETOS:[
+    {id:"frio", txt:"Haz que el vaso se enfríe", ok:"El vaso se enfrió: reacción endotérmica", pista:"Prueba bicarbonato + vinagre o sal + hielo."},
+    {id:"calor", txt:"Haz que el termómetro pase de 50 °C", ok:"¡Más de 50 °C! Reacción exotérmica", pista:"Una de las tres mezclas libera mucho calor."},
+    {id:"mas", txt:"Descubre cuál enfría más: prueba las dos mezclas frías", ok:"Sal + hielo enfría más que bicarbonato + vinagre", pista:"Prueba bicarbonato + vinagre y luego sal + hielo; compara el termómetro."}
+  ],
+  kit(i){ return {x:215 + i*165, y:392, w:150, h:46}; },
+  mount(){
+    const s = this.st = {base:22, temp:22, target:22, tested:new Set(), done:new Set(), kit:null, held:null, moved:false, ef:0};
+    const keys = Object.keys(this.RXN);
+    keys.forEach(k=> ctrlBtn(this.RXN[k].label, "", ()=>this.usar(k)));
+    ctrlBtn("Vaciar el vaso", "ghost", ()=>{ s.kit = null; s.target = s.base; });
+    ctrlBtn("Reiniciar", "ghost", ()=>{ this._keep = true; this.unmount(); $("controls").innerHTML = ""; $("readout").hidden = true; this.mount(); });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{ for(let i = 0; i < keys.length; i++){ const b = this.kit(i); if(Math.abs(p.x - b.x) <= Math.max(b.w/2, 22*sc) && Math.abs(p.y - b.y) <= Math.max(b.h/2, 22*sc)) return {k:keys[i], x0:p.x, y0:p.y}; } return null; },
+      down:(o, p)=>{ s.held = {k:o.k, x:p.x, y:p.y}; s.moved = true; },
+      move:(o, p)=>{ if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ const h = s.held; s.held = null; if(!h) return; const V = this.V, toque = Math.hypot(h.x - o.x0, h.y - o.y0) < 8;
+        if(toque || (Math.abs(h.x - V.x) < V.w/2 + 50 && h.y > V.top - 70 && h.y < V.top + V.h + 20)) this.usar(h.k); else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  usar(k){
+    const s = this.st, fx = s.fx, V = this.V;
+    s.kit = k; s.target = s.base + this.RXN[k].d; s.ef = 0; s.tested.add(k); s.moved = true;
+    if(s.tested.size >= 2) markRan();
+    FX.splash(fx, V.x, V.top + 40, k === "cal" ? "#FFB066" : "#BFE6FF", .35); FX.sound(k === "cal" ? "boom" : "pour");
+    if(k === "cal") fx.shake = Math.max(fx.shake, 2.5);
+  },
+  tick(dt){
+    const s = this.st, V = this.V, h = Math.min(dt, .05), fx = this.fotograma(h), RX = this.RXN;
+    s.temp += (s.target - s.temp)*Math.min(1, h*1.6); s.ef += h;
+    const fria = s.temp < s.base - 1, caliente = s.temp > s.base + 1, listo = s.kit && Math.abs(s.temp - s.target) < .4;
+    if(listo && !s.done.has(s.kit)){
+      s.done.add(s.kit); const ids = [];
+      if(s.temp <= s.base - 3) ids.push("frio"); if(s.temp >= 50) ids.push("calor"); if(s.done.has("bicarb") && s.done.has("sal")) ids.push("mas");
+      if(ids.length) this.ganar(ids, 90, 120);
+    }
+    // efectos dentro del vaso
+    if(!FX.rm && s.kit && s.ef < 6 && Math.random() < h*22){
+      const x = V.x - V.w/2 + 14 + Math.random()*(V.w - 28);
+      if(s.kit === "bicarb") FX.add(fx, {k:"d", x, y:V.top + V.h - 10, vx:0, vy:-50 - Math.random()*40, g:-10, life:1 + Math.random()*.6, r:2 + Math.random()*3, c:"rgba(255,255,255,.85)"});
+      else if(s.kit === "cal") FX.add(fx, {k:"d", x, y:V.top + 20, vx:(Math.random()-.5)*20, vy:-30 - Math.random()*30, g:-30, life:1.2 + Math.random()*.6, r:4 + Math.random()*5, c:"rgba(255,255,255,.45)"});
+      else FX.add(fx, {k:"s", x, y:V.top + 30 + Math.random()*60, vx:(Math.random()-.5)*20, vy:10, g:0, life:.9, r:3 + Math.random()*2, c:"#D8F0FF", rot:0, vr:0});
+    }
+    Juego.fondo(0);
+    // vaso
+    const tint = s.kit === "cal" ? "rgba(232,115,12,.35)" : s.kit === "sal" ? "rgba(150,210,245,.6)" : s.kit === "bicarb" ? "rgba(235,240,255,.65)" : "rgba(120,190,235,.4)";
+    const nivel = V.top + 50; ctx.fillStyle = "rgba(0,0,0,.22)"; ctx.beginPath(); ctx.ellipse(V.x, V.top + V.h + 8, V.w/2 + 6, 5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = tint; ctx.beginPath(); ctx.moveTo(V.x - V.w/2 + 4, nivel); for(let x = V.x - V.w/2 + 4; x <= V.x + V.w/2 - 4; x += 8) ctx.lineTo(x, nivel + Math.sin(fx.t*2.2 + x*.07)*1.4); ctx.lineTo(V.x + V.w/2 - 4, V.top + V.h - 2); ctx.lineTo(V.x - V.w/2 + 4, V.top + V.h - 2); ctx.closePath(); ctx.fill();
+    if(s.kit === "sal"){ ctx.fillStyle = "rgba(225,245,255,.9)"; ctx.strokeStyle = "rgba(120,170,200,.9)"; ctx.lineWidth = 1.5; for(let i = 0; i < 4; i++){ const x = V.x - 48 + i*32 + Math.sin(fx.t*1.3 + i)*2, y = nivel + 6 + (i%2)*10 + Math.sin(fx.t*1.7 + i*2)*2; roundRect(ctx, x - 12, y - 10, 24, 22, 4); ctx.fill(); ctx.stroke(); } }
+    ctx.strokeStyle = "rgba(95,125,135,.9)"; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(V.x - V.w/2, V.top); ctx.lineTo(V.x - V.w/2 + 6, V.top + V.h); ctx.lineTo(V.x + V.w/2 - 6, V.top + V.h); ctx.lineTo(V.x + V.w/2, V.top); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, V.x - V.w/2 + 12, V.top + 10, 6, V.h - 34, 3); ctx.fill();
+    if(s.held){ const dentro = Math.abs(s.held.x - V.x) < V.w/2 + 50 && s.held.y > V.top - 70 && s.held.y < V.top + V.h + 20; if(dentro){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.strokeRect(V.x - V.w/2 - 10, V.top - 14, V.w + 20, V.h + 26); ctx.setLineDash([]); } }
+    // termómetro
+    const tx = this.TX, ty = this.TY, th = this.TH, frac = Math.max(0, Math.min(1, (s.temp + 20)/80)), fillH = th*frac, cc = caliente ? "#E03131" : fria ? "#3B7DD8" : "#8A8F94";
+    ctx.fillStyle = "#fff"; roundRect(ctx, tx - 14, ty, 28, th, 14); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; roundRect(ctx, tx - 14, ty, 28, th, 14); ctx.stroke();
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(tx, ty + th + 16, 24, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = cc; ctx.beginPath(); ctx.arc(tx, ty + th + 16, 18, 0, 7); ctx.fill(); ctx.fillRect(tx - 7, ty + th - fillH, 14, fillH + 16);
+    ctx.fillStyle = "#000"; ctx.font = F(10, 700); ctx.textAlign = "left";
+    for(let t = -20; t <= 60; t += 20){ const y = ty + th - th*(t + 20)/80; ctx.fillRect(tx + 16, y - 1, 8, 2); ctx.fillText(t + " °", tx + 28, y + 3*uiScale); }
+    const yb = ty + th - th*(s.base + 20)/80; ctx.strokeStyle = "#1863DC"; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(tx - 22, yb); ctx.lineTo(tx + 24, yb); ctx.stroke(); ctx.setLineDash([]);
+    Juego.pastilla(`${s.temp.toFixed(1)} °C`, 200, 120, {px:20, pad:30, h:36, bg:cc, fg:"#fff"});
+    Juego.pastilla(`Temperatura ambiente: ${s.base} °C`, 200, 156, {px:11, pad:16, h:22});
+    Juego.pastilla(caliente ? "¡Reacción EXOTÉRMICA! libera calor" : fria ? "Reacción ENDOTÉRMICA: absorbe calor" : "Elige una reacción ↓", 400, 24, {px:13, pad:26, h:28, bg:caliente ? "#E03131" : fria ? "#3B7DD8" : "#000", fg:"#fff"});
+    if(s.kit) Juego.pastilla(RX[s.kit].label + (RX[s.kit].d > 0 ? ` (+${RX[s.kit].d} °C)` : ` (${RX[s.kit].d} °C)`), V.x, V.top - 20, {px:11, pad:18, h:22, bg:"#C1FF00", fg:"#000"});
+    // mezclas para arrastrar
+    Object.keys(RX).forEach((k, i)=>{
+      if(s.held && s.held.k === k) return; const b = this.kit(i); this.carta(k, b.x, b.y, b.w, b.h, false);
+    });
+    if(s.held) this.carta(s.held.k, s.held.x, s.held.y, 150, 46, true);
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra una mezcla al vaso", 380, 350);
+    this.finFotograma();
+  },
+  carta(k, x, y, w, hh, brillo){
+    const g = ctx.createLinearGradient(0, y - hh/2, 0, y + hh/2); g.addColorStop(0, FX.mix(this.KCOL[k], .2)); g.addColorStop(1, this.KCOL[k]);
+    ctx.fillStyle = g; roundRect(ctx, x - w/2, y - hh/2, w, hh, 10); ctx.fill(); ctx.strokeStyle = brillo ? "#C1FF00" : "rgba(0,0,0,.4)"; ctx.lineWidth = brillo ? 3 : 1.5; ctx.stroke();
+    ctx.font = F(20, 400); ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText(this.RXN[k].icon, x - w/2 + 22, y + 7*uiScale);
+    const partes = this.RXN[k].label.split(" + "); ctx.font = F(11, 800); ctx.fillText(partes[0] + " +", x + 16, y - 2*uiScale); ctx.fillText(partes[1], x + 16, y + 12*uiScale);
+  }
+};
+
+/* ---------- Electrólisis (piloto) ---------- */
+const expElectroV3 = {...expElectro, ...RetosMix, ...JuegoMix,
+  name:expElectro.name + " (piloto 2)",
+  cardDesc:"Arrastra la perilla de la fuente de poder, enciende la corriente y llena los tubos con hidrógeno y oxígeno. Cumple tres retos con estrellas.",
+  TK:{x0:170, x1:490, y:398}, SW:{x:570, y:398}, HMAX:240, CX:227, AX:447, TTOP:100, TBOT:250,
+  RETOS:[
+    {id:"gas", txt:"Enciende la corriente y haz salir gas en los dos electrodos", ok:"Sale gas en el cátodo (H₂) y en el ánodo (O₂)", pista:"Sube el voltaje con la perilla y pulsa el interruptor."},
+    {id:"lleno", txt:"Llena el tubo de hidrógeno (H₂) y mira cuánto oxígeno hay", ok:"El tubo de H₂ está lleno y el de O₂ solo a la mitad: ¡2 a 1!", pista:"Con más voltaje se llena más rápido; ten paciencia."},
+    {id:"volt", txt:"Deja la corriente encendida con 3 V o menos y con 8 V o más", ok:"Con más voltaje el gas sale más rápido", pista:"Cambia la perilla mientras la corriente está encendida y espera un par de segundos en cada voltaje."}
+  ],
+  mount(){
+    const s = this.st = {v:0, on:false, tested:new Set(), h2:0, o2:0, bubbles:[], tLow:0, tHigh:0, moved:false};
+    s.sl = ctrlSlider("Voltaje (V)", 0, 9, 1, 0, v=>this.poner(v));
+    ctrlBtn("🔌 Encender / apagar corriente", "", ()=>this.conmutar());
+    ctrlBtn("🧹 Vaciar los tubos", "ghost", ()=>{ s.h2 = 0; s.o2 = 0; s.bubbles = []; });
+    this.iniciarJuego();
+    const T = this.TK;
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(Math.abs(p.x - this.SW.x) <= Math.max(44, 22*sc) && Math.abs(p.y - this.SW.y) <= Math.max(20, 22*sc)) return {t:"sw"};
+        if(p.x >= T.x0 - 18 && p.x <= T.x1 + 18 && Math.abs(p.y - T.y) <= Math.max(18, 24*sc)) return {t:"v"}; return null; },
+      down:(o, p)=>{ if(o.t === "sw") this.conmutar(); else this.fijar(p.x); },
+      move:(o, p)=>{ if(o.t === "v") this.fijar(p.x); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijar(x){ const T = this.TK, v = Math.round(Math.max(0, Math.min(9, (x - T.x0)/(T.x1 - T.x0)*9))); if(v !== this.st.v) this.poner(v); },
+  poner(v){ const s = this.st; s.v = v; s.sl.value = v; s.moved = true; if(v > 0){ s.tested.add(v); if(s.tested.size >= 2) markRan(); } },
+  conmutar(){ const s = this.st; s.on = !s.on; s.moved = true; FX.sound("tick"); if(s.on && s.v === 0) FX.pop(s.fx, 337, 120, "Sube el voltaje con la perilla ↓"); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), HM = this.HMAX, TT = this.TTOP, TB = this.TBOT, T = this.TK;
+    const activo = s.on && s.v > 0 && s.h2 < HM;
+    if(activo){
+      s.h2 = Math.min(HM, s.h2 + s.v*h*2.4); s.o2 = Math.min(HM/2, s.o2 + s.v*h*1.2);
+      if(s.bubbles.length < 70){
+        if(Math.random() < s.v*h*3) s.bubbles.push({x:this.CX + (Math.random()-.5)*8, y:340, r:2 + Math.random()*3});
+        if(Math.random() < s.v*h*1.5) s.bubbles.push({x:this.AX + (Math.random()-.5)*8, y:340, r:2 + Math.random()*3});
+      }
+      if(s.v <= 3) s.tLow += h; if(s.v >= 8) s.tHigh += h;
+    }
+    s.bubbles.forEach(b=>{ b.y -= 95*h; b.x += Math.sin(b.y*.2)*.3; }); s.bubbles = s.bubbles.filter(b=>b.y > TB);
+    const ids = []; if(s.h2 >= 10 && s.o2 >= 5) ids.push("gas"); if(s.h2 >= HM) ids.push("lleno"); if(s.tLow >= 2 && s.tHigh >= 2) ids.push("volt");
+    if(ids.length) this.ganar(ids, 337, 190);
+    // ---- dibujo ----
+    Juego.fondo(0);
+    const wg = ctx.createLinearGradient(0, 60, 0, 360); wg.addColorStop(0, "#CBEAF6"); wg.addColorStop(1, "#8FCBE6"); ctx.fillStyle = wg; roundRect(ctx, 150, 60, 360, 300, 14); ctx.fill();
+    ctx.strokeStyle = "rgba(95,125,135,.95)"; ctx.lineWidth = 4; roundRect(ctx, 150, 60, 360, 300, 14); ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.35)"; roundRect(ctx, 160, 74, 7, 260, 3); ctx.fill();
+    // tubos de ensayo boca abajo con el gas atrapado
+    [[this.CX, s.h2, "H₂", "#D6336C"], [this.AX, s.o2, "O₂", "#1863DC"]].forEach(([cx, gas, lab, col])=>{
+      const fr = gas/HM, gh = fr*(TB - TT);
+      ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fillRect(cx - 22, TT, 44, TB - TT);
+      ctx.fillStyle = "rgba(255,255,255,.92)"; ctx.fillRect(cx - 22, TT, 44, gh);
+      if(gh > 4){ ctx.fillStyle = col; ctx.font = F(14, 800); ctx.textAlign = "center"; ctx.fillText(lab, cx, TT + Math.min(gh - 6, 26)*uiScale); }
+      ctx.strokeStyle = "rgba(60,90,100,.95)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - 22, TB); ctx.lineTo(cx - 22, TT + 12); ctx.quadraticCurveTo(cx - 22, TT, cx, TT); ctx.quadraticCurveTo(cx + 22, TT, cx + 22, TT + 12); ctx.lineTo(cx + 22, TB); ctx.stroke();
+      ctx.fillStyle = col; ctx.font = F(11, 800); ctx.fillText(gas >= HM*(lab === "H₂" ? 1 : .5) - .01 ? "¡lleno!" : "", cx, TT - 8);
+    });
+    // electrodos
+    ctx.fillStyle = "#222"; ctx.fillRect(this.CX - 3, 70, 6, 280); ctx.fillRect(this.AX - 3, 70, 6, 280);
+    ctx.fillStyle = "#D6336C"; ctx.fillRect(this.CX - 3, 340, 6, 10); ctx.fillStyle = "#1863DC"; ctx.fillRect(this.AX - 3, 340, 6, 10);
+    s.bubbles.forEach(b=>{ ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(60,90,100,.7)"; ctx.lineWidth = 1; ctx.stroke(); });
+    Juego.pastilla("Cátodo (−) H₂", this.CX, 325, {px:11, pad:16, h:22});
+    Juego.pastilla("Ánodo (+) O₂", this.AX, 325, {px:11, pad:16, h:22});
+    Juego.pastilla("Razón H₂ : O₂", 337, 150, {px:11, pad:16, h:22});
+    Juego.pastilla(s.o2 > 0 ? (s.h2/s.o2).toFixed(1) + " : 1" : "—", 337, 180, {px:16, pad:26, h:30, bg:"#C1FF00", fg:"#000"});
+    Juego.pastilla(`H₂: ${s.h2.toFixed(0)}`, 337, 218, {px:11, pad:14, h:20, bg:"#D6336C", fg:"#fff"});
+    Juego.pastilla(`O₂: ${s.o2.toFixed(0)}`, 337, 244, {px:11, pad:14, h:20, bg:"#1863DC", fg:"#fff"});
+    // fuente de poder y cables
+    ctx.strokeStyle = "#333"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(this.CX, 70); ctx.lineTo(this.CX, 28); ctx.lineTo(262, 28); ctx.moveTo(this.AX, 70); ctx.lineTo(this.AX, 28); ctx.lineTo(412, 28); ctx.stroke();
+    ctx.fillStyle = "#1B1B1B"; roundRect(ctx, 262, 6, 150, 44, 10); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2; roundRect(ctx, 262, 6, 150, 44, 10); ctx.stroke();
+    ctx.fillStyle = "#C1FF00"; ctx.font = F(22, 800); ctx.textAlign = "center"; ctx.fillText(s.v + " V", 337, 38);
+    ctx.fillStyle = s.on && s.v > 0 ? "#2EE66B" : "#555"; ctx.beginPath(); ctx.arc(278, 28, 5, 0, 7); ctx.fill();
+    // perilla de voltaje
+    ctx.fillStyle = "#1B1B1B"; roundRect(ctx, T.x0 - 22, T.y - 18, T.x1 - T.x0 + 44, 36, 18); ctx.fill();
+    ctx.strokeStyle = "#555"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(T.x0, T.y); ctx.lineTo(T.x1, T.y); ctx.stroke();
+    ctx.strokeStyle = "#C1FF00"; ctx.beginPath(); ctx.moveTo(T.x0, T.y); ctx.lineTo(T.x0 + s.v/9*(T.x1 - T.x0), T.y); ctx.stroke();
+    for(let v = 0; v <= 9; v++){ ctx.fillStyle = "#aaa"; ctx.font = F(9, 700); ctx.fillText(v, T.x0 + v/9*(T.x1 - T.x0), T.y - 22*uiScale + 2); }
+    const hx = T.x0 + s.v/9*(T.x1 - T.x0), hg = ctx.createRadialGradient(hx - 4, T.y - 4, 2, hx, T.y, 15); hg.addColorStop(0, "#F1FFB0"); hg.addColorStop(1, "#C1FF00");
+    ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, T.y, 14, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke();
+    // interruptor
+    const on = s.on; ctx.fillStyle = on ? "#C1FF00" : "#3A3A3A"; roundRect(ctx, this.SW.x - 40, this.SW.y - 17, 80, 34, 17); ctx.fill(); ctx.fillStyle = on ? "#000" : "#fff"; ctx.beginPath(); ctx.arc(on ? this.SW.x + 23 : this.SW.x - 23, this.SW.y, 12, 0, 7); ctx.fill();
+    ctx.fillStyle = on ? "#000" : "#aaa"; ctx.font = F(11, 800); ctx.fillText(on ? "ON" : "OFF", on ? this.SW.x - 12 : this.SW.x + 12, this.SW.y + 4*uiScale);
+    if(!s.moved) Juego.ayuda(fx, "👆 Mueve la perilla y enciende la corriente", 337, 372);
+    if(s.h2 >= HM) Juego.pastilla("¡El tubo de H₂ está lleno!", 337, 290, {px:12, pad:22, h:26, bg:"#C1FF00", fg:"#000"});
+    this.finFotograma();
+  }
+};
+
+/* ---------- Solubilidad (piloto) ---------- */
+const expSolubV3 = {...expSolub, ...RetosMix, ...JuegoMix,
+  name:"¿Cuánta azúcar se disuelve? Solubilidad y temperatura (piloto 2)",
+  cardDesc:"Arrastra la temperatura del termómetro y cucharadas de azúcar al vaso hasta encontrar el punto de saturación. Cumple tres retos con estrellas.",
+  GX:250, GY:70, GW:160, GH:280, MAXC:14, TH:{x:80, y0:340, y1:100},
+  RETOS:[
+    {id:"frio", txt:"Satura el vaso con agua fría (20 °C o menos)", ok:"Con agua fría el azúcar sobrante se queda en el fondo", pista:"Con el agua fría, agrega cucharadas hasta que aparezca «¡SATURADO!»."},
+    {id:"ocho", txt:"Disuelve 8 cucharadas sin que sobre nada", ok:"¡8 cucharadas disueltas por completo!", pista:"En agua caliente cabe más azúcar: sube la temperatura."},
+    {id:"caliente", txt:"Satura el vaso con agua a 70 °C o más", ok:"Incluso caliente hay un límite, pero es mucho más alto", pista:"Con el agua muy caliente hacen falta muchas cucharadas."}
+  ],
+  mount(){
+    const s = this.st = {temp:20, spoons:0, und:0, tested:new Set(), held:null, moved:false, gr:Array.from({length:80}, ()=>({a:Math.random(), b:Math.random()}))};
+    s.sl = ctrlSlider("Temperatura del agua (°C)", 0, 90, 5, 20, v=>this.poner(v));
+    ctrlBtn("🥄 Agregar cucharada de azúcar", "", ()=>this.agregar());
+    ctrlBtn("🔁 Vaciar vaso", "ghost", ()=>{ s.spoons = 0; s.und = 0; });
+    this.iniciarJuego();
+    const TH = this.TH;
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        const hy = TH.y0 - s.temp/90*(TH.y0 - TH.y1);
+        if(Math.abs(p.x - TH.x) <= Math.max(26, 22*sc) && p.y >= TH.y1 - 16 && p.y <= TH.y0 + 16) return {t:"temp"};
+        if(Math.abs(p.x - 560) <= Math.max(44, 22*sc) && Math.abs(p.y - 372) <= Math.max(34, 22*sc)) return {t:"azucar"}; return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "temp") this.fijarT(p.y); else s.held = {x:p.x, y:p.y}; },
+      move:(o, p)=>{ if(o.t === "temp") this.fijarT(p.y); else if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ if(o.t !== "azucar") return; const h = s.held; s.held = null; if(!h) return;
+        if(h.x > this.GX - 30 && h.x < this.GX + this.GW + 30 && h.y < this.GY + this.GH) this.agregar(h.x); else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijarT(y){ const TH = this.TH, t = Math.round(Math.max(0, Math.min(90, (TH.y0 - y)/(TH.y0 - TH.y1)*90))/5)*5; if(t !== this.st.temp) this.poner(t); },
+  poner(v){ const s = this.st; s.temp = v; s.sl.value = v; s.moved = true; s.tested.add(v); if(s.tested.size >= 2) markRan(); },
+  cap(){ return 2 + this.st.temp/9; },
+  agregar(x){
+    const s = this.st, fx = s.fx, gx = this.GX;
+    if(s.spoons >= this.MAXC){ FX.pop(fx, gx + this.GW/2, 110, "El vaso ya no admite más (" + this.MAXC + ")"); return; }
+    s.spoons++; s.moved = true; const px = Math.max(gx + 20, Math.min(gx + this.GW - 20, x || gx + this.GW/2));
+    if(!FX.rm) for(let i = 0; i < 12; i++) FX.add(fx, {k:"d", x:px + (Math.random()-.5)*26, y:this.GY + 20, vx:(Math.random()-.5)*20, vy:20 + Math.random()*40, life:.8, r:1.8, c:"#F5F0DC"});
+    FX.splash(fx, px, this.GY + 40, "#F5F0DC", .25); FX.sound("splash");
+  },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), gx = this.GX, gy = this.GY, gw = this.GW, gh = this.GH;
+    const max = this.cap(), dis = Math.min(s.spoons, max), und = Math.max(0, s.spoons - max);
+    s.und += (und - s.und)*Math.min(1, h*2.5);
+    const sat = und > .3, ids = [];
+    if(sat && s.temp <= 20) ids.push("frio"); if(s.spoons >= 8 && und === 0) ids.push("ocho"); if(sat && s.temp >= 70) ids.push("caliente");
+    if(ids.length) this.ganar(ids, gx + gw/2, gy + 60);
+    if(!FX.rm && s.temp >= 60 && Math.random() < h*10) FX.add(fx, {k:"d", x:gx + 20 + Math.random()*(gw - 40), y:gy + 28, vx:0, vy:-25, g:-20, life:1.1, r:3 + Math.random()*3, c:"rgba(255,255,255,.4)"});
+    Juego.fondo(0);
+    // vaso con agua que cambia de color con la temperatura
+    const k = s.temp/90, rr = Math.round(59 + (245 - 59)*k), gg = Math.round(125 + (165 - 125)*k), bb = Math.round(216 + (36 - 216)*k);
+    ctx.fillStyle = "rgba(0,0,0,.22)"; ctx.beginPath(); ctx.ellipse(gx + gw/2, gy + gh + 8, gw/2 + 10, 6, 0, 0, 7); ctx.fill();
+    const wg = ctx.createLinearGradient(0, gy + 30, 0, gy + gh); wg.addColorStop(0, `rgba(${rr},${gg},${bb},.25)`); wg.addColorStop(1, `rgba(${rr},${gg},${bb},${.4 + Math.min(.25, s.spoons*.02)})`);
+    ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(gx + 3, gy + 30); for(let x = gx + 3; x <= gx + gw - 3; x += 8) ctx.lineTo(x, gy + 30 + Math.sin(fx.t*2.2 + x*.07)*1.3); ctx.lineTo(gx + gw - 3, gy + gh - 2); ctx.lineTo(gx + 3, gy + gh - 2); ctx.closePath(); ctx.fill();
+    // granos sin disolver (posiciones fijas)
+    const n = Math.min(80, Math.round(s.und*6)), pile = Math.min(60, s.und*10); ctx.fillStyle = "#F5F0DC"; ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = .7;
+    for(let i = 0; i < n; i++){ const g = s.gr[i]; ctx.beginPath(); ctx.arc(gx + 15 + g.a*(gw - 30), gy + gh - 8 - g.b*pile, 2.6, 0, 7); ctx.fill(); ctx.stroke(); }
+    ctx.strokeStyle = "rgba(95,125,135,.95)"; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + 6, gy + gh); ctx.lineTo(gx + gw - 6, gy + gh); ctx.lineTo(gx + gw, gy); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, gx + 14, gy + 40, 6, gh - 70, 3); ctx.fill();
+    if(s.held && s.held.x > gx - 30 && s.held.x < gx + gw + 30 && s.held.y < gy + gh){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.strokeRect(gx - 12, gy - 12, gw + 24, gh + 24); ctx.setLineDash([]); }
+    // termómetro arrastrable
+    const TH = this.TH, hy = TH.y0 - s.temp/90*(TH.y0 - TH.y1), fc = s.temp >= 50 ? "#E8730C" : s.temp <= 20 ? "#3B7DD8" : "#C1A12A";
+    ctx.fillStyle = "#fff"; roundRect(ctx, TH.x - 11, TH.y1 - 10, 22, TH.y0 - TH.y1 + 20, 11); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; roundRect(ctx, TH.x - 11, TH.y1 - 10, 22, TH.y0 - TH.y1 + 20, 11); ctx.stroke();
+    ctx.fillStyle = fc; ctx.fillRect(TH.x - 6, hy, 12, TH.y0 + 6 - hy);
+    ctx.fillStyle = "#000"; ctx.font = F(10, 700); ctx.textAlign = "left"; for(let t = 0; t <= 90; t += 30){ const y = TH.y0 - t/90*(TH.y0 - TH.y1); ctx.fillRect(TH.x + 13, y - 1, 7, 2); ctx.fillText(t + " °C", TH.x + 24, y + 3*uiScale); }
+    const hg = ctx.createRadialGradient(TH.x - 3, hy - 3, 1, TH.x, hy, 14); hg.addColorStop(0, "#F1FFB0"); hg.addColorStop(1, "#C1FF00"); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(TH.x, hy, 13, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke();
+    // medidor de capacidad
+    const bx = 470, by0 = 340, u = 240/this.MAXC; ctx.fillStyle = "#fff"; roundRect(ctx, bx, by0 - this.MAXC*u, 26, this.MAXC*u, 8); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; roundRect(ctx, bx, by0 - this.MAXC*u, 26, this.MAXC*u, 8); ctx.stroke();
+    ctx.fillStyle = "#1863DC"; ctx.fillRect(bx + 3, by0 - dis*u, 20, dis*u); if(und > 0){ ctx.fillStyle = "#E03131"; ctx.fillRect(bx + 3, by0 - (dis + Math.min(und, this.MAXC - dis))*u, 20, Math.min(und, this.MAXC - dis)*u); }
+    ctx.strokeStyle = "#2EAA4A"; ctx.lineWidth = 3; ctx.setLineDash([5, 3]); ctx.beginPath(); ctx.moveTo(bx - 8, by0 - max*u); ctx.lineTo(bx + 34, by0 - max*u); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "#000"; ctx.font = F(10, 700); ctx.textAlign = "left"; ctx.fillText("máx ≈ " + max.toFixed(1), bx + 34, by0 - max*u + 4*uiScale); ctx.textAlign = "center"; ctx.fillText("cucharadas", bx + 13, by0 + 14*uiScale);
+    // tazón de azúcar
+    ctx.fillStyle = "#F5F0DC"; ctx.beginPath(); ctx.ellipse(560, 366, 38, 10, 0, 0, 7); ctx.fill(); ctx.fillStyle = "#8A5A2B"; ctx.beginPath(); ctx.moveTo(522, 368); ctx.quadraticCurveTo(560, 424, 598, 368); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke();
+    Juego.pastilla("Azúcar", 560, 410, {px:11, pad:14, h:20});
+    if(s.held){ ctx.fillStyle = "#F5F0DC"; ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(s.held.x, s.held.y, 20, 11, 0, 0, 7); ctx.fill(); ctx.stroke(); }
+    Juego.pastilla(`Temperatura: ${s.temp} °C · Cucharadas: ${s.spoons}`, 330, 24, {px:12, pad:22, h:26});
+    Juego.pastilla(`Disuelto: ${dis.toFixed(1)} de ~${max.toFixed(1)} máx`, 330, 52, {px:11, pad:18, h:22, bg:"#1863DC", fg:"#fff"});
+    if(und > .3) Juego.pastilla("¡SATURADO! ya no se disuelve más", gx + gw/2, 388, {px:13, pad:24, h:28, bg:"#E03131", fg:"#fff"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el azúcar al vaso y mueve el termómetro", 330, 100);
+    this.finFotograma();
+  }
+};
+
+/* ---------- El clavo que se oxida (piloto) ---------- */
+const expOxidaV3 = {...expOxida, ...RetosMix, ...JuegoMix,
+  name:expOxida.name + " (piloto 2)",
+  cardDesc:"Mete un clavo en cada frasco, deja pasar los días y compara cuál se oxida primero. Cumple tres retos con estrellas.",
+  JX:[130, 330, 530], JTOP:44, JH:244, TL:{x0:150, x1:510, y:398},
+  RETOS:[
+    {id:"clavos", txt:"Mete un clavo en cada frasco", ok:"Los tres frascos están listos", pista:"Arrastra los clavos de la caja a cada frasco."},
+    {id:"siete", txt:"Deja pasar 7 días y compara los tres clavos", ok:"A los 7 días solo el clavo en agua con sal está muy oxidado", pista:"Arrastra la perilla del tiempo o pulsa «Pasar el tiempo»."},
+    {id:"catorce", txt:"Llega a los 14 días: ¿cuál sigue casi intacto?", ok:"A los 14 días el aire seco y el aceite casi no oxidan el clavo", pista:"Lleva el tiempo hasta el final de la barra."}
+  ],
+  mount(){
+    const s = this.st = {nails:[false, false, false], dias:0, auto:false, tested:new Set(), held:null, moved:false,
+      spots:Array.from({length:3}, ()=>Array.from({length:16}, ()=>({y:Math.random(), x:Math.random(), r:2 + Math.random()*3, th:Math.random()})))};
+    s.sl = ctrlSlider("Días transcurridos", 0, 14, 1, 0, v=>this.dia(v));
+    s.btn = ctrlBtn("⏩ Pasar el tiempo", "amber", ()=>{ if(!this.listo()){ FX.pop(s.fx, 330, 330, "Primero mete un clavo en cada frasco"); return; } s.auto = !s.auto; if(s.dias >= 14) s.dias = 0; s.btn.textContent = s.auto ? "⏸ Pausar" : "⏩ Pasar el tiempo"; });
+    ctrlBtn("Reiniciar", "ghost", ()=>{ this._keep = true; this.unmount(); $("controls").innerHTML = ""; $("readout").hidden = true; this.mount(); });
+    this.iniciarJuego();
+    const T = this.TL;
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(!this.listo()){ const n = 3 - s.nails.filter(Boolean).length; for(let i = 0; i < n; i++){ const b = this.caja(i); if(Math.abs(p.x - b.x) <= Math.max(40, 22*sc) && Math.abs(p.y - b.y) <= Math.max(16, 22*sc)) return {t:"n"}; } return null; }
+        const hx = T.x0 + s.dias/14*(T.x1 - T.x0);
+        if(p.x >= T.x0 - 18 && p.x <= T.x1 + 18 && Math.abs(p.y - T.y) <= Math.max(18, 24*sc)) return {t:"t"}; return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "n") s.held = {x:p.x, y:p.y}; else { s.auto = false; s.btn.textContent = "⏩ Pasar el tiempo"; this.fijar(p.x); } },
+      move:(o, p)=>{ if(o.t === "n"){ if(s.held){ s.held.x = p.x; s.held.y = p.y; } } else this.fijar(p.x); },
+      up:(o)=>{ if(o.t !== "n") return; const h = s.held; s.held = null; if(!h) return;
+        const j = this.JX.findIndex((x, i)=>!s.nails[i] && Math.abs(h.x - x) < 58 && h.y > this.JTOP - 20 && h.y < this.JTOP + this.JH + 20);
+        if(j < 0){ FX.dust(s.fx, h.x, Math.min(h.y, 400)); return; }
+        s.nails[j] = true; FX.splash(s.fx, this.JX[j], this.JTOP + 70, "#BFE6FF", .2); FX.sound("thud"); if(this.listo()) this.ganar(["clavos"], 330, 200); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  listo(){ return this.st.nails.every(Boolean); },
+  caja(i){ return {x:240 + i*90, y:392}; },
+  fijar(x){ const T = this.TL, d = Math.max(0, Math.min(14, (x - T.x0)/(T.x1 - T.x0)*14)); this.st.dias = d; this.st.sl.value = Math.round(d); this.visto(); },
+  dia(v){ const s = this.st; if(!this.listo()){ s.sl.value = 0; FX.pop(s.fx, 330, 330, "Primero mete un clavo en cada frasco"); return; } s.auto = false; s.btn.textContent = "⏩ Pasar el tiempo"; s.dias = v; this.visto(); },
+  visto(){ const s = this.st; s.moved = true; s.tested.add(Math.round(s.dias)); if(s.tested.size >= 3) markRan(); },
+  oxido(i){ return Math.min(1, this.ENVS[i].rate*this.st.dias/6); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), T = this.TL;
+    if(s.auto){ s.dias = Math.min(14, s.dias + h*1.6); s.sl.value = Math.round(s.dias); this.visto(); if(s.dias >= 14){ s.auto = false; s.btn.textContent = "⏩ Pasar el tiempo"; } }
+    const ids = []; if(this.listo() && s.dias >= 7) ids.push("siete"); if(this.listo() && s.dias >= 14) ids.push("catorce");
+    if(ids.length) this.ganar(ids, 330, 200);
+    Juego.fondo(0);
+    const E = this.ENVS;
+    E.forEach((e, i)=>{
+      const x = this.JX[i], y = this.JTOP, jh = this.JH, rust = this.oxido(i);
+      // frasco
+      if(i === 1){ const wg = ctx.createLinearGradient(0, y + 40, 0, y + jh); wg.addColorStop(0, "rgba(120,180,235,.5)"); wg.addColorStop(1, "rgba(59,125,216,.7)"); ctx.fillStyle = wg; roundRect(ctx, x - 43, y + 40, 86, jh - 42, 8); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,.8)"; for(let k = 0; k < 7; k++) ctx.fillRect(x - 36 + (k*29)%72, y + jh - 12 - (k*17)%40, 2.5, 2.5); }
+      if(i === 2){ const og = ctx.createLinearGradient(0, y + 40, 0, y + jh); og.addColorStop(0, "rgba(246,222,110,.75)"); og.addColorStop(1, "rgba(232,190,60,.7)"); ctx.fillStyle = og; roundRect(ctx, x - 43, y + 40, 86, jh - 42, 8); ctx.fill(); }
+      ctx.strokeStyle = "rgba(95,125,135,.95)"; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(x - 45, y + 8); ctx.lineTo(x - 45, y + jh); ctx.lineTo(x + 45, y + jh); ctx.lineTo(x + 45, y + 8); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, x - 38, y + 24, 6, jh - 50, 3); ctx.fill();
+      if(s.nails[i]){
+        const nx = x - 6, ny = y + 16, nh = jh - 36; const g = ctx.createLinearGradient(nx, 0, nx + 12, 0); g.addColorStop(0, "#9AA0A6"); g.addColorStop(.4, "#E2E5E8"); g.addColorStop(1, "#7C838A");
+        ctx.fillStyle = g; ctx.fillRect(nx, ny, 12, nh); ctx.fillRect(nx - 6, ny - 4, 24, 6);
+        ctx.save(); ctx.beginPath(); ctx.rect(nx - 6, ny - 4, 24, nh + 4); ctx.clip(); ctx.fillStyle = `rgba(178,83,20,${rust*.85})`; ctx.fillRect(nx - 6, ny - 4, 24, nh + 4);
+        ctx.fillStyle = "rgba(120,50,10,.85)"; s.spots[i].forEach(p=>{ if(p.th < rust){ ctx.beginPath(); ctx.arc(nx + p.x*12, ny + p.y*nh, p.r*rust*1.6, 0, 7); ctx.fill(); } }); ctx.restore();
+        if(i === 1 && rust > .3 && !FX.rm && Math.random() < h*rust*8) FX.add(fx, {k:"d", x:x + (Math.random()-.5)*10, y:y + 60 + Math.random()*120, vx:0, vy:14, g:30, life:1.2, r:1.6, c:"rgba(178,83,20,.8)"});
+      }
+      ctx.fillStyle = "#000"; ctx.font = F(12, 800); ctx.textAlign = "center"; ctx.fillText(e.label, x, y + jh + 20*uiScale);
+      const txt = !s.nails[i] ? "sin clavo" : rust > .6 ? "¡muy oxidado!" : rust > .2 ? "oxidándose" : "casi intacto";
+      ctx.fillStyle = !s.nails[i] ? "#666" : rust > .6 ? "#E03131" : "#444"; ctx.font = F(11, 700); ctx.fillText(txt, x, y + jh + 36*uiScale);
+      if(s.nails[i]){ const bw = 70; ctx.fillStyle = "#ddd"; roundRect(ctx, x - bw/2, y + jh + 44, bw, 8, 4); ctx.fill(); ctx.fillStyle = "#B25314"; if(rust > 0) { roundRect(ctx, x - bw/2, y + jh + 44, Math.max(8, bw*rust), 8, 4); ctx.fill(); } }
+    });
+    if(!this.listo()){
+      ctx.fillStyle = "#1B1B1B"; roundRect(ctx, 170, 366, 320, 52, 12); ctx.fill(); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 2; roundRect(ctx, 170, 366, 320, 52, 12); ctx.stroke();
+      const n = 3 - s.nails.filter(Boolean).length; for(let i = 0; i < n; i++){ const b = this.caja(i); if(s.held && i === n - 1) continue; this.clavoH(b.x, b.y); }
+      ctx.fillStyle = "#aaa"; ctx.font = F(10, 700); ctx.textAlign = "center"; ctx.fillText("Caja de clavos", 330, 380);
+      if(s.held) this.clavoH(s.held.x, s.held.y, true);
+    } else {
+      ctx.fillStyle = "#1B1B1B"; roundRect(ctx, T.x0 - 28, T.y - 20, T.x1 - T.x0 + 56, 40, 20); ctx.fill(); ctx.strokeStyle = "#555"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(T.x0, T.y); ctx.lineTo(T.x1, T.y); ctx.stroke();
+      ctx.strokeStyle = "#C1FF00"; ctx.beginPath(); ctx.moveTo(T.x0, T.y); ctx.lineTo(T.x0 + s.dias/14*(T.x1 - T.x0), T.y); ctx.stroke();
+      ctx.fillStyle = "#aaa"; ctx.font = F(9, 700); ctx.textAlign = "center"; for(let d = 0; d <= 14; d += 2) ctx.fillText(d, T.x0 + d/14*(T.x1 - T.x0), T.y - 22*uiScale + 2);
+      const hx = T.x0 + s.dias/14*(T.x1 - T.x0), hg = ctx.createRadialGradient(hx - 4, T.y - 4, 2, hx, T.y, 15); hg.addColorStop(0, "#F1FFB0"); hg.addColorStop(1, "#C1FF00"); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, T.y, 14, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke();
+    }
+    Juego.pastilla(`Días transcurridos: ${Math.floor(s.dias + .0001)}`, 330, 22, {px:12, pad:22, h:26});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra un clavo a cada frasco", 330, 340);
+    else if(this.listo() && s.dias === 0) Juego.ayuda(fx, "👆 Mueve la perilla del tiempo", 330, 350);
+    this.finFotograma();
+  },
+  clavoH(x, y, brillo){
+    const g = ctx.createLinearGradient(0, y - 5, 0, y + 5); g.addColorStop(0, "#E2E5E8"); g.addColorStop(1, "#7C838A"); ctx.fillStyle = g; ctx.fillRect(x - 32, y - 4, 60, 8); ctx.fillRect(x - 38, y - 8, 7, 16);
+    if(brillo){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.strokeRect(x - 42, y - 12, 74, 24); }
+  }
+};
+
+/* ---------- Levadura que infla un globo (piloto) ---------- */
+const expFermentoV3 = {...expFermento, ...RetosMix, ...JuegoMix,
+  name:expFermento.name + " (piloto 2)",
+  cardDesc:"Ajusta el azúcar y la temperatura, suelta el sobre de levadura en la botella y mira cómo se infla el globo. Cumple tres retos con estrellas.",
+  BX:300, TH:{x:70, y0:330, y1:100}, PK:{x:190, y:372}, BOWL:{x:560, y:372},
+  RETOS:[
+    {id:"globo", txt:"Infla el globo hasta el máximo", ok:"¡El globo quedó bien inflado con el CO₂ de la levadura!", pista:"Pon azúcar y agua tibia (cerca de 37 °C) y suelta la levadura."},
+    {id:"sin", txt:"Prueba sin azúcar: ¿se infla el globo?", ok:"Sin azúcar la levadura no tiene qué fermentar", pista:"Pon el azúcar en 0, suelta la levadura y espera unos segundos."},
+    {id:"muerta", txt:"Pon el agua a más de 50 °C: ¿qué le pasa a la levadura?", ok:"Arriba de ~50 °C la levadura muere y ya no sale gas", pista:"Sube el termómetro por encima de 50 °C y suelta la levadura."}
+  ],
+  mount(){
+    const s = this.st = {azucar:2, temp:35, running:false, size:14, tested:new Set(), held:null, moved:false, tSin:0, tMuerta:0, bub:[], rate:0};
+    s.slA = ctrlSlider("Azúcar (cucharadas)", 0, 5, 1, s.azucar, v=>this.poner("a", v));
+    s.slT = ctrlSlider("Temperatura del agua (°C)", 10, 60, 1, s.temp, v=>this.poner("t", v));
+    ctrlBtn("▶️ Iniciar fermentación", "amber", ()=>this.iniciar());
+    ctrlBtn("Reiniciar", "ghost", ()=>{ this._keep = true; this.unmount(); $("controls").innerHTML = ""; $("readout").hidden = true; this.mount(); });
+    this.iniciarJuego();
+    const TH = this.TH;
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(Math.abs(p.x - TH.x) <= Math.max(26, 22*sc) && p.y >= TH.y1 - 16 && p.y <= TH.y0 + 16) return {t:"temp"};
+        if(Math.abs(p.x - this.PK.x) <= Math.max(36, 22*sc) && Math.abs(p.y - this.PK.y) <= Math.max(28, 22*sc)) return {t:"lev"};
+        if(Math.abs(p.x - this.BOWL.x) <= Math.max(44, 22*sc) && Math.abs(p.y - this.BOWL.y) <= Math.max(34, 22*sc)) return {t:"azu"}; return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "temp") this.fijarT(p.y); else s.held = {t:o.t, x:p.x, y:p.y}; },
+      move:(o, p)=>{ if(o.t === "temp") this.fijarT(p.y); else if(s.held){ s.held.x = p.x; s.held.y = p.y; } },
+      up:(o)=>{ if(o.t === "temp") return; const h = s.held; s.held = null; if(!h) return;
+        if(Math.abs(h.x - this.BX) < 80 && h.y > 90 && h.y < 395){ if(h.t === "lev") this.iniciar(); else if(s.azucar < 5){ this.poner("a", s.azucar + 1); FX.splash(s.fx, this.BX, 290, "#F5F0DC", .2); FX.sound("splash"); } else FX.pop(s.fx, this.BX, 200, "Máximo 5 cucharadas"); }
+        else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  fijarT(y){ const TH = this.TH, t = Math.round(Math.max(10, Math.min(60, 10 + (TH.y0 - y)/(TH.y0 - TH.y1)*50))); if(t !== this.st.temp) this.poner("t", t); },
+  poner(k, v){ const s = this.st; if(k === "a"){ s.azucar = v; s.slA.value = v; } else { s.temp = v; s.slT.value = v; } s.moved = true; },
+  iniciar(){
+    const s = this.st; s.running = true; s.size = 14; s.moved = true; s.tSin = 0; s.tMuerta = 0;
+    s.tested.add(s.azucar + ":" + Math.round(s.temp/10)); if(s.tested.size >= 2) markRan(); FX.sound("plop"); FX.dust(s.fx, this.BX, 270);
+  },
+  tasa(){ const s = this.st; if(s.temp > 50) return 0; const bell = Math.exp(-Math.pow((s.temp - 37)/16, 2)); return s.azucar*bell*6; },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), bx = this.BX, rate = this.tasa();
+    s.rate = rate;
+    if(s.running){ s.size = Math.min(70, s.size + rate*h); if(s.azucar === 0) s.tSin += h; if(s.temp > 50) s.tMuerta += h; }
+    const ids = []; if(s.running && s.size >= 70) ids.push("globo"); if(s.tSin >= 3) ids.push("sin"); if(s.tMuerta >= 3) ids.push("muerta");
+    if(ids.length) this.ganar(ids, bx, 150);
+    if(s.running && rate > .2 && !FX.rm && Math.random() < Math.min(.9, rate*h*2.2)) s.bub.push({x:bx - 36 + Math.random()*72, y:372, r:1.5 + Math.random()*2.5, v:30 + Math.random()*30});
+    s.bub.forEach(b=>{ b.y -= b.v*h; b.x += Math.sin(b.y*.15)*.3; }); s.bub = s.bub.filter(b=>b.y > 286);
+    Juego.fondo(396);
+    // botella con líquido
+    const by = 380, nk = 232;
+    ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.beginPath(); ctx.ellipse(bx, by + 12, 56, 6, 0, 0, 7); ctx.fill();
+    const lg = ctx.createLinearGradient(0, 280, 0, by); lg.addColorStop(0, "#E8CE8A"); lg.addColorStop(1, "#C9A24B"); ctx.fillStyle = lg;
+    ctx.beginPath(); ctx.moveTo(bx - 41, 286); for(let x = bx - 41; x <= bx + 41; x += 8) ctx.lineTo(x, 286 + Math.sin(fx.t*3 + x*.1)*(1 + Math.min(2.5, rate*.2))); ctx.lineTo(bx + 41, by - 6); ctx.quadraticCurveTo(bx + 41, by, bx + 35, by); ctx.lineTo(bx - 35, by); ctx.quadraticCurveTo(bx - 41, by, bx - 41, by - 6); ctx.closePath(); ctx.fill();
+    if(s.running && rate > .2){ ctx.fillStyle = "rgba(255,248,220,.85)"; for(let i = 0; i < 9; i++){ ctx.beginPath(); ctx.arc(bx - 36 + i*9, 284 + Math.sin(fx.t*4 + i)*1.5, 4 + (i%3), 0, 7); ctx.fill(); } }
+    s.bub.forEach(b=>{ ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fill(); });
+    ctx.strokeStyle = "rgba(60,90,100,.95)"; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(bx - 20, nk); ctx.lineTo(bx - 20, 262); ctx.quadraticCurveTo(bx - 45, 272, bx - 45, 300); ctx.lineTo(bx - 45, by - 8); ctx.quadraticCurveTo(bx - 45, by + 2, bx - 35, by + 2); ctx.lineTo(bx + 35, by + 2); ctx.quadraticCurveTo(bx + 45, by + 2, bx + 45, by - 8); ctx.lineTo(bx + 45, 300); ctx.quadraticCurveTo(bx + 45, 272, bx + 20, 262); ctx.lineTo(bx + 20, nk); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, bx - 38, 296, 6, 62, 3); ctx.fill();
+    // globo
+    const r = s.size, gcy = nk - r*.9, caliente = r > 60;
+    const gg = ctx.createRadialGradient(bx - r*.35, gcy - r*.35, r*.1, bx, gcy, r*1.05); gg.addColorStop(0, caliente ? "#FF8A8A" : "#FF9DBB"); gg.addColorStop(1, caliente ? "#C92A2A" : "#E64980");
+    ctx.fillStyle = gg; ctx.beginPath(); ctx.ellipse(bx + Math.sin(fx.t*2)*.6, gcy, r*.92, r, 0, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.3)"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.45)"; ctx.beginPath(); ctx.ellipse(bx - r*.35, gcy - r*.35, r*.16, r*.28, -.5, 0, 7); ctx.fill();
+    ctx.fillStyle = caliente ? "#C92A2A" : "#E64980"; ctx.beginPath(); ctx.moveTo(bx - 8, nk - 2); ctx.lineTo(bx + 8, nk - 2); ctx.lineTo(bx + 5, nk + 8); ctx.lineTo(bx - 5, nk + 8); ctx.closePath(); ctx.fill();
+    // termómetro arrastrable
+    const TH = this.TH, hy = TH.y0 - (s.temp - 10)/50*(TH.y0 - TH.y1), fc = s.temp > 50 ? "#C92A2A" : s.temp >= 30 ? "#E8730C" : "#3B7DD8";
+    ctx.fillStyle = "#fff"; roundRect(ctx, TH.x - 11, TH.y1 - 10, 22, TH.y0 - TH.y1 + 20, 11); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 3; roundRect(ctx, TH.x - 11, TH.y1 - 10, 22, TH.y0 - TH.y1 + 20, 11); ctx.stroke();
+    ctx.fillStyle = fc; ctx.fillRect(TH.x - 6, hy, 12, TH.y0 + 6 - hy);
+    ctx.fillStyle = "#2EAA4A"; const y37 = TH.y0 - 27/50*(TH.y0 - TH.y1); ctx.fillRect(TH.x + 13, y37 - 1.5, 9, 3);
+    ctx.fillStyle = "#000"; ctx.font = F(10, 700); ctx.textAlign = "left"; for(let t = 10; t <= 60; t += 10){ const y = TH.y0 - (t - 10)/50*(TH.y0 - TH.y1); ctx.fillRect(TH.x + 13, y - 1, 6, 2); ctx.fillText(t + "°", TH.x + 24, y + 3*uiScale); }
+    ctx.fillStyle = "#2EAA4A"; ctx.fillText("← ideal", TH.x + 50, y37 + 3*uiScale);
+    const hg = ctx.createRadialGradient(TH.x - 3, hy - 3, 1, TH.x, hy, 14); hg.addColorStop(0, "#F1FFB0"); hg.addColorStop(1, "#C1FF00"); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(TH.x, hy, 13, 0, 7); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke();
+    // sobre de levadura y tazón de azúcar
+    const PK = this.PK; if(!(s.held && s.held.t === "lev")) this.sobre(PK.x, PK.y);
+    Juego.pastilla("Levadura", PK.x, PK.y + 36, {px:11, pad:14, h:20});
+    const B = this.BOWL; ctx.fillStyle = "#F5F0DC"; ctx.beginPath(); ctx.ellipse(B.x, B.y - 6, 38, 10, 0, 0, 7); ctx.fill(); ctx.fillStyle = "#8A5A2B"; ctx.beginPath(); ctx.moveTo(B.x - 38, B.y - 4); ctx.quadraticCurveTo(B.x, B.y + 52, B.x + 38, B.y - 4); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke();
+    Juego.pastilla("Azúcar", B.x, B.y + 36, {px:11, pad:14, h:20});
+    if(s.held){
+      if(s.held.t === "lev") this.sobre(s.held.x, s.held.y, true); else { ctx.fillStyle = "#F5F0DC"; ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(s.held.x, s.held.y, 20, 11, 0, 0, 7); ctx.fill(); ctx.stroke(); }
+      if(Math.abs(s.held.x - bx) < 80 && s.held.y > 90 && s.held.y < 395){ ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.strokeRect(bx - 62, 230, 124, 168); ctx.setLineDash([]); }
+    }
+    Juego.pastilla(`Azúcar: ${s.azucar} cdas · Temperatura: ${s.temp} °C`, 330, 24, {px:12, pad:22, h:26});
+    const msg = !s.running ? "Ajusta y suelta la levadura en la botella ↓" : s.temp > 50 ? "¡La levadura murió! Hace demasiado calor" : s.azucar === 0 ? "Sin azúcar no hay nada que fermentar" : s.size >= 70 ? "¡Globo bien inflado!" : "Fermentando… produciendo CO₂";
+    Juego.pastilla(msg, 330, 54, {px:12, pad:24, h:26, bg:s.running && (s.temp > 50 || s.azucar === 0) ? "#E03131" : "#1863DC", fg:"#fff"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra el sobre de levadura a la botella", 420, 130);
+    this.finFotograma();
+  },
+  sobre(x, y, brillo){
+    ctx.fillStyle = "#F3C13A"; roundRect(ctx, x - 26, y - 20, 52, 38, 5); ctx.fill(); ctx.strokeStyle = brillo ? "#C1FF00" : "rgba(0,0,0,.5)"; ctx.lineWidth = brillo ? 3 : 1.5; ctx.stroke();
+    ctx.fillStyle = "rgba(0,0,0,.15)"; for(let i = 0; i < 5; i++) ctx.fillRect(x - 26 + i*10.4, y - 20, 2, 5); ctx.fillStyle = "#222"; ctx.font = F(10, 800); ctx.textAlign = "center"; ctx.fillText("LEVADURA", x, y + 4*uiScale);
+  }
+};
+
+/* ---------- Cromatografía (piloto) ---------- */
+const expCromatoV3 = {...expCromato, ...RetosMix, ...JuegoMix,
+  name:expCromato.name + " (piloto 2)",
+  cardDesc:"Elige un marcador, baja la tira de papel al agua sin mojar el punto y mira cómo se separan los colores escondidos. Cumple tres retos con estrellas.",
+  SX:330, SWD:50, YB:330, LEN:290, WL:358, DIP:44, MAL:58,
+  PENS:{negro:"#222222", verde:"#2b8a3e", cafe:"#8A5A2B"},
+  RETOS:[
+    {id:"negro", txt:"Separa los colores del marcador negro", ok:"El negro escondía 4 colores distintos", pista:"Elige el marcador negro, baja la tira al agua sin mojar el punto y espera."},
+    {id:"otro", txt:"Compara con otro marcador (verde o café)", ok:"Cada marcador tiene su propia mezcla de colores", pista:"Cambia de marcador y repite el experimento."},
+    {id:"mojado", txt:"Descubre qué pasa si el punto toca el agua", ok:"Si el punto se moja, la tinta se disuelve y no se separa", pista:"Baja la tira un poco más de la cuenta y suéltala."}
+  ],
+  mount(){
+    const s = this.st = {color:"negro", p:0, dy:0, dyV:0, dipped:false, ruined:false, held:null, done:new Set(), tested:new Set(), moved:false, cloud:0};
+    Object.keys(this.MARK).forEach(k=> ctrlBtn(this.MARK[k].label, k === s.color ? "" : "ghost", ()=>this.elegir(k)));
+    ctrlBtn("💧 Sumergir en agua", "amber", ()=>{ if(s.ruined){ FX.pop(s.fx, this.SX, 200, "La tira se estropeó: elige un marcador"); return; } s.dy = this.DIP; s.held = null; this.sumergir(); });
+    ctrlBtn("Reiniciar", "ghost", ()=>{ this._keep = true; this.unmount(); $("controls").innerHTML = ""; $("readout").hidden = true; this.mount(); });
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        const keys = Object.keys(this.PENS); for(let i = 0; i < keys.length; i++){ const x = 70 + i*52; if(Math.abs(p.x - x) <= Math.max(22, 22*sc) && Math.abs(p.y - 372) <= Math.max(44, 22*sc)) return {t:"pen", k:keys[i]}; }
+        const yb = this.YB + s.dyV; if(Math.abs(p.x - this.SX) <= Math.max(36, 22*sc) && p.y >= yb - this.LEN - 10 && p.y <= yb + 10) return {t:"tira", y0:p.y, dy0:s.dy}; return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "pen") this.elegir(o.k); else { s.held = true; s.dipped = false; } },
+      move:(o, p)=>{ if(o.t === "tira"){ s.dy = Math.max(0, Math.min(70, o.dy0 + p.y - o.y0)); s.dyV = s.dy; } },
+      up:(o)=>{ if(o.t !== "tira") return; s.held = false;
+        if(s.ruined || s.dy > this.MAL){ if(!s.ruined) this.estropear(); s.dy = 64; }
+        else if(s.dy >= 28){ s.dy = this.DIP; this.sumergir(); }
+        else s.dy = 0; }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  elegir(k){ const s = this.st; s.color = k; s.p = 0; s.dy = 0; s.dipped = false; s.ruined = false; s.cloud = 0; s.moved = true; [...$("controls").querySelectorAll("button")].forEach(b=>{ const k2 = Object.keys(this.MARK).find(q=>this.MARK[q].label === b.textContent); if(k2) b.className = "btn small " + (k2 === k ? "" : "ghost"); }); },
+  sumergir(){ const s = this.st; if(s.ruined) return; s.dipped = true; s.tested.add(s.color); if(s.tested.size >= 2) markRan(); FX.splash(s.fx, this.SX, this.WL, "#BFE6FF", .15); FX.sound("splash"); },
+  estropear(){ const s = this.st; s.ruined = true; s.dipped = false; s.p = 0; s.cloud = 0; FX.splash(s.fx, this.SX, this.WL, this.PENS[s.color], .3); FX.sound("thud"); this.ganar(["mojado"], this.SX, this.WL - 40); FX.pop(s.fx, this.SX, this.WL - 90, "¡Se mojó el punto!"); },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), m = this.MARK[s.color], SX = this.SX, SW = this.SWD, W = this.WL;
+    if(!s.held) s.dyV += (s.dy - s.dyV)*Math.min(1, h*10);
+    if(s.dipped && !s.ruined && !s.held) s.p = Math.min(1, s.p + h*.28);
+    if(s.ruined) s.cloud = Math.min(1, s.cloud + h*.5);
+    if(s.p >= 1 && !s.ruined){ s.done.add(s.color); const ids = []; if(s.color === "negro") ids.push("negro"); if(s.done.size >= 2) ids.push("otro"); if(ids.length) this.ganar(ids, SX, 120); }
+    const yb = this.YB + s.dyV, top = yb - this.LEN, front = yb - s.p*(this.LEN - 30), Y0 = yb - 30;
+    const mojado = s.dipped || s.p > 0 || s.dyV > 28;
+    Juego.fondo(0);
+    // tira de papel colgada de una pinza
+    ctx.fillStyle = "#FBF9F2"; ctx.fillRect(SX - SW/2, top, SW, this.LEN); ctx.strokeStyle = "#B7C6CC"; ctx.lineWidth = 1.5; ctx.strokeRect(SX - SW/2, top, SW, this.LEN);
+    ctx.fillStyle = "#333"; roundRect(ctx, SX - SW/2 - 4, top - 14, SW + 8, 16, 4); ctx.fill(); ctx.fillStyle = "#C1FF00"; ctx.fillRect(SX - SW/2 + 2, top - 5, SW - 4, 2);
+    if(mojado){ const wt = Math.min(W, s.p > 0 ? front : W); ctx.fillStyle = "rgba(160,205,225,.55)"; ctx.fillRect(SX - SW/2, Math.min(yb, wt), SW, Math.max(0, yb - Math.min(yb, wt))); }
+    const q = Math.max(0, (s.p*(this.LEN - 30) - 30)/(this.LEN - 60));
+    if(!s.ruined){
+      if(q <= 0 || m.parts.length){ const a = q > 0 ? Math.max(0, 1 - q*6) : 1; if(a > 0){ ctx.globalAlpha = a; ctx.fillStyle = this.PENS[s.color]; ctx.beginPath(); ctx.arc(SX, Y0, 5, 0, 7); ctx.fill(); ctx.globalAlpha = 1; } }
+      if(q > 0) m.parts.forEach(([color, speed])=>{ const y = Y0 - q*(this.LEN - 60)*speed; ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(SX, y, SW/2 - 3, 6, 0, 0, 7); ctx.fill(); });
+    }
+    // vaso con agua
+    const G = {x:SX - 90, y:300, w:180, h:112};
+    const wg = ctx.createLinearGradient(0, W, 0, G.y + G.h); wg.addColorStop(0, "rgba(170,215,235,.6)"); wg.addColorStop(1, "rgba(110,175,215,.75)");
+    ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(G.x + 4, W); for(let x = G.x + 4; x <= G.x + G.w - 4; x += 8) ctx.lineTo(x, W + Math.sin(fx.t*2 + x*.08)*1.1); ctx.lineTo(G.x + G.w - 4, G.y + G.h - 2); ctx.lineTo(G.x + 4, G.y + G.h - 2); ctx.closePath(); ctx.fill();
+    if(s.ruined && s.cloud > 0){ m.parts.forEach(([color], i)=>{ ctx.fillStyle = color; ctx.globalAlpha = .55*s.cloud; ctx.beginPath(); ctx.arc(SX - 24 + i*16, W + 12 + (i%2)*10, 10 + s.cloud*10, 0, 7); ctx.fill(); }); ctx.globalAlpha = 1; }
+    ctx.strokeStyle = "rgba(95,125,135,.95)"; ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(G.x, G.y); ctx.lineTo(G.x + 6, G.y + G.h); ctx.lineTo(G.x + G.w - 6, G.y + G.h); ctx.lineTo(G.x + G.w, G.y); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, G.x + 12, G.y + 12, 6, G.h - 30, 3); ctx.fill();
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = "rgba(24,99,220,.5)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(G.x + 8, W); ctx.lineTo(G.x + G.w - 8, W); ctx.stroke(); ctx.setLineDash([]);
+    // marcadores
+    Object.keys(this.PENS).forEach((k, i)=>{ const x = 70 + i*52, sel = k === s.color;
+      ctx.save(); ctx.translate(x, 372); ctx.rotate(-.2); ctx.fillStyle = "#fff"; roundRect(ctx, -9, -34, 18, 56, 6); ctx.fill(); ctx.strokeStyle = sel ? "#C1FF00" : "rgba(0,0,0,.5)"; ctx.lineWidth = sel ? 3.5 : 1.5; ctx.stroke();
+      ctx.fillStyle = this.PENS[k]; roundRect(ctx, -9, -34, 18, 22, 6); ctx.fill(); ctx.beginPath(); ctx.moveTo(-5, 22); ctx.lineTo(5, 22); ctx.lineTo(0, 34); ctx.closePath(); ctx.fill(); ctx.restore();
+      Juego.pastilla(this.MARK[k].label.replace("Marcador ", ""), x, 412, {px:10, pad:12, h:18, bg:sel ? "#C1FF00" : "#000", fg:sel ? "#000" : "#C1FF00"}); });
+    if(s.p >= 1 && !s.ruined){ Juego.pastilla(`${m.parts.length} colores separados`, 520, 110, {px:12, pad:22, h:26, bg:"#C1FF00", fg:"#000"}); m.parts.forEach(([color], i)=>{ ctx.fillStyle = color; ctx.beginPath(); ctx.arc(468 + i*28, 144, 10, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.4)"; ctx.lineWidth = 1.5; ctx.stroke(); }); }
+    Juego.pastilla(m.label, 330, 22, {px:12, pad:22, h:26});
+    const msg = s.ruined ? "¡Se mojó el punto! La tinta se disolvió en el agua" : s.dipped ? (s.p >= 1 ? "¡Colores separados!" : "El agua está subiendo…") : "Baja la tira al agua, sin mojar el punto ↓";
+    Juego.pastilla(msg, 330, 52, {px:12, pad:24, h:26, bg:s.ruined ? "#E03131" : "#1863DC", fg:"#fff"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra la tira hacia el agua", 500, 250);
+    this.finFotograma();
+  }
+};
+
+/* ---------- Apaga la vela sin soplar (piloto) ---------- */
+const expVelaV3 = {...expVela, ...RetosMix, ...JuegoMix,
+  name:expVela.name + " (piloto 2)",
+  cardDesc:"Arrastra un vaso sobre la vela encendida y mide cuánto tarda en apagarse. Compara tamaños y cumple tres retos con estrellas.",
+  CX:300, PY:380, ESC:.5,
+  RETOS:[
+    {id:"apaga", txt:"Tapa la vela con un vaso y mira cómo se apaga", ok:"Se apagó cuando se acabó el oxígeno del vaso", pista:"Arrastra un vaso de la derecha sobre la vela y espera."},
+    {id:"compara", txt:"Apaga la vela con el vaso chico y con el grande y compara los tiempos", ok:"Más aire atrapado = la flama dura más", pista:"Prueba el vaso chico, deja que se apague, y luego el grande."},
+    {id:"salva", txt:"Salva la flama: levanta el vaso antes de que se apague", ok:"Con aire nuevo la flama sigue viva", pista:"Cuando baje el oxígeno, arrastra el vaso hacia arriba."}
+  ],
+  dims(k){ const v = this.SIZES[k].vol; return {w:40 + v*22, h:90 + v*40}; },
+  shelf(k){ const i = Object.keys(this.SIZES).indexOf(k); return {x:[505, 555, 610][i], y:392}; },
+  mount(){
+    const s = this.st = {size:null, o2:100, covered:false, out:false, tested:new Set(), held:null, lift:null, t:0, times:{}, moved:false, o2p:{}};
+    Object.keys(this.SIZES).forEach(k=> ctrlBtn(this.SIZES[k].label, "", ()=>this.cubrir(k)));
+    ctrlBtn("🔓 Sin vaso (control)", "ghost", ()=>{ this.destapar(); this.encender(); });
+    ctrlBtn("🔥 Encender de nuevo", "ghost", ()=>this.encender());
+    this.iniciarJuego();
+    this._off = bindDrag({
+      hit:(p, sc)=>{
+        if(s.covered){ const d = this.dims(s.size), top = this.PY - 8 - d.h; if(Math.abs(p.x - this.CX) <= d.w/2 + 8 && p.y >= top - 10 && p.y <= this.PY) return {t:"lift", x0:p.x, y0:p.y}; }
+        if(s.out && !s.covered && Math.abs(p.x - this.CX) <= 30 && Math.abs(p.y - (this.PY - 90)) <= 34) return {t:"wick"};
+        for(const k of Object.keys(this.SIZES)){ const b = this.shelf(k), d = this.dims(k); if(Math.abs(p.x - b.x) <= Math.max(d.w*this.ESC/2 + 8, 22*sc) && p.y >= b.y - d.h*this.ESC - 10 && p.y <= b.y + 8) return {t:"vaso", k}; } return null; },
+      down:(o, p)=>{ s.moved = true; if(o.t === "wick") this.encender(); else if(o.t === "lift") s.lift = {x:p.x, y:p.y, dx:0, dy:0}; else s.held = {k:o.k, x:p.x, y:p.y}; },
+      move:(o, p)=>{ if(o.t === "vaso" && s.held){ s.held.x = p.x; s.held.y = p.y; } else if(o.t === "lift" && s.lift){ s.lift.dx = p.x - o.x0; s.lift.dy = p.y - o.y0; } },
+      up:(o)=>{ if(o.t === "vaso"){ const h = s.held; s.held = null; if(!h) return; if(Math.abs(h.x - this.CX) < 100 && h.y > 130 && h.y < 410) this.cubrir(h.k); else FX.dust(s.fx, h.x, Math.min(h.y, 400)); }
+        else if(o.t === "lift"){ const l = s.lift; s.lift = null; if(l && Math.hypot(l.dx, l.dy) > 50) this.destapar(); } }
+    });
+    loop(dt=>this.tick(dt));
+  },
+  unmount(){ this.salirJuego(); },
+  cubrir(k){ const s = this.st; s.size = k; s.o2 = 100; s.covered = true; s.out = false; s.t = 0; s.moved = true; s.tested.add(k); if(s.tested.size >= 2) markRan(); FX.dust(s.fx, this.CX, this.PY - 8); FX.sound("thud"); },
+  destapar(){
+    const s = this.st; if(!s.covered){ s.moved = true; return; }
+    const salva = !s.out && s.o2 < 60; s.covered = false; s.o2 = 100; s.t = 0; s.moved = true; FX.dust(s.fx, this.CX, this.PY - 8);
+    if(salva) this.ganar(["salva"], this.CX, this.PY - 120);
+  },
+  encender(){ const s = this.st; if(s.covered){ FX.pop(s.fx, this.CX, 200, "Levanta el vaso para renovar el aire"); return; } if(s.out){ s.out = false; s.o2 = 100; FX.sound("tick"); } s.moved = true; },
+  tick(dt){
+    const s = this.st, h = Math.min(dt, .05), fx = this.fotograma(h), CX = this.CX, PY = this.PY;
+    if(s.covered && !s.out){
+      const vol = this.SIZES[s.size].vol; s.o2 -= h*18/vol; s.t += h;
+      if(s.o2 <= 15){ s.out = true; s.times[s.size] = s.t; FX.sound("boom"); fx.shake = Math.max(fx.shake, 1.5);
+        if(!FX.rm) for(let i = 0; i < 10; i++) FX.add(fx, {k:"d", x:CX + (Math.random()-.5)*10, y:PY - 80 - Math.random()*20, vx:(Math.random()-.5)*14, vy:-30 - Math.random()*30, g:-25, life:1.6, r:5 + Math.random()*5, c:"rgba(110,110,110,.45)"});
+        const ids = ["apaga"]; if(s.times.chico && s.times.grande) ids.push("compara"); this.ganar(ids, CX, PY - 130); }
+    }
+    Juego.fondo(396);
+    // plato y vela
+    ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.beginPath(); ctx.ellipse(CX, PY + 8, 96, 8, 0, 0, 7); ctx.fill();
+    const pg = ctx.createLinearGradient(0, PY - 8, 0, PY + 12); pg.addColorStop(0, "#F1F5F6"); pg.addColorStop(1, "#C2CFD3"); ctx.fillStyle = pg; ctx.beginPath(); ctx.ellipse(CX, PY, 92, 14, 0, 0, 7); ctx.fill(); ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 1.5; ctx.stroke();
+    const cg = ctx.createLinearGradient(CX - 8, 0, CX + 8, 0); cg.addColorStop(0, "#E8D9B0"); cg.addColorStop(.5, "#FFF6DC"); cg.addColorStop(1, "#D2BF8C"); ctx.fillStyle = cg; ctx.fillRect(CX - 8, PY - 70, 16, 70);
+    ctx.fillStyle = "#333"; ctx.fillRect(CX - 1, PY - 78, 2, 8);
+    if(!s.out){ const fl = 22 + Math.sin(fx.t*14)*3 + Math.sin(fx.t*23)*1.5, fy = PY - 78 - fl/2, dim = s.covered ? Math.max(.45, (s.o2 - 15)/85) : 1;
+      const gl = ctx.createRadialGradient(CX, fy, 4, CX, fy, 70); gl.addColorStop(0, `rgba(255,200,80,${.35*dim})`); gl.addColorStop(1, "rgba(255,200,80,0)"); ctx.fillStyle = gl; ctx.fillRect(CX - 80, fy - 80, 160, 160);
+      const fg = ctx.createLinearGradient(0, fy + fl/2, 0, fy - fl/2); fg.addColorStop(0, "#3B7DD8"); fg.addColorStop(.25, "#FFD54A"); fg.addColorStop(1, "#FF8A1F"); ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(CX, fy, 7*(.7 + .3*dim), fl/2*(.5 + .5*dim), 0, 0, 7); ctx.fill(); }
+    else { ctx.fillStyle = "#666"; ctx.beginPath(); ctx.arc(CX, PY - 80, 3, 0, 7); ctx.fill(); }
+    // vaso que cubre
+    if(s.covered){
+      const d = this.dims(s.size), gx = CX - d.w/2 + (s.lift ? s.lift.dx : 0), gy = PY - 8 - d.h + (s.lift ? Math.min(0, s.lift.dy) : 0), n = Math.round(40*Math.max(0, s.o2 - 15)/85);
+      ctx.fillStyle = "rgba(190,225,240,.18)"; ctx.fillRect(gx, gy, d.w, d.h);
+      const key = s.size; if(!s.o2p[key]){ s.o2p[key] = Array.from({length:40}, ()=>({a:Math.random(), b:Math.random()})); }
+      ctx.fillStyle = "rgba(24,99,220,.8)"; for(let i = 0; i < n; i++){ const q = s.o2p[key][i]; ctx.beginPath(); ctx.arc(gx + 8 + q.a*(d.w - 16) + Math.sin(fx.t*2 + i)*2, gy + 8 + q.b*(d.h - 16) + Math.cos(fx.t*2 + i)*2, 2.2, 0, 7); ctx.fill(); }
+      ctx.strokeStyle = s.lift ? "#C1FF00" : "rgba(95,125,135,.95)"; ctx.lineWidth = s.lift ? 4 : 3; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(gx, gy + d.h); ctx.lineTo(gx, gy); ctx.lineTo(gx + d.w, gy); ctx.lineTo(gx + d.w, gy + d.h); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,.4)"; roundRect(ctx, gx + 6, gy + 8, 5, d.h - 20, 2); ctx.fill();
+      ctx.fillStyle = "#000"; ctx.font = F(11, 800); ctx.textAlign = "center"; ctx.fillText(this.SIZES[s.size].label, gx + d.w/2, gy - 8);
+    }
+    // medidor de oxígeno
+    const gx0 = 40, gy0 = 110, gh = 220; ctx.fillStyle = "#fff"; roundRect(ctx, gx0, gy0, 26, gh, 8); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 2; roundRect(ctx, gx0, gy0, 26, gh, 8); ctx.stroke();
+    const oh = Math.max(0, s.o2)/100*(gh - 6); const og = ctx.createLinearGradient(0, gy0 + gh, 0, gy0); og.addColorStop(0, "#1863DC"); og.addColorStop(1, "#6AA0FF"); ctx.fillStyle = og; ctx.fillRect(gx0 + 3, gy0 + gh - 3 - oh, 20, oh);
+    const ly = gy0 + gh - 3 - 15/100*(gh - 6); ctx.strokeStyle = "#E03131"; ctx.lineWidth = 3; ctx.setLineDash([5, 3]); ctx.beginPath(); ctx.moveTo(gx0 - 6, ly); ctx.lineTo(gx0 + 32, ly); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "#E03131"; ctx.font = F(10, 700); ctx.textAlign = "left"; ctx.fillText("se apaga", gx0 + 34, ly + 4*uiScale);
+    Juego.pastilla("O₂", gx0 + 13, gy0 - 14, {px:12, pad:16, h:22});
+    // vasos en el estante
+    Object.keys(this.SIZES).forEach(k=>{ if(s.held && s.held.k === k) return; const b = this.shelf(k), d = this.dims(k), w = d.w*this.ESC, hh = d.h*this.ESC;
+      ctx.fillStyle = "rgba(190,225,240,.35)"; ctx.fillRect(b.x - w/2, b.y - hh, w, hh); ctx.strokeStyle = "rgba(95,125,135,.95)"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(b.x - w/2, b.y); ctx.lineTo(b.x - w/2, b.y - hh); ctx.lineTo(b.x + w/2, b.y - hh); ctx.lineTo(b.x + w/2, b.y); ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.font = F(10, 700); ctx.textAlign = "center"; ctx.fillText(k === "chico" ? "Chico" : k === "mediano" ? "Mediano" : "Grande", b.x, 416); });
+    if(s.held){ const d = this.dims(s.held.k), w = d.w*.8, hh = d.h*.8; ctx.fillStyle = "rgba(190,225,240,.3)"; ctx.fillRect(s.held.x - w/2, s.held.y - hh/2, w, hh); ctx.strokeStyle = "#C1FF00"; ctx.lineWidth = 3.5; ctx.strokeRect(s.held.x - w/2, s.held.y - hh/2, w, hh);
+      if(Math.abs(s.held.x - CX) < 100 && s.held.y > 130 && s.held.y < 410){ ctx.setLineDash([8, 6]); ctx.strokeRect(CX - 100, PY - 270, 200, 285); ctx.setLineDash([]); } }
+    // tiempos y estado
+    Juego.pastilla(s.covered ? `${this.SIZES[s.size].label} · O₂ restante ≈ ${Math.max(0, s.o2).toFixed(0)} %` : "Sin tapar (control): la flama no se apaga", 330, 22, {px:12, pad:22, h:26});
+    if(s.covered) Juego.pastilla(`⏱ ${s.t.toFixed(1)} s`, 330, 52, {px:12, pad:20, h:24, bg:"#1863DC", fg:"#fff"});
+    Object.keys(s.times).forEach((k, i)=> Juego.pastilla(`${this.SIZES[k].label}: ${s.times[k].toFixed(1)} s`, 540, 80 + i*28, {px:11, pad:16, h:22, bg:"#C1FF00", fg:"#000"}));
+    if(s.out) Juego.pastilla("¡Se apagó! Faltó oxígeno.", 330, 84, {px:13, pad:26, h:28, bg:"#E03131", fg:"#fff"});
+    if(!s.moved) Juego.ayuda(fx, "👆 Arrastra un vaso sobre la vela", 330, 130);
+    this.finFotograma();
+  }
+};
+
+const QUIMICA_EXPS = [PILOTO ? expReactermV3 : expReacterm, PILOTO ? expElectroV3 : expElectro, PILOTO ? expSolubV3 : expSolub, PILOTO ? expOxidaV3 : expOxida, PILOTO ? expFermentoV3 : expFermento, PILOTO ? expCromatoV3 : expCromato, PILOTO ? expVelaV3 : expVela];
 /* ---------- SALUD ---------- */
 const expCorazon = {
   id:"corazon", name:"Tu corazón después de hacer ejercicio", icon:"❤️", cat:"salud",
@@ -7374,7 +8181,7 @@ const ELECTRONICA_EXPS = [expCircuitos, expOhm, expCapacitor, expLED, expElectro
 
 /* ================= home ================= */
 const EXPS = [
-  expDensV3, expInerciaV3, expPendV3, expLava, expPH, expReac,
+  expDensV3, expInerciaV3, expPendV3, PILOTO ? expLavaV3 : expLava, PILOTO ? expPHV3 : expPH, expReac,
   ...FISICA_EXPS, ...QUIMICA_EXPS, ...SALUD_EXPS, ...AMBIENTE_EXPS, ...ELECTRONICA_EXPS
 ];
 const CATS = [
