@@ -303,7 +303,14 @@
   .pd-mat-body li.ok{background:#E6F4EA; color:var(--ok); font-weight:700;}
   .pd-mat-body .pd-sci{background:#F4F7FB; border-radius:10px; padding:10px 14px;} .pd-mat-body .pd-sci p{margin:6px 0;}
   .pd-mat-body .pd-aula{background:#FFF7E0; border-radius:10px; padding:10px 14px; color:#4A3500;}
-  .pd-mat-body .btn{margin-top:14px;}
+  .pd-mat-body .btn{margin-top:0;}
+  .pd-acc{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;}
+  .pd-mat-body .pd-obj{background:#EAF1FD; border-radius:10px; padding:10px 14px; color:var(--navy); font-weight:500;}
+  .pd-mat-body ul.pd-vocab li{background:#F4F7FB;}
+  .pd-mat-body .pd-err{background:#FDECEC; border-radius:10px; padding:6px 14px;} .pd-mat-body .pd-err p{margin:8px 0;}
+  .pd-mat-body .pd-ana{background:#F0F4F5; border-radius:10px; padding:10px 14px; font-style:italic;}
+  .pd-mat-body .pd-din{background:#E6F4EA; border-radius:10px; padding:10px 14px;}
+  .pd-mat-body ol.pd-cierre{padding-left:22px;} .pd-mat-body ol.pd-cierre li{background:none; padding:6px 0 6px 4px;} .pd-mat-body .pd-resp{color:var(--ok); font-size:.85rem;}
   .pd-toast{position:fixed; left:50%; transform:translateX(-50%); bottom:24px; background:var(--navy); color:#fff; padding:12px 18px; border-radius:12px; z-index:1005; max-width:90vw; font-size:.9rem; font-weight:700;}
   .pd-manual{display:block; width:100%; margin-top:8px; padding:8px; font-size:14px; border-radius:6px; border:none;}
   .pd-modal-card{background:var(--navy); color:#fff; border-radius:18px; padding:28px 22px; max-width:680px; width:100%; text-align:center; max-height:92vh; overflow:auto;}
@@ -3482,6 +3489,565 @@ function pdExplicaciones(box, D){
   });
   if(lista.length > pdExplN){ const m = pe("button","btn ghost mt","Ver más explicaciones"); m.onclick = ()=>{ pdExplN += 30; pdRender(); }; box.appendChild(m); }
 }
+const GUIA = {
+  dens:{
+    obj:"Que el alumno explique por qué cada objeto o líquido se queda en el nivel que le toca usando la idea de densidad (masa entre volumen), y no el peso.",
+    vocab:[["Densidad","Cuánta masa hay en cada unidad de volumen (g/mL). Un material denso «pesa más» en el mismo tamaño."],["Flotar y hundirse","Un objeto se hunde si es más denso que el líquido y flota si es menos denso."],["Miscible","Que se mezcla. El agua y el aceite no son miscibles: no se mezclan."]],
+    abre:["Si tuvieras que apostar: ¿una piedra grande se hunde más rápido que una pequeña? ¿Por qué?","¿Por qué crees que un barco de metal flota si un clavo de metal se hunde?"],
+    mira:["Fíjense en que el orden en que se vierten los líquidos no cambia el resultado final.","Observen la uva: no se hunde ni flota, se queda a media torre. Pregunten qué dos densidades tiene en medio."],
+    error:[["«Lo más pesado siempre se hunde.»","Lo que importa es la densidad, no el peso total. Un tronco enorme flota y una moneda diminuta se hunde: compara masa en el mismo volumen."]],
+    analogia:"Imagina un estacionamiento con carriles por «pesadez»: cada coche se acomoda en el carril de los vehículos igual de pesados que él. Cada objeto busca el nivel donde el líquido de abajo es más denso que él y el de arriba menos denso.",
+    dinamica:"Torre humana: reparte cuatro «líquidos» (alumnos con tarjetas de miel, agua, aceite, alcohol). Que se formen en fila de abajo hacia arriba según su densidad. Después entrega objetos y cada uno debe decir entre qué dos líquidos se detiene.",
+    cierre:[["¿Qué líquido queda abajo y cuál arriba?","La miel (≈1.42 g/mL) abajo y el alcohol (≈0.79 g/mL) arriba."],["¿Dónde se queda la moneda y por qué?","Hasta el fondo: es más densa (≈7.5 g/mL) que todos los líquidos."],["Si cambio el orden de vertido, ¿cambia la torre?","No: el resultado depende de la densidad, no del orden."]],
+    extra:"Que midan la densidad real de dos líquidos con una taza medidora y una báscula de cocina (masa ÷ volumen) y la comparen con la del simulador."
+  },
+  inercia:{
+    obj:"Que el alumno aplique la primera ley de Newton para predecir cuándo la moneda cae dentro del vaso y cuándo se va con la tarjeta.",
+    vocab:[["Inercia","La tendencia de un objeto a conservar su estado de reposo o de movimiento."],["Fricción","Fuerza entre dos superficies que se tocan y se oponen al deslizamiento."],["Variable","Lo que cambias en un experimento (aquí, la rapidez del tirón) para ver qué pasa."]],
+    abre:["Si jalas el mantel muy rápido, ¿se caen los platos? ¿Y si lo jalas despacio?","Cuando el camión frena de golpe, ¿hacia dónde se va tu cuerpo?"],
+    mira:["Comparen un tirón lento con uno rápido: la única diferencia es el tiempo que la fricción actúa sobre la moneda.","Noten que, sin la tarjeta, nada sostiene a la moneda y la gravedad la baja al vaso."],
+    error:[["«La moneda cae porque algo la empuja hacia abajo.»","La gravedad siempre actúa; lo nuevo es que la inercia evita que la moneda se vaya con la tarjeta cuando el tirón es rápido."]],
+    analogia:"Es como sacar el mantel de golpe de una mesa con vajilla: el tirón es tan corto que la fricción casi no alcanza a mover los platos.",
+    dinamica:"En parejas con vaso, tarjeta y moneda real: cada pareja prueba tres rapideces (lenta, media, rápida) y anota dónde cae la moneda. Compartan la tabla en el pizarrón.",
+    cierre:[["¿Con qué tirón cae la moneda en el vaso?","Con el tirón rápido (a partir de la rapidez 4 en el simulador)."],["¿Qué fuerza intenta arrastrar la moneda?","La fricción entre la tarjeta y la moneda."],["¿Qué relación tiene con el cinturón de seguridad?","Al frenar, el cuerpo conserva su movimiento por inercia; el cinturón lo detiene."]],
+    extra:"Apilen varias monedas sobre la tarjeta o cambien la superficie (papel, tela): ¿qué cambia en la rapidez necesaria? Discutan por qué."
+  },
+  pend:{
+    obj:"Que el alumno descubra que el periodo de un péndulo depende del largo del hilo y no de la masa, y que lo use para calcular la gravedad.",
+    vocab:[["Periodo (T)","Tiempo que tarda el péndulo en hacer una oscilación completa (ida y vuelta)."],["Oscilación","Un movimiento completo de ida y vuelta."],["Gravedad (g)","Aceleración con la que la Tierra atrae a los objetos: ≈ 9.81 m/s²."]],
+    abre:["¿Un columpio con un adulto va más rápido o más lento que con un niño?","¿Cómo medirías con un cronómetro el tiempo de UNA oscilación con poco error?"],
+    mira:["Cambien solo la masa y observen que el ritmo no cambia.","Acorten el hilo a la mitad: el periodo no baja a la mitad, baja con la raíz cuadrada del largo."],
+    error:[["«Un péndulo más pesado oscila más lento.»","La masa no aparece en T = 2π√(L/g): cambia el largo, no el peso. Es la misma idea de que todos los cuerpos caen igual."]],
+    analogia:"Es un reloj de pared: el largo del péndulo marca el ritmo, por eso para atrasar un reloj de péndulo se alarga el hilo y para adelantarlo se acorta.",
+    dinamica:"Cada equipo cronometra 10 oscilaciones y divide entre 10. Comparen cuántos resultados difieren por el «dedo humano» y discutan por qué conviene medir 10 y no 1.",
+    cierre:[["¿De qué depende el periodo?","Del largo del hilo (y de g), no de la masa."],["¿Por qué se cronometran 10 oscilaciones?","Para repartir el error de reacción de la persona entre muchas oscilaciones."],["¿Qué fórmula te da la gravedad?","g = 4π²L / T²."]],
+    extra:"Grafiquen T² contra L con tres largos distintos: sale una recta cuya pendiente es 4π²/g."
+  },
+  lava:{
+    obj:"Que el alumno explique con densidad y gases por qué las gotas de colorante suben, se vuelven a hundir y por qué el ciclo se detiene.",
+    vocab:[["Densidad","Masa por unidad de volumen: el aceite (≈0.92 g/mL) es menos denso que el agua (≈1.00 g/mL)."],["Reacción efervescente","Reacción que libera gas; aquí el CO₂ de la pastilla al tocar el agua."],["Inmiscible","Que no se mezcla: el agua y el aceite se separan."]],
+    abre:["¿Por qué el agua y el aceite no se mezclan?","Si suelto una pastilla efervescente, ¿en qué parte del frasco reaccionará?"],
+    mira:["Noten que la pastilla solo burbujea cuando llega al agua del fondo.","Sigan una gota: sube con su burbuja, llega arriba, suelta el gas y vuelve a caer."],
+    error:[["«El colorante tiñe el aceite.»","El colorante está en el agua; las gotas de agua coloreada suben pegadas a burbujas pero no se mezclan con el aceite."]],
+    analogia:"Cada burbuja es como un globo atado a una piedra: juntos flotan, pero cuando el globo se suelta arriba, la piedra vuelve a caer.",
+    dinamica:"Representación: un alumno es la gota, dos son burbujas que lo toman de los brazos y suben hasta el «techo». Arriba se sueltan y la gota «cae». Repitan hasta que se agote la «pastilla» (el reloj del maestro).",
+    cierre:[["¿Por qué sube la gota?","Gota + burbuja de CO₂ es menos densa que el aceite."],["¿Por qué vuelve a caer?","Arriba la burbuja se escapa y la gota, sola, es más densa que el aceite."],["¿Por qué se detiene la «lava»?","Porque la pastilla se agota y deja de producir gas."]],
+    extra:"Hagan el experimento real con media pastilla y una entera y cronometren cuánto burbujea cada una."
+  },
+  ph:{
+    obj:"Que el alumno clasifique sustancias comunes de más ácidas a más básicas usando un indicador natural y la escala de pH.",
+    vocab:[["pH","Escala de 0 a 14 que mide qué tan ácida o básica es una sustancia."],["Ácido / base","Por debajo de 7 es ácido; 7 es neutro; por encima de 7 es básico."],["Indicador","Sustancia que cambia de color según el pH, como el té de col morada."]],
+    abre:["Sin probar nada: ¿cuál crees que es más ácido, el limón o el refresco de cola?","¿Qué otros líquidos de tu casa crees que son básicos?"],
+    mira:["Observen que cada sustancia deja el té en un color distinto y que el color depende del pH, no del color original del líquido.","Fíjense que el vinagre y el refresco quedan casi en el mismo lugar de la escala."],
+    error:[["«Si algo es ácido, quema o sabe feo.»","El refresco es casi tan ácido como el vinagre, pero el azúcar tapa el sabor."],["«Las bases no son peligrosas.»","Las bases fuertes (como el amoniaco) también pueden dañar la piel; no se prueban."]],
+    analogia:"El té de col morada es como un semáforo químico: rojizo con ácidos, morado en neutro, azul-verde con bases.",
+    dinamica:"Escalera humana: cada alumno recibe una sustancia con su pH. Que se ordenen en fila de 1 a 14 sin hablar y luego verifiquen contra la escala del simulador.",
+    cierre:[["¿Cuál de las tres de la predicción es la más ácida?","El jugo de limón (pH ≈ 2.0)."],["¿De qué color queda el té con jabón o amoniaco?","Verdoso (pH 10 a 11.5)."],["¿Qué sustancia es casi neutra?","El agua pura (pH 7) y, casi, la leche (6.6)."]],
+    extra:"Neutralización: gota a gota, bicarbonato sobre el vinagre teñido hasta regresar al morado."
+  },
+  reac:{
+    obj:"Que el alumno calcule su tiempo de reacción a partir de la distancia que cae una regla y relacione la física con el sistema nervioso.",
+    vocab:[["Tiempo de reacción","Tiempo entre que ves un estímulo y logras responder con el músculo."],["Caída libre","Movimiento solo por gravedad: d = ½·g·t²."],["Impulso nervioso","Señal eléctrica que viaja por los nervios del ojo al cerebro y al brazo."]],
+    abre:["¿Cuántos centímetros crees que alcanzas a dejar caer una regla antes de atraparla?","¿Qué pasa en tu cuerpo desde que ves algo hasta que mueves la mano?"],
+    mira:["Hagan varios intentos: comparen el primero con el quinto.","Noten que atrapar la regla más abajo significa tardar más en reaccionar."],
+    error:[["«Si reacciono rápido, la regla cae menos porque yo la jalo.»","La regla cae por gravedad; solo la distancia a la que la atrapas cambia con tu tiempo de reacción."]],
+    analogia:"Es como un cronómetro hecho con gravedad: cada centímetro de caída equivale a una fracción de segundo.",
+    dinamica:"Concurso por parejas: uno suelta, otro atrapa. Cada quien registra 5 intentos; en el pizarrón se arma el histograma del grupo.",
+    cierre:[["¿Qué relación hay entre la distancia y el tiempo?","d = ½·g·t²: a más distancia, más tiempo de reacción."],["¿Por qué hacer varios intentos?","Para promediar y ver la variación."],["¿Por qué importa esto al conducir?","A 80 km/h el coche recorre unos 4.5 m antes de que el pie llegue al freno."]],
+    extra:"Comparen estímulo visual con auditivo (soltar al oír «ya»): ¿cuál es más rápido?"
+  },
+  tiro:{
+    obj:"Que el alumno explique por qué 45° da el mayor alcance y por qué 30° y 60° llegan al mismo punto, separando el movimiento horizontal y vertical.",
+    vocab:[["Proyectil","Objeto lanzado que se mueve solo por su impulso inicial y la gravedad."],["Componentes","Las dos partes de la velocidad: horizontal y vertical."],["Alcance","Distancia horizontal que recorre el proyectil."]],
+    abre:["Al lanzar una pelota, ¿con qué ángulo llega más lejos?","Si disparas hacia arriba y hacia adelante a la vez, ¿qué movimiento domina?"],
+    mira:["Observen que la velocidad horizontal no cambia durante todo el vuelo.","Comparen las marcas de 30° y 60°: caen casi en el mismo lugar."],
+    error:[["«A mayor ángulo, siempre llega más lejos.»","Después de 45° el alcance baja, porque se gasta más rapidez en subir que en avanzar."]],
+    analogia:"Es como repartir una moneda entre subir y avanzar: con 45° das la mitad a cada una y el alcance es máximo.",
+    dinamica:"Lanzamiento con pelota de papel en el patio: marquen con gises 3 ángulos con el mismo esfuerzo y midan con cinta.",
+    cierre:[["¿Con qué ángulo llega más lejos?","Con 45° (sin contar el aire)."],["¿Por qué 30° y 60° caen casi igual?","Porque sen(2θ) es igual para ambos: sen 60° = sen 120°."],["¿Qué fuerza actúa en el aire?","Solo la gravedad (ignorando la fricción del aire)."]],
+    extra:"Piensen cómo cambia el resultado desde una mesa alta o con viento."
+  },
+  rampa:{
+    obj:"Que el alumno relacione el ángulo en que un objeto empieza a resbalar con la fricción del material.",
+    vocab:[["Fricción","Fuerza que se opone al deslizamiento entre dos superficies."],["Coeficiente de fricción (μ)","Número que dice cuánta fricción hay entre dos materiales."],["Componente del peso","La parte del peso que empuja al objeto a lo largo de la rampa."]],
+    abre:["¿Por qué un trineo resbala en nieve y no en pasto?","¿Qué crees que resbala primero, un hielo o un trozo de madera?"],
+    mira:["Inclinen la rampa lentamente y anoten el ángulo exacto donde cada material empieza a deslizarse.","Noten que los materiales «resbalosos» necesitan muy poca inclinación."],
+    error:[["«Un objeto más pesado resbala primero.»","El ángulo de inicio no depende del peso: depende solo del coeficiente de fricción (tan θ = μ)."]],
+    analogia:"Es como una competencia entre la gravedad (que jala hacia abajo) y la fricción (que agarra al objeto); resbala cuando la gravedad gana.",
+    dinamica:"Con un libro como rampa, cada equipo prueba tres objetos y mide el ángulo con transportador; luego ordenan los materiales del más al menos resbaloso.",
+    cierre:[["¿Qué material resbala primero?","El hielo sobre metal (≈3°)."],["¿Qué relación hay entre ángulo y fricción?","tan(ángulo) = μ."],["¿Cambia el ángulo si el objeto es más pesado?","No."]],
+    extra:"Cambien la superficie de la rampa (papel, tela) y comparen."
+  },
+  resorte:{
+    obj:"Que el alumno encuentre la proporcionalidad entre la fuerza (peso colgado) y el estiramiento del resorte (ley de Hooke).",
+    vocab:[["Ley de Hooke","F = k·x: la fuerza es proporcional al estiramiento."],["Constante del resorte (k)","Qué tan rígido es el resorte."],["Límite elástico","Hasta dónde el resorte regresa a su forma original."]],
+    abre:["Si cuelgo el doble de peso, ¿el resorte se estira el doble?","¿Qué pasaría si un resorte se estira demasiado?"],
+    mira:["Cada pesa nueva coloca un punto en la gráfica.","Los puntos forman una línea recta que parte del origen."],
+    error:[["«Si estiro más, la relación sigue siendo recta siempre.»","Solo dentro del límite elástico; más allá, el resorte se deforma para siempre."]],
+    analogia:"Es una báscula de baño: cuanto más peso, más se comprime el resorte de adentro, siempre en la misma proporción.",
+    dinamica:"Cada equipo cuelga 1, 2, 3 y 4 monedas de una liga, mide con regla y grafica. Comparen si sale una recta.",
+    cierre:[["¿Cuánto se estira con 100 g y con 200 g?","2 cm y 4 cm (el doble)."],["¿Qué forma tiene la gráfica?","Una línea recta que pasa por el origen."],["¿Qué significa la pendiente?","La rigidez: cuántos cm se estira por cada gramo."]],
+    extra:"Predice cuánto estira 300 g y compruébalo: deben salir 6 cm."
+  },
+  choque:{
+    obj:"Que el alumno prediga el resultado de choques entre canicas usando la conservación del momento y la energía.",
+    vocab:[["Momento (cantidad de movimiento)","Masa × velocidad; se conserva en los choques."],["Choque elástico","Choque en el que también se conserva la energía de movimiento."],["Conservación","Algo que no se pierde: solo pasa de un objeto a otro."]],
+    abre:["Si una canica choca contra una fila de cuatro, ¿cuántas salen disparadas?","¿Qué pasa en un juego de billar cuando la bola golpea de frente a otra?"],
+    mira:["Observen que las canicas del medio casi no se mueven.","Prueben con dos canicas lanzadas juntas."],
+    error:[["«Si lanzo una canica, todas se mueven un poco.»","En el choque ideal solo sale la última, con casi la misma velocidad de la primera."]],
+    analogia:"Es como pasar un cubo con agua en una cadena de personas: el movimiento pasa de mano en mano sin que nadie se mueva de su lugar.",
+    dinamica:"Fila de alumnos con las manos en los hombros: uno empuja desde un extremo y todos sienten el impulso, pero solo el último se tambalea hacia afuera.",
+    cierre:[["¿Qué canica sale disparada?","Solo la última."],["¿Qué pasa con dos canicas?","Salen dos."],["¿Qué se conserva?","El momento y la energía cinética."]],
+    extra:"Cambien una canica por otra de distinta masa y predigan."
+  },
+  presion:{
+    obj:"Que el alumno explique con la presión del aire por qué el huevo entra en la botella al enfriarse el aire.",
+    vocab:[["Presión","Fuerza por unidad de área; el aire empuja en todas direcciones."],["Presión atmosférica","La presión del aire que nos rodea."],["Diferencia de presión","Cuando un lado empuja más que el otro, hay movimiento."]],
+    abre:["¿Qué sientes si cubres una jeringa vacía con el dedo y jalas el émbolo?","Si enfrío un gas dentro de un recipiente cerrado, ¿qué le pasa a su presión?"],
+    mira:["Noten que el huevo no es «succionado»: lo empuja el aire de afuera.","Observen cómo la presión interior baja cuando se enfría el aire."],
+    error:[["«El vacío chupa el huevo.»","No hay jalón del vacío: la presión de afuera es mayor y empuja el huevo hacia adentro."]],
+    analogia:"Es como una multitud afuera de una puerta con poca gente adentro: la gente de afuera empuja hacia adentro.",
+    dinamica:"Dibujen con flechas las presiones de adentro y de afuera. Quien tenga más flechas gana el empuje.",
+    cierre:[["¿Por qué entra el huevo?","El aire de adentro se enfría, baja su presión y el de afuera lo empuja."],["¿El huevo es succionado?","No: lo empuja el aire exterior."],["¿Qué pasó con las moléculas de aire?","Se acercaron y chocan menos contra las paredes."]],
+    extra:"Pregunten qué pasaría si la botella fuera más pequeña o más grande."
+  },
+  palanca:{
+    obj:"Que el alumno equilibre una palanca aplicando la regla masa × distancia = masa × distancia.",
+    vocab:[["Torque","Capacidad de girar: masa × distancia al apoyo."],["Punto de apoyo","El punto sobre el que gira la palanca."],["Equilibrio","Cuando los torques de ambos lados son iguales."]],
+    abre:["¿Por qué un niño liviano puede equilibrar a un adulto en un sube y baja?","¿Dónde conviene empujar una puerta para abrirla más fácil?"],
+    mira:["Muevan el peso más lejos del apoyo y noten que gira más fácil.","Comprueben que 30 kg a 2 m se equilibran con 60 kg a 1 m."],
+    error:[["«Solo importa cuánto pesa cada lado.»","También importa la distancia al apoyo: el producto de ambos es el que cuenta."]],
+    analogia:"Es abrir una puerta empujando lejos o cerca de las bisagras: lejos cuesta menos esfuerzo.",
+    dinamica:"Sube y baja humano o regla en un lápiz: busquen cómo equilibrar con monedas de distinta cantidad y registren las distancias.",
+    cierre:[["¿A qué distancia equilibra 60 kg si 30 kg están a 2 m?","A 1 m."],["¿Qué es el torque?","Masa × distancia al apoyo."],["¿Dónde se pone más fácil?","Más lejos del apoyo."]],
+    extra:"Equilibren tres pesos distintos a la vez."
+  },
+  luz:{
+    obj:"Que el alumno explique que el lápiz «se ve doblado» porque la luz cambia de dirección al pasar del agua al aire (refracción).",
+    vocab:[["Refracción","Cambio de dirección de la luz al pasar de un medio a otro."],["Índice de refracción","Cuánto frena un material la luz (agua ≈ 1.33)."],["Medio","El material por donde viaja la luz: aire, agua, vidrio."]],
+    abre:["¿Por qué una alberca se ve menos profunda de lo que es?","¿Cómo crees que se ve un lápiz metido en un vaso con agua?"],
+    mira:["Cambien el ángulo con que miran el lápiz y vean que el «doblez» cambia.","Noten que el lápiz real no se dobla: lo que cambia es el camino de la luz."],
+    error:[["«El agua rompe o dobla el lápiz.»","El lápiz sigue recto; lo que se dobla es el recorrido de la luz que llega a tu ojo."]],
+    analogia:"Es como un coche que pasa del asfalto al lodo en diagonal: una rueda frena antes y el coche gira un poco.",
+    dinamica:"Con vasos de agua y popotes, cada alumno dibuja lo que ve y lo compara con el de un compañero.",
+    cierre:[["¿Por qué parece doblado?","La luz se refracta al pasar del agua al aire."],["¿La luz va más rápida en agua o en aire?","En aire."],["¿Qué ley describe el ángulo?","La ley de Snell."]],
+    extra:"Midan el ángulo de entrada y salida con transportador y comparen."
+  },
+  onda:{
+    obj:"Que el alumno reconozca la resonancia como una onda estacionaria con nodos y antinodos en frecuencias específicas.",
+    vocab:[["Frecuencia","Cuántas oscilaciones hay por segundo (Hz)."],["Nodo / antinodo","Nodo: punto quieto. Antinodo: punto de máxima vibración."],["Resonancia","Cuando la frecuencia coincide con un modo natural y la vibración crece."]],
+    abre:["¿Por qué una copa puede romperse con un sonido agudo?","Si sacudes una cuerda cada vez más rápido, ¿sube siempre la vibración?"],
+    mira:["Cambien lentamente la frecuencia y busquen los momentos de mayor vibración.","Cuenten cuántas «panzas» (antinodos) hay en cada modo."],
+    error:[["«A mayor frecuencia, mayor amplitud siempre.»","Solo en las frecuencias naturales (resonancia) la amplitud es grande."]],
+    analogia:"Es empujar a alguien en un columpio: solo cuando empujas al ritmo justo, el columpio sube mucho.",
+    dinamica:"Con un resorte o cuerda larga entre dos personas, busquen uno, dos y tres antinodos y dibújenlos.",
+    cierre:[["¿Cómo se llama el fenómeno?","Resonancia (onda estacionaria)."],["¿Qué son los nodos?","Puntos que casi no se mueven."],["¿Qué cambia entre un modo y el siguiente?","El número de antinodos y la frecuencia."]],
+    extra:"Predice la frecuencia del segundo modo a partir de la del primero (el doble)."
+  },
+  reacterm:{
+    obj:"Que el alumno distinga reacciones que absorben calor (endotérmicas) de las que lo liberan (exotérmicas) midiendo el cambio de temperatura.",
+    vocab:[["Endotérmica","Reacción o proceso que toma calor del entorno y lo enfría."],["Exotérmica","Reacción que libera calor y calienta el entorno."],["Energía química","Energía guardada en los enlaces de las sustancias."]],
+    abre:["Si mezclas bicarbonato con vinagre y tocas el vaso, ¿lo sentirás frío, tibio o igual?","¿De dónde sale el calor cuando se enciende una fogata?"],
+    mira:["Comparen el termómetro con la línea de temperatura ambiente (22 °C).","Noten que cada mezcla lleva el termómetro a un lugar distinto: unas bajan y otra sube."],
+    error:[["«Toda mezcla que se calienta o enfría es una reacción química.»","Sal con hielo enfría por un cambio físico (baja el punto de congelación del hielo), no por una reacción química; úsala para hablar de ambos tipos de cambio."],["«El vaso se enfría porque «sale» el frío.»","El frío no es una sustancia: la mezcla toma calor de tu mano y del vaso."]],
+    analogia:"Una reacción endotérmica es como una esponja que absorbe calor del ambiente; una exotérmica es una estufa que lo regala.",
+    dinamica:"Tres estaciones con vasos desechables: bicarbonato + vinagre y sal + hielo (con termómetro). Cada equipo anota la temperatura antes y después y la clasifica. La cal viva + agua solo se muestra en el simulador: es cáustica y no se maneja en clase.",
+    cierre:[["¿Qué le pasa al termómetro con bicarbonato y vinagre?","Baja unos 4 °C (endotérmica)."],["¿Qué mezcla sube mucho la temperatura?","Cal viva con agua (+35 °C, exotérmica)."],["¿Cuál enfría más de las dos frías?","Sal con hielo (−8 °C)."]],
+    extra:"Hagan una tabla con las tres mezclas y su cambio de temperatura y piensen en un uso cotidiano de cada tipo (compresas frías y calientes)."
+  },
+  electro:{
+    obj:"Que el alumno explique con la fórmula 2H₂O → 2H₂ + O₂ por qué sale el doble de gas en el cátodo que en el ánodo.",
+    vocab:[["Electrólisis","Usar electricidad para romper una sustancia en otras."],["Cátodo / ánodo","Cátodo (−): sale hidrógeno. Ánodo (+): sale oxígeno."],["Electrolito","Sal disuelta que ayuda a que el agua conduzca la corriente."]],
+    abre:["El agua pura casi no conduce la electricidad; ¿por qué se le agrega sal?","Si el agua es H₂O, ¿cuántos gases distintos crees que se pueden obtener de ella?"],
+    mira:["Suban el voltaje y comparen la rapidez con que se llenan los tubos.","Vean cómo se mantiene la razón H₂ : O₂ cercana a 2 : 1."],
+    error:[["«El agua se «consume» en la electrólisis.»","Se descompone: los átomos pasan de agua a dos gases nuevos."],["«Sale el mismo volumen en los dos lados.»","La fórmula del agua tiene el doble de hidrógeno que de oxígeno."]],
+    analogia:"Es como desarmar un juguete de bloques: los mismos bloques (átomos) quedan, pero en piezas separadas.",
+    dinamica:"Con tarjetas de átomos (H en azul, O en rojo): dos moléculas de agua se «descomponen» al pasar la «corriente» y los alumnos se reagrupan en dos grupos de H₂ y uno de O₂.",
+    cierre:[["¿Qué gas sale en el cátodo y cuánto?","Hidrógeno, el doble que de oxígeno."],["¿Para qué sirve la sal?","Para que el agua conduzca mejor la corriente."],["¿Qué pasa si aumento el voltaje?","Sale más gas por segundo."]],
+    extra:"En el experimento real hagan el montaje con pila de 9 V y minas de lápiz; el hidrógeno es inflamable y, con agua salada, en el ánodo puede salir también un poco de cloro: poco tiempo, lugar ventilado y con supervisión de un adulto."
+  },
+  solub:{
+    obj:"Que el alumno descubra que la cantidad de azúcar que se disuelve aumenta con la temperatura y reconozca el punto de saturación.",
+    vocab:[["Solubilidad","Máxima cantidad de soluto que se disuelve en cierta cantidad de disolvente."],["Saturación","Cuando ya no se disuelve más y el sobrante queda en el fondo."],["Soluto / disolvente","Soluto: lo que se disuelve (azúcar). Disolvente: donde se disuelve (agua)."]],
+    abre:["¿En qué vaso se disuelve más azúcar, uno con agua fría o uno con agua caliente?","¿Por qué el té helado se prepara caliente?"],
+    mira:["Cuenten cuántas cucharadas se disuelven antes de que aparezca «¡SATURADO!».","Suban la temperatura sin vaciar el vaso: mira cómo desaparece el sobrante."],
+    error:[["«El azúcar desaparece.»","Sigue ahí, repartida entre las moléculas de agua; si evaporas el agua, regresa."],["«Más agitación disuelve más azúcar.»","Agitar disuelve más rápido, pero la cantidad máxima la fija la temperatura."]],
+    analogia:"El agua es un autobús con asientos para el azúcar: el calor agranda el autobús y caben más.",
+    dinamica:"Dos vasos con agua fría y tibia: cada equipo agrega cucharaditas hasta saturar y registra cuántas cupieron en cada uno.",
+    cierre:[["¿Con agua fría o caliente cabe más azúcar?","Con agua caliente."],["¿Qué es estar saturado?","Que ya no se puede disolver más soluto."],["¿Qué pasa al calentar un vaso saturado?","Se disuelve lo que sobraba."]],
+    extra:"Prueben con sal de mesa: la sal cambia mucho menos con la temperatura. ¿Por qué creen?"
+  },
+  oxida:{
+    obj:"Que el alumno explique por qué el hierro se oxida más con agua con sal y casi nada con aceite, usando la idea de oxígeno + agua.",
+    vocab:[["Oxidación","Reacción del hierro con oxígeno y agua que forma herrumbre."],["Herrumbre","El óxido de hierro rojizo que se forma."],["Electrolito","Sal disuelta que acelera la oxidación."]],
+    abre:["¿Qué se oxida más rápido: una reja en el campo o una cerca junto al mar?","¿Qué necesita el hierro para oxidarse?"],
+    mira:["Avancen los días y comparen los tres clavos al mismo tiempo.","Noten que el clavo en aceite casi no cambia aunque pasen 14 días."],
+    error:[["«El clavo se oxida por estar mojado nada más.»","Necesita también oxígeno; el aceite impide que lleguen el agua y el oxígeno."],["«El óxido es suciedad que se quita.»","Es una sustancia nueva que reemplaza al hierro."]],
+    analogia:"El aceite es como un impermeable para el clavo: no deja pasar ni agua ni oxígeno.",
+    dinamica:"Tres frascos con clavos nuevos: seco, con agua con sal y con aceite. Cada día, un alumno diferente toma la foto y la pega en un cartel.",
+    cierre:[["¿Cuál se oxida más rápido?","El clavo en agua con sal."],["¿Por qué casi no se oxida el del aceite?","El aceite bloquea el contacto con oxígeno y agua."],["¿Qué se necesita para oxidar?","Hierro, oxígeno y agua (con sal es más rápido)."]],
+    extra:"Pregunten cómo proteger una bicicleta: pintura, aceite, galvanizado."
+  },
+  fermento:{
+    obj:"Que el alumno relacione el gas que infla el globo con la fermentación de la levadura y vea cómo influyen el azúcar y la temperatura.",
+    vocab:[["Fermentación","Proceso en que la levadura transforma azúcar y libera CO₂ y alcohol."],["Levadura","Hongo microscópico vivo."],["Temperatura óptima","Donde la levadura trabaja mejor (≈ 37 °C en el simulador)."]],
+    abre:["¿Qué hace que el pan crezca?","¿Qué crees que pasa si pones levadura sin azúcar? ¿Y con agua hirviendo?"],
+    mira:["Cambien la temperatura y vean cómo cambia la rapidez del inflado.","Noten que a más de 50 °C ya no se infla: la levadura muere."],
+    error:[["«El globo se infla con aire que sale de la botella.»","Se infla con CO₂ nuevo que produce la levadura."],["«Más calor siempre acelera la fermentación.»","Hasta cierto punto; muy caliente mata a la levadura."]],
+    analogia:"La levadura son obreras que comen azúcar y «exhalan» CO₂; si hace mucho calor, se enferman.",
+    dinamica:"Cada equipo prepara una botella con distinta temperatura de agua (fría, tibia, caliente) y compara cuál infla más el globo en 15 minutos.",
+    cierre:[["¿Qué gas infla el globo?","Dióxido de carbono (CO₂)."],["¿Qué pasa sin azúcar?","No hay qué fermentar y el globo no se infla."],["¿Y con agua muy caliente?","Muere la levadura y tampoco se infla."]],
+    extra:"Relacionen con la masa del pan: ¿por qué se deja «reposar» en un lugar tibio?"
+  },
+  cromato:{
+    obj:"Que el alumno explique que una tinta es una mezcla de pigmentos que viajan a distinta velocidad por el papel mojado.",
+    vocab:[["Cromatografía","Técnica para separar mezclas según qué tan rápido viaja cada componente."],["Pigmento","Sustancia que da color."],["Solvente","El líquido que viaja por el papel (aquí, agua)."]],
+    abre:["¿El marcador negro es de un solo color?","Si el agua sube por el papel, ¿arrastrará igual a todos los colores?"],
+    mira:["Vean cómo el negro revela cuatro colores y el verde solo dos.","Bajen la tira demasiado: el punto se disuelve en el agua y no se separa."],
+    error:[["«El punto de tinta se queda del mismo color y solo se estira.»","Se separa en varios pigmentos que viajan a distinta velocidad."],["«Funciona con cualquier marcador y agua.»","Los marcadores permanentes no se disuelven en agua: usa marcadores lavables."]],
+    analogia:"Es una carrera: todos salen del mismo punto, pero cada color avanza a su velocidad.",
+    dinamica:"Cada equipo usa un marcador lavable distinto y compara las bandas en tiras de papel. Colguen todas en un tendedero y comparen patrones.",
+    cierre:[["¿Qué le pasa a la tinta negra?","Se separa en varios colores."],["¿Por qué viajan distinto?","Por su tamaño y su afinidad con el papel."],["¿Por qué no se moja el punto?","Para que la tinta suba por el papel y no se disuelva en el agua."]],
+    extra:"Prueben con hojas de espinaca o col morada trituradas: ¿qué pigmentos aparecen?"
+  },
+  vela:{
+    obj:"Que el alumno explique con el triángulo del fuego por qué la vela se apaga bajo el vaso y por qué un vaso grande tarda más.",
+    vocab:[["Combustión","Reacción de un combustible con oxígeno que libera calor y luz."],["Triángulo del fuego","Combustible, calor y oxígeno: sin uno, el fuego se apaga."],["Volumen","Espacio que ocupa el aire dentro del vaso."]],
+    abre:["¿Por qué sopla la gente las velas de cumpleaños?","Si tapo una vela con un vaso, ¿se apaga de inmediato o tarda?"],
+    mira:["Midan el tiempo con vaso chico, mediano y grande. El porcentaje de O₂ del simulador es relativo al aire inicial: sirve para comparar vasos, no es el valor real.","Levanten el vaso antes de que se apague y vean la llama recuperarse."],
+    error:[["«La vela se apaga porque se acaba TODO el oxígeno.»","Se apaga cuando baja cerca de 16 % (el aire tiene 21 %), porque la llama ya no puede sostenerse."],["«El vaso grande tiene más aire, así que la vela dura para siempre.»","Solo dura más; el oxígeno siempre baja."]],
+    analogia:"Es como una persona en un cuarto cerrado: no se queda sin aire de golpe, pero llega un punto en que ya no puede respirar bien.",
+    dinamica:"Con supervisión de un adulto por el fuego, cada equipo cronometra con un vaso y compara los tiempos en una tabla grupal.",
+    cierre:[["¿Qué vaso apaga más pronto la vela?","El más chico."],["¿Qué elementos forman el triángulo del fuego?","Combustible, calor y oxígeno."],["¿Cómo se puede salvar la llama?","Levantando el vaso para renovar el aire."]],
+    extra:"Prueben con dos velas a la vez: ¿se apagan al mismo tiempo?"
+  },
+  corazon:{
+    obj:"Que el alumno mida su pulso y explique por qué el corazón late más rápido con el ejercicio.",
+    vocab:[["Frecuencia cardiaca","Latidos por minuto (lpm)."],["Pulso","Latido que sientes en la muñeca o el cuello."],["Circulación","Recorrido de la sangre por el cuerpo."]],
+    abre:["¿Qué le pasa a tu corazón después de correr?","¿Cómo contarías tus latidos en 15 segundos?"],
+    mira:["Midan en reposo y luego de saltar durante un minuto.","Comparen reposo, caminar, correr y saltar."],
+    error:[["«Si el corazón late más rápido, está más débil.»","Late más rápido porque los músculos necesitan más oxígeno."],["«Todos tienen el mismo pulso en reposo.»","Varía de 60 a 100 lpm en adultos sanos."]],
+    analogia:"El corazón es una bomba de agua: si más personas necesitan agua, la bomba debe trabajar más rápido.",
+    dinamica:"En parejas, uno cuenta 15 segundos el pulso de otro (en reposo y tras 1 minuto de saltos) y multiplican por 4.",
+    cierre:[["¿Qué pasa con el pulso al hacer ejercicio?","Sube."],["¿Por qué?","Para llevar más oxígeno a los músculos."],["¿Cómo se estima el pulso por minuto?","Se cuentan 15 s y se multiplica por 4."]],
+    extra:"Midan cuánto tarda el pulso en volver a reposo después del ejercicio."
+  },
+  pulmones:{
+    obj:"Que el alumno compare la capacidad vital de un niño, un adulto y un atleta y la distinga del aire de una respiración normal.",
+    vocab:[["Capacidad vital","Todo el aire que puedes exhalar tras inhalar al máximo."],["Volumen corriente","El aire de una respiración normal en reposo (≈ 0.5 L)."],["Entrenamiento","Ejercicio que mejora la resistencia."]],
+    abre:["¿Cuánto aire crees que caben tus pulmones?","¿Quién crees que sopla un globo más grande, un niño o un atleta?"],
+    mira:["Comparen los litros que llenan el globo en cada perfil.","Vean la línea de una respiración normal en comparación."],
+    error:[["«Siempre respiramos con todo el pulmón.»","En reposo solo usamos una fracción pequeña."],["«El tamaño del cuerpo no influye.»","Edad, estatura y entrenamiento influyen."]],
+    analogia:"Los pulmones son una mochila: en reposo la llevas a medio llenar y puedes llenarla toda si hace falta.",
+    dinamica:"Cada alumno infla un globo propio de una sola exhalación y mide su circunferencia; se comparan en el grupo. Un globo por persona, por higiene.",
+    cierre:[["¿Cuánto es una respiración normal?","Unos 0.5 L."],["¿Quién tiene mayor capacidad?","El atleta (≈ 5.5 L en el simulador)."],["¿Cómo se mejora la capacidad?","Con ejercicio cardiovascular."]],
+    extra:"Investiguen por qué los buzos aprenden a respirar profundo."
+  },
+  ciego:{
+    obj:"Que el alumno ubique su punto ciego y explique por qué no se nota en la vida diaria.",
+    vocab:[["Retina","Capa del fondo del ojo que detecta la luz."],["Nervio óptico","Cable que lleva la imagen al cerebro."],["Punto ciego","Zona sin receptores donde sale el nervio óptico."]],
+    abre:["¿Crees que ves todo lo que está frente a ti?","¿Por qué no vemos un «hueco» en la imagen?"],
+    mira:["Cierren un ojo, miren la cruz y muevan el punto: pregunten cuándo desaparece.","Noten que el punto reaparece al seguir moviéndolo."],
+    error:[["«El punto ciego es una falla del ojo.»","Es normal: ahí sale el nervio óptico."],["«Se nota que falta algo.»","El cerebro rellena el hueco con lo que hay alrededor."]],
+    analogia:"Es como un fotógrafo con un pequeño parche sobre el lente: el programa de edición del cerebro lo disimula.",
+    dinamica:"En una hoja, cada alumno dibuja una cruz y un punto a 8 cm, y acerca o aleja la hoja hasta que el punto desaparezca.",
+    cierre:[["¿Qué hay en el punto ciego?","El lugar donde el nervio óptico sale del ojo; no hay receptores."],["¿Por qué no lo notamos?","Cada ojo cubre el del otro y el cerebro rellena."],["¿Con qué ojo se prueba?","Con un ojo cerrado, mirando fija la cruz con el otro."]],
+    extra:"Comparen con el punto ciego del otro ojo (el punto va hacia el otro lado)."
+  },
+  equilibrio:{
+    obj:"Que el alumno explique que el equilibrio usa vista, oído interno y receptores de músculos, y que sin vista cuesta más.",
+    vocab:[["Sistema vestibular","Órganos del oído interno que detectan movimiento y posición de la cabeza."],["Propiocepción","Sentido de dónde está tu cuerpo gracias a músculos y articulaciones."],["Equilibrio","Mantener el cuerpo estable."]],
+    abre:["¿Es más difícil pararte en un pie con los ojos abiertos o cerrados?","¿Qué sentidos crees que usas para no caerte?"],
+    mira:["Noten cuánto oscila el cuerpo con los ojos abiertos y con los cerrados.","Intenten seguir con la base el balanceo."],
+    error:[["«El equilibrio solo depende de las piernas.»","Depende también de la vista y del oído interno."],["«Los ojos cerrados no cambian nada.»","Se pierde una de las tres fuentes de información."]],
+    analogia:"El cerebro es un piloto que usa tres instrumentos: sin uno, el vuelo se vuelve más inestable.",
+    dinamica:"Cada alumno se para en un pie 20 s con ojos abiertos y luego cerrados, con un compañero cerca por seguridad, y compara tiempos.",
+    cierre:[["¿Qué es más difícil, con ojos abiertos o cerrados?","Cerrados."],["¿Qué órgano ayuda al equilibrio?","El oído interno."],["¿Qué otro sentido interviene?","La propiocepción."]],
+    extra:"Prueben sobre una superficie blanda (cojín): ¿qué cambia?"
+  },
+  memoria:{
+    obj:"Que el alumno estime su memoria de trabajo y pruebe estrategias para ampliarla, como agrupar dígitos.",
+    vocab:[["Memoria de trabajo","Memoria corta para retener información unos segundos."],["7 ± 2","Lo típico que se logra recordar, según George Miller."],["Agrupar (chunking)","Juntar datos en bloques para recordar más."]],
+    abre:["¿Cuántos dígitos de un teléfono recuerdas sin repetirlos?","¿Por qué los teléfonos se escriben en grupos?"],
+    mira:["Vean hasta cuántos dígitos llegan antes de fallar.","Prueben agrupando en bloques de 3."],
+    error:[["«Quien recuerda más tiene mejor inteligencia.»","Solo mide una capacidad corta y se puede entrenar."],["«Repetir mentalmente no sirve.»","Repetir y agrupar ayudan."]],
+    analogia:"La memoria de trabajo es una charola de mesero: caben pocas copas, pero si las agrupas en bandejitas, caben más.",
+    dinamica:"Competencia amistosa: el maestro dicta secuencias que crecen de 3 en 3 dígitos y quien falla se sienta.",
+    cierre:[["¿Cuánto es lo típico?","Entre 5 y 9 dígitos."],["¿Cómo se amplía?","Agrupando en bloques."],["¿Qué pasa si te distraes?","Se pierde la secuencia."]],
+    extra:"Prueben a recordar letras, palabras o colores en lugar de números."
+  },
+  fiebre:{
+    obj:"Que el alumno explique la fiebre como una respuesta de defensa del cuerpo controlada por el hipotálamo.",
+    vocab:[["Hipotálamo","Parte del cerebro que actúa como termostato."],["Patógeno","Microorganismo que causa enfermedad."],["Sistema inmune","Células y órganos que defienden al cuerpo."]],
+    abre:["¿Qué sientes cuando tienes fiebre?","¿Por qué crees que el cuerpo sube su temperatura al enfermarse?"],
+    mira:["Vean cómo sube la curva al detectar la infección.","Noten cómo baja cuando el sistema inmune controla el problema."],
+    error:[["«La fiebre es la enfermedad.»","Es un síntoma y una defensa: muchos microbios se reproducen peor a más temperatura."],["«Toda fiebre debe bajarse a cualquier precio.»","Si es alta, dura o es en un bebé, se consulta a un médico."]],
+    analogia:"Es como subir el termostato de la casa para incomodar a un intruso que prefiere el frío.",
+    dinamica:"Dibujen en el pizarrón la curva de temperatura en el tiempo y marquen etapas: detecta, sube, controla y recupera.",
+    cierre:[["¿Qué parte sube la temperatura?","El hipotálamo."],["¿Para qué sirve la fiebre?","Para dificultar a los microbios y activar a las defensas."],["¿Cuándo hay que ir al médico?","Si la fiebre es alta, larga, o en bebés."]],
+    extra:"Investiguen rangos de temperatura normal, febrícula y fiebre, y por qué axila, boca y oído dan lecturas distintas."
+  },
+  glucosa:{
+    obj:"Que el alumno compare cómo suben los niveles de glucosa tras comer alimentos con diferente índice glucémico.",
+    vocab:[["Glucosa","Azúcar que usa el cuerpo como energía."],["Índice glucémico","Qué tan rápido un alimento sube la glucosa en sangre."],["Fibra","Parte de los alimentos que se digiere lento."]],
+    abre:["¿Cuál sube más rápido tu azúcar: un refresco o un plato de avena?","¿Por qué sientes sueño después de comer mucha azúcar?"],
+    mira:["Comparen el pico y el tiempo en que ocurre en cada curva.","Noten que el refresco sube alto y rápido y los frijoles suave y lento."],
+    error:[["«Todos los carbohidratos suben igual.»","Los simples suben rápido; los complejos y con fibra, más despacio."],["«El azúcar es mala siempre.»","Es energía necesaria; importa cuánto y con qué se come."]],
+    analogia:"Es como leña: el refresco son papeles que se queman rápido; la avena y los frijoles, troncos que duran.",
+    dinamica:"Cada equipo investiga el índice glucémico aproximado de 5 alimentos que comen y los ordena de mayor a menor.",
+    cierre:[["¿Qué alimento sube más rápido?","El refresco."],["¿Cuál sube más suave?","Los frijoles."],["¿Cómo suavizar un azúcar simple?","Combinándolo con fibra."]],
+    extra:"Discutan por qué la fruta entera suaviza más que el jugo."
+  },
+  postura:{
+    obj:"Que el alumno relacione el ángulo del cuello con la carga que soporta y proponga hábitos para cuidarlo.",
+    vocab:[["Biomecánica","Estudio de fuerzas en el cuerpo."],["Brazo de palanca","Distancia entre una fuerza y su punto de giro."],["Vértebras cervicales","Huesos del cuello."]],
+    abre:["¿Cuánto crees que pesa tu cabeza?","¿Qué le pasa a tu cuello al mirar el celular mucho tiempo?"],
+    mira:["Muevan el ángulo y vean cómo sube la carga de 5 a 27 kg.","Noten dónde cambia el color de la barra."],
+    error:[["«La cabeza pesa lo mismo en cualquier postura.»","Pesa igual, pero con el cuello inclinado el músculo sufre una carga mayor."],["«Es solo comodidad.»","Muchas horas pueden causar dolor de cuello y espalda."]],
+    analogia:"Sostener una bolsa con el brazo estirado cansa más que pegada al cuerpo: lo mismo pasa con la cabeza.",
+    dinamica:"Foto de perfil con el celular a distintas alturas; midan el ángulo del cuello y propongan cómo corregirlo.",
+    cierre:[["¿Cuánto pesa la cabeza?","Unos 5 kg."],["¿Qué carga hay a 60°?","Hasta cerca de 27 kg (estimación)."],["¿Cómo reducirla?","Subir el celular a la altura de los ojos."]],
+    extra:"Diseñen carteles de recomendaciones para sus compañeros."
+  },
+  pupila:{
+    obj:"Que el alumno explique el reflejo pupilar: se contrae con mucha luz y se dilata en la oscuridad, sin controlarlo.",
+    vocab:[["Pupila","Agujero negro en el centro del ojo por donde entra la luz."],["Iris","Parte coloreada que abre o cierra la pupila."],["Reflejo","Respuesta automática e involuntaria."]],
+    abre:["¿Por qué cuesta ver al salir de un cine?","¿Puedes cambiar el tamaño de tu pupila pensándolo?"],
+    mira:["Muevan la luz y vean cómo cambia el tamaño de la pupila.","Noten la rapidez del cambio en las dos."],
+    error:[["«La pupila cambia de tamaño porque yo lo decido.»","Es un reflejo involuntario."],["«Solo se achica la pupila del ojo iluminado.»","Se achican las dos (reflejo consensual)."]],
+    analogia:"Es el diafragma de una cámara: se cierra con mucha luz y se abre con poca.",
+    dinamica:"En parejas, uno observa los ojos del otro al pasar de un cuarto con poca luz a otro con luz normal (nunca se apunta una linterna directo al ojo).",
+    cierre:[["¿Qué hace la pupila con mucha luz?","Se contrae."],["¿Y en la oscuridad?","Se dilata."],["¿Es voluntario?","No, es un reflejo."]],
+    extra:"Investiguen para qué se miden las pupilas en una revisión médica."
+  },
+  invernadero:{
+    obj:"Que el alumno explique que los gases de efecto invernadero retienen parte del calor y que una botella con más CO₂ se calienta más.",
+    vocab:[["Efecto invernadero","Retención de calor en la atmósfera por gases como CO₂, metano y vapor de agua."],["Radiación infrarroja","Calor que emiten los objetos calientes."],["Calentamiento global","Aumento de la temperatura media de la Tierra por el exceso de estos gases."]],
+    abre:["¿Por qué un coche cerrado al sol se calienta tanto por dentro?","¿Qué crees que pasa si agregamos más CO₂ a la atmósfera?"],
+    mira:["Avancen el tiempo y comparen las dos botellas.","Noten que la diferencia crece con los minutos de sol."],
+    error:[["«El efecto invernadero es malo en sí mismo.»","Sin él la Tierra sería demasiado fría; el problema es el exceso de gases."],["«La botella cerrada se calienta solo por el CO₂.»","También porque el aire caliente no se escapa; para comparar bien, ambas botellas deben estar cerradas y una con CO₂ extra (por ejemplo, con una tableta efervescente)."]],
+    analogia:"Los gases de efecto invernadero son como una cobija: no producen calor, pero lo guardan.",
+    dinamica:"Dos botellas iguales al sol con termómetro, una abierta y otra cerrada con un poco de aliento. Cada 5 minutos un equipo anota la temperatura.",
+    cierre:[["¿Qué botella se calienta más?","La cerrada con más CO₂."],["¿Por qué?","El CO₂ retiene parte del calor infrarrojo."],["¿Qué relación tiene con el cambio climático?","Más gases invernadero retienen más calor en la atmósfera."]],
+    extra:"Hagan una lista de actividades diarias que emiten CO₂ y propongan reducir una."
+  },
+  huella:{
+    obj:"Que el alumno compare emisiones de actividades cotidianas con una balanza y decida cuáles reducir primero.",
+    vocab:[["Huella de carbono","Cantidad de CO₂ (o equivalente) que genera una actividad."],["Emisión","Gas que se libera a la atmósfera."],["Combustible fósil","Petróleo, gas o carbón, cuya quema libera CO₂."]],
+    abre:["¿Qué crees que contamina más, un vuelo o cargar tu celular un mes?","¿Cómo medirías el impacto de tus actividades?"],
+    mira:["Pongan dos actividades en la balanza y vean cuál baja.","Comparen cuántas veces más pesa una que otra."],
+    error:[["«Lo pequeño no importa.»","Sumado a diario, cuenta; pero conviene priorizar lo que más pesa."],["«Los números son exactos.»","Son aproximaciones ilustrativas que cambian según país y fuente."]],
+    analogia:"Es como el presupuesto del gasto: hay gastos grandes y gastos hormiga; conviene empezar por lo grande.",
+    dinamica:"Cada equipo elige 5 actividades de su día, estima su huella y las ordena de mayor a menor en un cartel.",
+    cierre:[["¿Qué pesa más, un vuelo de 2 h o cargar el celular?","El vuelo (≈ 250 kg contra 1.5 kg)."],["¿Qué pesa más, la carne o manejar 20 km?","La carne de res (27 kg contra 4 kg)."],["¿Cuál sería fácil de reducir?","Discútanlo en el grupo."]],
+    extra:"Propongan un compromiso personal para reducir una actividad esta semana."
+  },
+  ciclo:{
+    obj:"Que el alumno describa evaporación, condensación y precipitación y explique por qué el colorante se queda abajo.",
+    vocab:[["Evaporación","El agua líquida pasa a vapor."],["Condensación","El vapor pasa a gotas al enfriarse."],["Precipitación","Caída del agua como lluvia."]],
+    abre:["¿De dónde viene el agua de la lluvia?","¿Qué pasa con un charco en un día soleado?"],
+    mira:["Vean cuánto tarda un ciclo con sol débil y con sol fuerte.","Observen que el color azul se queda abajo."],
+    error:[["«La lluvia es agua nueva.»","Es la misma agua que circula."],["«El colorante sube con el vapor.»","Solo el agua se evapora; el colorante queda abajo."]],
+    analogia:"Es una olla con tapa: el vapor sube, toca la tapa fría y cae en gotas.",
+    dinamica:"Bolsa resellable con agua y colorante pegada a una ventana soleada; revisen cada 20–30 minutos y dibujen.",
+    cierre:[["¿Qué pasa cuando el sol es más fuerte?","El ciclo es más rápido."],["¿Por qué el colorante no sube?","Solo el agua se evapora."],["¿Por qué el agua de mar se vuelve dulce al condensarse?","La sal se queda atrás."]],
+    extra:"Comparen una bolsa a la sombra con otra al sol."
+  },
+  filtro:{
+    obj:"Que el alumno vea que un filtro casero mejora el aspecto del agua pero no la hace potable.",
+    vocab:[["Filtración","Separar partículas sólidas de un líquido."],["Potable","Agua segura para beber."],["Carbón activado","Material poroso que atrapa olores y colores."]],
+    abre:["¿Si el agua se ve limpia, es segura para beber?","¿Qué capa atrapará las partículas más grandes?"],
+    mira:["Armen distintas combinaciones de capas y comparen la claridad.","Noten el aviso: «más clara no significa potable»."],
+    error:[["«Agua transparente es agua potable.»","No elimina bacterias, virus ni químicos disueltos."],["«Más capas siempre es mejor.»","Mejora el aspecto, pero hervir o desinfectar es lo que potabiliza."]],
+    analogia:"Es como un colador de cocina con varios tamaños de huecos: atrapa lo grande primero y lo fino después.",
+    dinamica:"Cada equipo arma un filtro en una botella invertida y compara el antes y después, sin beber nunca el agua.",
+    cierre:[["¿Qué capa atrapa lo más grande?","La grava."],["¿Para qué sirve el carbón?","Absorbe olores y colores."],["¿El agua filtrada se puede beber?","No sin hervirla o desinfectarla."]],
+    extra:"Investiguen cómo potabilizan el agua en su comunidad."
+  },
+  erosion:{
+    obj:"Que el alumno explique cómo la vegetación protege el suelo de la erosión.",
+    vocab:[["Erosión","Desgaste y arrastre del suelo por agua o viento."],["Cobertura vegetal","Plantas que cubren el suelo."],["Escurrimiento","Agua que corre sobre la superficie."]],
+    abre:["¿Por qué se llevan la tierra las lluvias fuertes en un cerro sin árboles?","¿Qué hacen las raíces?"],
+    mira:["Hagan llover varias veces y comparen lo perdido en cada charola.","Suban la intensidad y vean cómo crece la diferencia."],
+    error:[["«La lluvia suave no hace nada.»","Con el tiempo también erosiona suelos desnudos."],["«El pasto solo adorna.»","Sus raíces sujetan el suelo y sus hojas frenan las gotas."]],
+    analogia:"Las raíces son como una red de cuerdas que mantiene unida la tierra.",
+    dinamica:"Dos charolas inclinadas con la misma tierra, una desnuda y otra con pasto u hojas, regadas con una regadera igual. Midan el agua turbia.",
+    cierre:[["¿Qué charola pierde más suelo?","La desnuda."],["¿Qué protege el suelo?","Las hojas y las raíces."],["¿Qué consecuencia tiene la deforestación?","Pérdida de suelo fértil."]],
+    extra:"Piensen cómo proteger una ladera: terrazas, árboles, cobertura."
+  },
+  islacalor:{
+    obj:"Que el alumno relacione el color y el material de una superficie con cuánto calor absorbe.",
+    vocab:[["Albedo","Qué tanta luz refleja una superficie."],["Isla de calor","Zona urbana más caliente que el campo."],["Radiación solar","Energía que llega del sol."]],
+    abre:["¿Por qué los pies queman en el asfalto y no en el pasto?","¿Por qué una ciudad es más caliente que el campo?"],
+    mira:["Midan las superficies al mediodía con el termómetro.","Comparen cuánto se calienta cada una."],
+    error:[["«Todas las superficies se calientan igual.»","Las oscuras absorben más; el agua y el pasto se enfrían por evaporación."],["«Solo importa el sol.»","También importan materiales y vegetación."]],
+    analogia:"Una camiseta negra al sol se calienta más que una blanca: igual el asfalto.",
+    dinamica:"Con termómetro infrarrojo, midan al mediodía asfalto, concreto, pasto y tierra en su escuela.",
+    cierre:[["¿Qué superficie se calienta más?","El asfalto negro."],["¿Qué enfría?","Pasto y agua."],["¿Cómo reducir la isla de calor?","Con más árboles y techos claros."]],
+    extra:"Propongan pintar un techo de blanco: ¿qué cambiaría?"
+  },
+  biodegrada:{
+    obj:"Que el alumno compare el tiempo de descomposición de materiales y reflexione sobre los residuos.",
+    vocab:[["Biodegradable","Que los microorganismos pueden descomponer."],["Microplásticos","Fragmentos diminutos de plástico."],["Residuo","Material que se desecha."]],
+    abre:["¿Cuánto tarda en desaparecer una cáscara de plátano?","¿Y una botella de plástico?"],
+    mira:["Avancen el tiempo y vean quién se descompone primero.","Noten la diferencia de escalas: semanas contra siglos."],
+    error:[["«El plástico desaparece solo.»","No se degrada del todo: se rompe en microplásticos."],["«El metal no se descompone.»","Se oxida lentamente."]],
+    analogia:"Los microorganismos son comensales: una cáscara es un banquete; el plástico, una piedra imposible de morder.",
+    dinamica:"Cada equipo investiga 5 materiales de su casa y los ordena por tiempo de descomposición.",
+    cierre:[["¿Qué se descompone primero?","La cáscara de plátano."],["¿Qué tarda más?","La botella de plástico (~450 años)."],["¿Qué podemos hacer?","Reducir, reutilizar y reciclar."]],
+    extra:"Propongan un cambio concreto para reducir un residuo."
+  },
+  airepart:{
+    obj:"Que el alumno vea que el aire contiene partículas y que el tráfico aumenta su cantidad.",
+    vocab:[["Partículas suspendidas (PM)","Partículas pequeñas flotando en el aire."],["Hollín","Partículas oscuras de combustión."],["Calidad del aire","Qué tan limpio está el aire que respiramos."]],
+    abre:["¿Cómo sabes si el aire está contaminado?","¿Dónde crees que hay más partículas, en un parque o en un crucero?"],
+    mira:["Comparen las partículas atrapadas en cada zona.","Noten la diferencia entre bajo, medio y alto tráfico."],
+    error:[["«Si no se ve, no hay contaminación.»","Muchas partículas son demasiado pequeñas para verlas."],["«Solo los coches producen partículas.»","También polvo, polen y desgaste de llantas."]],
+    analogia:"La cinta pegajosa es una trampa que atrapa mosquitos de polvo.",
+    dinamica:"Pongan cintas adhesivas boca arriba en 2 o 3 lugares durante 24 horas y comparen con lupa.",
+    cierre:[["¿Dónde se atrapan más partículas?","En el crucero de tráfico alto."],["¿Por qué importa?","Pueden afectar la respiración."],["¿Cómo reducirlas?","Menos tráfico y más transporte limpio."]],
+    extra:"Comparen la cinta de una ventana cerrada con una abierta."
+  },
+  solar:{
+    obj:"Que el alumno relacione el ángulo del panel solar con la energía que recibe (cos θ).",
+    vocab:[["Ángulo de incidencia","Ángulo entre los rayos y la perpendicular al panel."],["Energía solar","Energía que llega del sol."],["cos(θ)","Factor que da la fracción de energía aprovechada."]],
+    abre:["¿Por qué los paneles se inclinan?","¿Cuándo recibe más luz una pared, de frente o de lado?"],
+    mira:["Inclinen el panel y vean cuántos rayos lo alcanzan.","Noten que a 60° queda solo la mitad."],
+    error:[["«El panel siempre recibe la misma luz.»","Depende del ángulo."],["«A 90° no recibe nada porque no hay sol.»","Los rayos son paralelos al panel y casi no lo iluminan."]],
+    analogia:"Una linterna de frente ilumina un círculo pequeño y brillante; de lado, uno grande y débil.",
+    dinamica:"Con linterna y hoja de papel, cambien el ángulo y observen el tamaño de la mancha de luz.",
+    cierre:[["¿Con qué ángulo se genera más?","Con 0° (perpendicular)."],["¿Cuánto a 60°?","50 %."],["¿Qué fórmula?","cos(ángulo)."]],
+    extra:"Calculen la energía a 30°, 45° y 75°."
+  },
+  reciclaje:{
+    obj:"Que el alumno clasifique residuos en orgánicos, reciclables y de manejo especial.",
+    vocab:[["Reciclaje","Convertir residuos en nuevos productos."],["Composta","Abono formado por residuos orgánicos."],["Residuo especial","Residuo tóxico que necesita acopio especial (pilas, focos, aceite)."]],
+    abre:["¿Qué haces con una pila gastada?","¿Qué se puede hacer con una cáscara?"],
+    mira:["Noten qué residuos no van a la basura normal.","Comparen sus respuestas con las de sus compañeros."],
+    error:[["«Todo lo que sea plástico se recicla.»","Depende del tipo y del lugar."],["«La pila se puede tirar a la basura.»","Contiene metales pesados y requiere acopio especial."]],
+    analogia:"Cada contenedor es una estación del tren: cada residuo debe llegar a la estación correcta.",
+    dinamica:"Juego de tres cubetas con tarjetas de residuos: por turnos, cada alumno clasifica y explica.",
+    cierre:[["¿A dónde va la pila?","A un punto especial de recolección."],["¿La cáscara?","Orgánico (composta)."],["¿El vidrio y el papel?","Reciclables."]],
+    extra:"Revisen su basura por un día y calculen cuántos especiales terminaron mal."
+  },
+  circuitos:{
+    obj:"Que el alumno explique por qué en serie se apagan todos los focos y en paralelo solo el que falla.",
+    vocab:[["Circuito en serie","Un solo camino para la corriente."],["Circuito en paralelo","Varios caminos independientes."],["Circuito abierto","Camino interrumpido: no hay corriente."]],
+    abre:["Cuando se funde un foco de una serie de luces, ¿por qué se apagan todos?","¿Cómo está conectada la luz de tu casa?"],
+    mira:["Fundan un foco en serie y en paralelo y comparen.","Sigan con el dedo el camino de la corriente."],
+    error:[["«La corriente se «gasta» en el primer foco.»","La corriente es la misma en toda la serie."],["«En paralelo los focos tienen menos energía.»","Cada foco recibe todo el voltaje."]],
+    analogia:"Serie: una sola carretera con un bloqueo detiene todo. Paralelo: varias calles; si una se cierra, las otras siguen.",
+    dinamica:"Cadena humana: alumnos de la mano son serie, si uno suelta se rompe la cadena. Luego dos filas independientes forman paralelo.",
+    cierre:[["¿Qué pasa en serie si un foco falla?","Se apagan todos."],["¿Y en paralelo?","El otro sigue encendido."],["¿Por qué las casas son en paralelo?","Para que un foco no apague todo."]],
+    extra:"Comparen el brillo de dos focos en serie y en paralelo con pila real."
+  },
+  ohm:{
+    obj:"Que el alumno aplique I = V / R para predecir cómo cambia la corriente al variar el voltaje o la resistencia.",
+    vocab:[["Voltaje (V)","Lo que empuja la corriente."],["Resistencia (Ω)","Lo que se opone a la corriente."],["Corriente (mA)","Cantidad de carga que fluye por segundo."]],
+    abre:["Si duplico el voltaje, ¿qué le pasa a la corriente?","¿Y si duplico la resistencia?"],
+    mira:["Cambien una perilla a la vez y observen el valor de I.","Noten el brillo del foco con diferentes corrientes."],
+    error:[["«Más resistencia da más corriente.»","Mientras más resistencia, menos corriente."],["«El voltaje y la corriente son lo mismo.»","El voltaje empuja; la corriente es el flujo."]],
+    analogia:"Es una manguera: el voltaje es la presión, la resistencia un estrechamiento y la corriente el agua.",
+    dinamica:"Con una pila y varias resistencias, midan la corriente con un multímetro y compárenla con el cálculo.",
+    cierre:[["¿Qué le pasa a I si V se duplica?","Se duplica."],["¿Y si R se duplica?","Baja a la mitad."],["¿Cuánto da 6 V con 200 Ω?","30 mA."]],
+    extra:"Calculen la resistencia para tener 20 mA con 9 V."
+  },
+  capacitor:{
+    obj:"Que el alumno describa la carga y descarga de un capacitor como curvas exponenciales.",
+    vocab:[["Capacitor","Componente que almacena carga."],["Constante de tiempo (τ)","Tiempo característico de carga (R × C)."],["Exponencial","Cambio rápido al principio y lento al final."]],
+    abre:["¿Un capacitor se llena de golpe o poco a poco?","¿Por qué un flash de cámara tarda en recargarse?"],
+    mira:["Cambien la resistencia y comparen el tiempo de carga.","Observen cómo la curva se aplana al llegar a 9 V."],
+    error:[["«El capacitor se carga linealmente.»","Es exponencial."],["«Más resistencia carga más rápido.»","Carga más lento."]],
+    analogia:"Es como llenar un vaso con la llave que se va cerrando: al principio entra mucha agua y al final muy poca.",
+    dinamica:"Con capacitor, resistencia y LED, carguen y descarguen y vean cuánto tarda en apagarse.",
+    cierre:[["¿Cómo sube el voltaje?","Rápido al principio y más lento después."],["¿Qué cambia con más resistencia?","Se carga y descarga más despacio."],["¿Y al desconectar?","Se descarga poco a poco."]],
+    extra:"Midan el tiempo de carga con dos resistencias distintas."
+  },
+  led:{
+    obj:"Que el alumno explique que el LED solo conduce en un sentido y reconozca ánodo y cátodo.",
+    vocab:[["Diodo","Componente que deja pasar corriente en un solo sentido."],["Ánodo (+) / Cátodo (−)","Ánodo: pata larga; cátodo: pata corta."],["Polaridad","Orientación positivo/negativo."]],
+    abre:["¿Por qué a veces un LED no enciende aunque esté conectado?","¿Cómo sabrías cuál es la pata positiva?"],
+    mira:["Volteen el LED y enciendan el circuito.","Vean la pata larga y la corta."],
+    error:[["«El LED enciende igual al revés.»","Bloquea la corriente al revés."],["«Se puede conectar directo a una pila.»","Necesita una resistencia para no quemarse; el simulador no la dibuja."]],
+    analogia:"Es una puerta giratoria de un solo sentido: deja pasar de un lado, no del otro.",
+    dinamica:"Con LED, resistencia de 220–330 Ω y pila, cada pareja prueba ambos sentidos.",
+    cierre:[["¿Enciende al revés?","No."],["¿Cuál pata es la positiva?","La larga (ánodo)."],["¿Por qué usar resistencia?","Para limitar la corriente."]],
+    extra:"Prueben con LED de distintos colores y comparen."
+  },
+  electroiman:{
+    obj:"Que el alumno relacione la fuerza del electroimán con el número de vueltas y la corriente.",
+    vocab:[["Electroimán","Imán creado con corriente en una bobina."],["Bobina","Alambre enrollado."],["Campo magnético","Zona donde actúa la fuerza magnética."]],
+    abre:["¿Cómo puede un imán «apagarse»?","¿Qué crees que pasa si enrollas más alambre?"],
+    mira:["Cambien vueltas y pilas y cuenten los clips.","Noten las líneas de campo."],
+    error:[["«Un clavo es un imán permanente.»","Solo se magnetiza mientras pasa corriente."],["«Más pilas siempre es seguro.»","Con mucha corriente el alambre se calienta."]],
+    analogia:"Cada vuelta suma su propio empujón magnético, como más personas jalando la misma cuerda.",
+    dinamica:"Enrollen alambre esmaltado en un clavo (60–100 vueltas), conecten a una pila y cuenten clips; repitan con más vueltas.",
+    cierre:[["¿Qué pasa al duplicar las vueltas?","Aumenta la fuerza."],["¿Y con más pilas?","También aumenta."],["¿Qué se puede apagar?","El imán: al cortar la corriente."]],
+    extra:"Midan la temperatura del alambre tras 30 segundos."
+  },
+  ldr:{
+    obj:"Que el alumno explique cómo un LDR cambia su resistencia con la luz y permite encender una lámpara automáticamente.",
+    vocab:[["LDR","Resistencia que depende de la luz."],["Sensor","Dispositivo que mide algo del entorno."],["Umbral","Valor a partir del cual el circuito decide."]],
+    abre:["¿Cómo sabe una lámpara de calle cuándo anochece?","¿La resistencia del LDR sube o baja con más luz?"],
+    mira:["Muevan la luz y vean cuándo se prende la lámpara.","Noten cómo cambia la resistencia."],
+    error:[["«Con más luz sube la resistencia.»","Con más luz baja."],["«La lámpara decide por la hora.»","Decide por la cantidad de luz."]],
+    analogia:"El LDR es una compuerta que se abre con la luz para dejar pasar corriente.",
+    dinamica:"Con un LDR y un multímetro, midan la resistencia con luz y tapándolo con la mano.",
+    cierre:[["¿Qué pasa con la resistencia de día?","Baja."],["¿Cuándo se enciende la lámpara?","Con poca luz."],["¿Dónde se usa?","Alumbrado público y relojes."]],
+    extra:"Diseñen un aviso que suene cuando entre luz."
+  },
+  transistor:{
+    obj:"Que el alumno vea el transistor como un interruptor controlado por una corriente pequeña.",
+    vocab:[["Base, colector, emisor","Las tres terminales."],["Umbral","Mínimo para que el transistor conduzca."],["Amplificación","Una señal pequeña controla una grande."]],
+    abre:["¿Cómo puede un microcontrolador encender un motor potente?","¿Qué hace falta para controlar mucho con poco?"],
+    mira:["Suban la base y vean cuándo gira el motor.","Comparen la corriente de base con la del motor."],
+    error:[["«El transistor da energía.»","No la crea: la toma de la batería."],["«Funciona con cualquier valor.»","Necesita pasar el umbral."]],
+    analogia:"Es abrir una llave grande con un pequeño giro.",
+    dinamica:"Con transistor NPN, resistencia en la base y motor o LED, busquen qué resistencia hace que abra.",
+    cierre:[["¿Qué controla la base?","Una corriente grande entre colector y emisor."],["¿Qué pasa debajo del umbral?","No conduce."],["¿Para qué sirve?","Para controlar cargas grandes."]],
+    extra:"Investiguen cuántos transistores tiene un celular."
+  },
+  bateria:{
+    obj:"Que el alumno calcule la duración de una batería con t = capacidad / consumo.",
+    vocab:[["mAh","Miliamperios-hora: capacidad de la batería."],["Consumo (mA)","Corriente que gasta el dispositivo."],["Duración","Tiempo estimado de uso."]],
+    abre:["¿De qué depende cuánto dura la batería del celular?","¿Cómo calcularías el tiempo?"],
+    mira:["Cambien capacidad y consumo y vean la duración.","Gasten la batería con el botón."],
+    error:[["«Más mAh siempre significa más tiempo.»","También importa el consumo."],["«El cálculo es exacto.»","Es una estimación con consumo constante."]],
+    analogia:"Es un tanque de gasolina: capacidad es el tanque y consumo los litros por hora.",
+    dinamica:"Busquen mAh de un dispositivo y estimen su duración; luego comparen con la realidad.",
+    cierre:[["¿Cuánto dura 2000 mAh a 400 mA?","5 horas."],["¿Y a 100 mA?","20 horas."],["¿Cómo alargarla?","Bajar el consumo."]],
+    extra:"Calculen cuánto durará una linterna con dos baterías distintas."
+  },
+  morse:{
+    obj:"Que el alumno comprenda que la información se codifica con pulsos y practique el código Morse.",
+    vocab:[["Punto y raya","Pulso corto y largo (3 veces)."],["Código","Reglas para convertir letras en señales."],["Señal digital","Información en estados encendido/apagado."]],
+    abre:["¿Cómo se pueden mandar mensajes con una linterna?","¿Qué significa SOS?"],
+    mira:["Observen la línea de pulsos.","Noten la pausa entre letras."],
+    error:[["«Morse solo sirve en barcos.»","Se usa en radioaficionados y emergencias."],["«Cada letra tiene un solo pulso.»","Tienen combinaciones."]],
+    analogia:"Es un alfabeto de luces: un lenguaje con solo dos sonidos.",
+    dinamica:"Por parejas, uno transmite su nombre con linterna y el otro lo descifra con una tabla.",
+    cierre:[["¿Qué letra es -.-.?","C."],["¿Cuánto dura una raya?","3 veces un punto."],["¿Cómo es SOS?","··· −−− ···."]],
+    extra:"Reto: transmitan y reciban SOS sin tabla."
+  },
+  generador:{
+    obj:"Que el alumno explique que un imán en movimiento cerca de una bobina genera corriente (ley de Faraday).",
+    vocab:[["Inducción","Producir corriente con un campo magnético que cambia."],["Galvanómetro","Medidor de corriente."],["Generador","Convierte movimiento en electricidad."]],
+    abre:["¿Cómo se produce electricidad en una presa?","¿Puede haber corriente sin pila?"],
+    mira:["Muevan el imán y vean la aguja.","Déjenlo quieto: la aguja vuelve a cero."],
+    error:[["«El imán produce corriente por sí mismo.»","Hace falta movimiento relativo."],["«La rapidez no importa.»","Más rápido, más voltaje."]],
+    analogia:"Es como empujar un columpio: solo hay efecto mientras hay movimiento.",
+    dinamica:"Con bobina de 200 vueltas, imán y multímetro sensible, muevan el imán adentro y afuera.",
+    cierre:[["¿Qué pasa con el imán quieto?","No hay corriente."],["¿Y si se mueve más rápido?","La aguja se mueve más."],["¿Dónde se aplica?","En turbinas y dinamos."]],
+    extra:"Investiguen cómo una bicicleta enciende su luz con un dínamo."
+  },
+};
+function pdImprimirFicha(e, cuerpo){
+  const w = window.open("", "_blank"); if(!w){ pdToast("Permite las ventanas emergentes para imprimir"); return; }
+  const c = cuerpo.cloneNode(true); c.querySelectorAll(".pd-acc").forEach(n=>n.remove());
+  const css = "body{font-family:Roboto,Arial,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#111;line-height:1.5;font-size:14px} h1{font-size:22px;margin:0 0 4px} .sub{color:#666;margin-bottom:12px} h6{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#1863DC;margin:16px 0 4px} ul,ol{margin:4px 0;padding-left:20px} li{margin:2px 0} .ok{font-weight:700} .pd-resp{color:#555;font-size:13px} .pd-obj,.pd-sci,.pd-aula,.pd-ana,.pd-din{border:1px solid #ddd;border-radius:6px;padding:8px 12px} .pd-mat-body ul.pd-vocab,.pd-mat-body ul{list-style:disc} @page{margin:14mm}";
+  w.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>' + e.name + '</title><style>' + css + '</style></head><body><h1>' + e.icon + " " + e.name + '</h1><div class="sub">' + e.sub + " · " + e.time + " · Laboratorio Virtual · Dimex</div>" + c.innerHTML + "</body></html>");
+  w.document.close(); w.focus(); setTimeout(()=>{ try{ w.print(); }catch(err){} }, 400);
+}
 const sinAcento = s=>String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 function pdMaterial(box){
   const guia = pe("div","pd-guia");
@@ -3499,16 +4065,31 @@ function pdMaterial(box){
     ttl.append(pe("span","ic",e.icon), pe("h5","",e.name));
     const der = pe("div","pd-row"); der.style.gap = "8px"; der.append(pe("span","pd-chip gris", nombres[e.cat] || e.cat), pe("span","pd-chip gris", e.time), pe("span","pd-chev","▾"));
     row.append(ttl, der); sm.appendChild(row); sm.appendChild(pe("small","", e.sub)); d.appendChild(sm);
-    const b = pe("div","pd-mat-body");
-    b.appendChild(pe("h6","","De qué trata")); b.appendChild(pe("p","",e.cardDesc));
+    const b = pe("div","pd-mat-body"), g = GUIA[e.id];
+    const sec = (t, n)=>{ b.appendChild(pe("h6","",t)); if(n) b.appendChild(n); };
+    const lista = (arr, cls)=>{ const ul = pe("ul", cls || ""); arr.forEach(x=>ul.appendChild(pe("li","",x))); return ul; };
+    if(g) sec("Objetivo de aprendizaje", pe("div","pd-obj", g.obj));
+    sec("De qué trata", pe("p","",e.cardDesc));
+    if(g){ const v = pe("ul","pd-vocab"); g.vocab.forEach(([t,x])=>{ const li = pe("li"); li.append(pe("b","",t + ": "), document.createTextNode(x)); v.appendChild(li); }); sec("Vocabulario clave", v); }
+    if(g) sec("Para abrir la clase", lista(g.abre));
     b.appendChild(pe("h6","","Pregunta para predecir")); b.appendChild(pe("p","",e.pred.q));
     if(e.pred.options){ const ul = pe("ul"); e.pred.options.forEach((o,i)=>{ ul.appendChild(pe("li", i === e.pred.correct ? "ok" : "", "ABCDE"[i] + ". " + o + (i === e.pred.correct ? "  ✔ correcta" : ""))); }); b.appendChild(ul); }
     let porque = e.pred.okText || ""; if(!porque && typeof e.pred.verdict === "function"){ try{ porque = e.pred.verdict(); }catch(err){} }
     if(porque){ b.appendChild(pe("h6","", e.pred.correct === null ? "Qué esperar" : "Por qué es la correcta")); b.appendChild(pe("p","",porque)); }
+    if(g) sec("Mientras observan: señálales", lista(g.mira));
     b.appendChild(pe("h6","","La ciencia detrás")); const sci = pe("div","pd-sci"); sci.innerHTML = (e.ciencia || "").replace(/<h5>[^<]*<\/h5>/, ""); b.appendChild(sci);
+    if(g){
+      const er = pe("div","pd-err"); g.error.forEach(([m,c])=>{ const p = pe("p"); p.append(pe("b","","Idea frecuente: "), document.createTextNode(m + " "), pe("b","","Cómo aclararla: "), document.createTextNode(c)); er.appendChild(p); }); sec("Ideas erróneas frecuentes", er);
+      sec("Una analogía para explicarlo", pe("div","pd-ana", g.analogia));
+      sec("Dinámica en grupo", pe("div","pd-din", g.dinamica));
+      const ci = pe("ol","pd-cierre"); g.cierre.forEach(([q,a2])=>{ const li = pe("li"); li.append(pe("b","",q), pe("br"), pe("span","pd-resp","Respuesta esperada: " + a2)); ci.appendChild(li); }); sec("Preguntas de cierre", ci);
+      sec("Reto extra", pe("p","",g.extra));
+    }
     b.appendChild(pe("h6","","Para hacer en el salón")); b.appendChild(pe("div","pd-aula", e.clase || ""));
+    const acc = pe("div","pd-acc");
     const go = pe("button","btn small","▶ Abrir este experimento"); go.onclick = ()=>{ $("panelMaestro").hidden = true; openExp(e); };
-    b.appendChild(go); d.appendChild(b);
+    const imp = pe("button","btn ghost small","🖨 Imprimir esta ficha"); imp.onclick = ()=>pdImprimirFicha(e, b);
+    acc.append(go, imp); b.appendChild(acc); d.appendChild(b);
     d.dataset.n = sinAcento(e.name + " " + e.sub);
     return d;
   });
