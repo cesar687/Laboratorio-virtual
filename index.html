@@ -210,6 +210,14 @@
   .teacher-form-card label{display:block; font-size:.8rem; font-weight:700; color:var(--navy); margin:14px 0 6px;}
   .teacher-form-card input, .teacher-form-card textarea{width:100%; padding:10px 12px; border:1px solid #DCE7EA; border-radius:8px; font-size:.9rem; font-family:inherit; box-sizing:border-box;}
   .teacher-form-card textarea{resize:vertical; min-height:70px;}
+  .teacher-form-card select{width:100%; padding:10px 12px; border:1px solid #DCE7EA; border-radius:8px; font-size:.9rem; font-family:inherit; box-sizing:border-box; background:#fff;}
+  .teacher-form-card .tf-hint{font-size:.74rem; color:var(--muted); margin:2px 0 0; font-weight:400;}
+  .teacher-form-card .tf-sec{font-size:.72rem; font-weight:800; letter-spacing:1.6px; text-transform:uppercase; color:var(--teal); margin:22px 0 2px; border-top:1px solid #E1E7EF; padding-top:14px;}
+  .tf-checks{display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:2px;}
+  .teacher-form-card .tf-checks label, .teacher-form-card label.tf-consent{display:inline-flex; align-items:flex-start; gap:8px; margin:0; font-weight:500; font-size:.85rem; color:var(--ink); line-height:1.4; cursor:pointer;}
+  .teacher-form-card .tf-checks input, .teacher-form-card label.tf-consent input{width:auto; margin-top:2px; flex-shrink:0; accent-color:var(--teal);}
+  .teacher-form-card label.tf-consent{display:flex; margin:12px 0 0;}
+  .teacher-form-card .tf-consent a{color:var(--teal); font-weight:700;}
   .teacher-form-actions{display:flex; gap:10px; margin-top:20px;}
   .teacher-form-msg{font-size:.85rem; margin-top:10px; min-height:1.2em;}
   /* ---------- ciclo POE: código de clase y explicación con tus palabras ---------- */
@@ -327,6 +335,21 @@
     <p style="text-align:left">Desarrollos de Ideas Mexicanas ("Dimex") usa el nombre y correo electrónico de tu cuenta de Google para llevar un registro de quién utiliza el Laboratorio Virtual y qué experimentos realiza. También guardamos lo que respondes en cada experimento: tus predicciones, las explicaciones que escribes con tus propias palabras, el tiempo que tardas y, si lo escribes, el código de tu clase. Todo se usa con fines educativos, para que tu maestro/a pueda acompañar tu aprendizaje. Esta información no se vende ni se comparte con terceros, y se usa solo con fines de seguimiento educativo. No escribas datos personales (teléfono, domicilio, etc.) en tus explicaciones. Si eres menor de edad, pide a tu maestro/a o a tu mamá, papá o tutor que te acompañe antes de iniciar sesión. Si quieres conocer, corregir o eliminar tus datos, escribe a <a href="mailto:cesar@dimexideas.com">cesar@dimexideas.com</a>.</p>
     <div class="mt" style="text-align:center; margin-top:16px;">
       <button class="btn small" id="closePrivacy">Cerrar</button>
+    </div>
+  </div>
+</div>
+<div id="teacherPrivacyModal" class="login-gate" style="display:none; z-index:1004;">
+  <div class="login-card" style="max-width:560px; text-align:left; max-height:88vh; overflow-y:auto;">
+    <h2 style="text-align:center">Aviso de privacidad para docentes</h2>
+    <p style="text-align:left"><b>Responsable.</b> Desarrollos de Ideas Mexicanas DIMEX A.C. («Dimex») es responsable del tratamiento de tus datos personales. Domicilio: Blvd. Miguel Hidalgo #43, Colonia Centenario, C.P. 83260, Hermosillo, Sonora. Contacto: <b>hola@dimexideas.com</b>.</p>
+    <p style="text-align:left; margin-top:10px"><b>Datos que pedimos.</b> Nombre, correo electrónico, escuela o institución, rol, nivel y materias que impartes, tipo de escuela, número aproximado de alumnos, estado y ciudad, WhatsApp o teléfono (opcional), tus intereses, cómo te enteraste del Laboratorio y el comentario que quieras agregar. No pedimos datos de tus alumnos en este formulario.</p>
+    <p style="text-align:left; margin-top:10px"><b>Para qué los usamos (necesarios).</b> Registrarte en la comunidad de docentes, contactarte sobre tu registro, darte acceso a las herramientas para maestros del Laboratorio Virtual y usar tus datos con fines educativos.</p>
+    <p style="text-align:left; margin-top:10px"><b>Para qué los usamos (solo si lo autorizas).</b> Si marcas la segunda casilla, también para enviarte información sobre cursos, talleres, capacitaciones y recursos educativos de Dimex, adaptada a tu nivel, materia, intereses y ubicación. Puedes registrarte sin marcarla. Con datos generales, sin tu nombre, podemos hacer estadísticas de quién usa el Laboratorio (por ejemplo, cuántos docentes hay por nivel o estado).</p>
+    <p style="text-align:left; margin-top:10px"><b>Con quién los compartimos.</b> No vendemos ni compartimos tus datos con terceros para fines propios de ellos. Se guardan en servicios de Google (hojas de cálculo y Apps Script) que Dimex usa para operar este sitio.</p>
+    <p style="text-align:left; margin-top:10px"><b>Tus derechos.</b> Puedes pedir en cualquier momento acceder a tus datos, corregirlos, eliminarlos u oponerte a su uso, y retirar tu autorización para recibir información, escribiendo a <b>hola@dimexideas.com</b> con tu nombre y tu petición. Responderemos en los plazos que marca la ley. Cada mensaje que te enviemos indicará cómo dejar de recibirlos.</p>
+    <p style="text-align:left; margin-top:10px"><b>Cambios.</b> Si modificamos este aviso, publicaremos la nueva versión en esta misma página. Versión: docentes-2026-11.</p>
+    <div class="mt" style="text-align:center; margin-top:16px;">
+      <button class="btn small" id="closeTeacherPrivacy">Cerrar</button>
     </div>
   </div>
 </div>
@@ -478,20 +501,43 @@
   <div class="teacher-form-card">
     <button class="teacher-close-x" id="closeTeacherForm" title="Cerrar">&times;</button>
     <h2>Comunidad de docentes</h2>
-    <p>Completa tus datos y te contactaremos.</p>
+    <p>Completa tus datos y te contactaremos. Los campos con * son obligatorios.</p>
     <form id="teacherForm">
+      <div class="tf-sec">Contacto</div>
       <label for="tNombre">Nombre completo *</label>
-      <input type="text" id="tNombre" required>
+      <input type="text" id="tNombre" required maxlength="120" autocomplete="name">
       <label for="tCorreo">Correo electrónico *</label>
-      <input type="email" id="tCorreo" required>
+      <input type="email" id="tCorreo" required maxlength="120" autocomplete="email">
+      <label for="tTelefono">WhatsApp o teléfono (opcional)</label>
+      <input type="tel" id="tTelefono" maxlength="30" autocomplete="tel">
+      <div class="tf-sec">Tu escuela</div>
       <label for="tEscuela">Escuela / institución *</label>
-      <input type="text" id="tEscuela" required>
-      <label for="tMateria">Materia(s) que impartes</label>
-      <input type="text" id="tMateria">
-      <label for="tTelefono">Teléfono (opcional)</label>
-      <input type="tel" id="tTelefono">
+      <input type="text" id="tEscuela" required maxlength="120">
+      <label for="tRol">¿Cuál es tu rol? *</label>
+      <select id="tRol" required><option value="">Elige una opción</option><option>Docente</option><option>Coordinador/a académico</option><option>Director/a o directivo</option><option>Docente de ciencias (club o taller)</option><option>Otro</option></select>
+      <label for="tTipoEsc">Tipo de escuela (opcional)</label>
+      <select id="tTipoEsc"><option value="">Elige una opción</option><option>Pública</option><option>Privada</option><option>Otra</option></select>
+      <label>Nivel que atiendes * <span class="tf-hint">(marca uno o más)</span></label>
+      <div class="tf-checks" id="tNivel"><label><input type="checkbox" value="Primaria"> Primaria</label><label><input type="checkbox" value="Secundaria"> Secundaria</label><label><input type="checkbox" value="Bachillerato"> Bachillerato</label><label><input type="checkbox" value="Universidad"> Universidad</label></div>
+      <label>Materias que impartes <span class="tf-hint">(opcional)</span></label>
+      <div class="tf-checks" id="tMateria"><label><input type="checkbox" value="Ciencias naturales"> Ciencias naturales</label><label><input type="checkbox" value="Física"> Física</label><label><input type="checkbox" value="Química"> Química</label><label><input type="checkbox" value="Biología"> Biología</label><label><input type="checkbox" value="Matemáticas"> Matemáticas</label><label><input type="checkbox" value="Tecnología"> Tecnología</label><label><input type="checkbox" value="Otra"> Otra</label></div>
+      <label for="tAlumnos">Alumnos que atiendes, aproximadamente (opcional)</label>
+      <select id="tAlumnos"><option value="">Elige una opción</option><option>Menos de 30</option><option>30 a 100</option><option>101 a 300</option><option>Más de 300</option></select>
+      <div class="tf-sec">Dónde estás</div>
+      <label for="tEstado">Estado *</label>
+      <input type="text" id="tEstado" required maxlength="60" autocomplete="address-level1">
+      <label for="tCiudad">Ciudad o municipio *</label>
+      <input type="text" id="tCiudad" required maxlength="80" autocomplete="address-level2">
+      <div class="tf-sec">Tus intereses</div>
+      <label>¿Qué te gustaría recibir? <span class="tf-hint">(opcional, marca los que quieras)</span></label>
+      <div class="tf-checks" id="tIntereses"><label><input type="checkbox" value="Talleres presenciales"> Talleres presenciales</label><label><input type="checkbox" value="Cursos en línea"> Cursos en línea</label><label><input type="checkbox" value="Planeaciones y recursos"> Planeaciones y recursos</label><label><input type="checkbox" value="Webinars"> Webinars</label></div>
+      <label for="tOrigen">¿Cómo te enteraste del Laboratorio? (opcional)</label>
+      <select id="tOrigen"><option value="">Elige una opción</option><option>Redes sociales</option><option>Un curso o taller de Dimex</option><option>Recomendación de un colega</option><option>Mi escuela</option><option>Búsqueda en internet</option><option>Otro</option></select>
       <label for="tComentario">Cuéntanos brevemente tu interés (opcional)</label>
-      <textarea id="tComentario"></textarea>
+      <textarea id="tComentario" maxlength="600"></textarea>
+      <div class="tf-sec">Tu autorización</div>
+      <label class="tf-consent"><input type="checkbox" id="tAvisoOk" required><span>He leído el <a href="#" id="teacherPrivacyLink">aviso de privacidad para docentes</a> y acepto que Dimex use mis datos para registrarme en la comunidad, contactarme y para fines educativos. *</span></label>
+      <label class="tf-consent"><input type="checkbox" id="tPromoOk"><span>Acepto recibir por correo o WhatsApp información sobre cursos, talleres, capacitaciones y recursos educativos de Dimex. Puedo dejar de recibirla cuando quiera. <span class="tf-hint">(opcional)</span></span></label>
       <div class="teacher-form-actions">
         <button type="submit" class="btn" id="teacherSubmitBtn">Enviar</button>
         <button type="button" class="btn ghost" id="teacherCancelBtn">Cancelar</button>
@@ -627,6 +673,13 @@ document.getElementById("privacyLink").onclick = function(ev){
   ev.preventDefault();
   document.getElementById("privacyModal").style.display = "flex";
 };
+document.getElementById("teacherPrivacyLink").onclick = function(ev){
+  ev.preventDefault();
+  document.getElementById("teacherPrivacyModal").style.display = "flex";
+};
+document.getElementById("closeTeacherPrivacy").onclick = function(){
+  document.getElementById("teacherPrivacyModal").style.display = "none";
+};
 document.getElementById("closePrivacy").onclick = function(){
   document.getElementById("privacyModal").style.display = "none";
 };
@@ -649,6 +702,9 @@ document.getElementById("teacherForm").addEventListener("submit", function(ev){
   ev.preventDefault();
   const btn = document.getElementById("teacherSubmitBtn");
   const msg = document.getElementById("teacherFormMsg");
+  const marcados = id => Array.from(document.querySelectorAll("#" + id + " input:checked")).map(i=>i.value).join(", ");
+  if(!marcados("tNivel")){ msg.style.color = "var(--bad)"; msg.textContent = "Marca al menos un nivel que atiendes."; return; }
+  if(!document.getElementById("tAvisoOk").checked){ msg.style.color = "var(--bad)"; msg.textContent = "Para registrarte necesitas aceptar el aviso de privacidad."; return; }
   btn.disabled = true;
   msg.style.color = "var(--muted)";
   msg.textContent = "Enviando...";
@@ -657,9 +713,20 @@ document.getElementById("teacherForm").addEventListener("submit", function(ev){
     nombre: document.getElementById("tNombre").value.trim(),
     correo: document.getElementById("tCorreo").value.trim(),
     escuela: document.getElementById("tEscuela").value.trim(),
-    materia: document.getElementById("tMateria").value.trim(),
+    materia: marcados("tMateria"),
     telefono: document.getElementById("tTelefono").value.trim(),
     comentario: document.getElementById("tComentario").value.trim(),
+    rol: document.getElementById("tRol").value,
+    nivel: marcados("tNivel"),
+    estado: document.getElementById("tEstado").value.trim(),
+    ciudad: document.getElementById("tCiudad").value.trim(),
+    tipoEscuela: document.getElementById("tTipoEsc").value,
+    alumnos: document.getElementById("tAlumnos").value,
+    intereses: marcados("tIntereses"),
+    origen: document.getElementById("tOrigen").value,
+    aceptaAviso: document.getElementById("tAvisoOk").checked,
+    aceptaPromocion: document.getElementById("tPromoOk").checked,
+    versionAviso: "docentes-2026-11",
     fecha: new Date().toISOString()
   };
   const finish = function(){
