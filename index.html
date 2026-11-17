@@ -23,33 +23,57 @@
   *{box-sizing:border-box; margin:0; padding:0;}
   [hidden]{display:none !important;} /* que «hidden» siempre oculte, aunque el elemento tenga display propio */
   body{font-family:'Roboto', system-ui, -apple-system, Arial, sans-serif; background:var(--bg); color:var(--ink);}
-  header{background:var(--navy); color:#fff; padding:26px 20px 30px; position:relative; overflow:hidden;}
-  header::after{content:""; position:absolute; right:-90px; top:-140px; width:320px; height:320px; border-radius:50%; background:rgba(24,99,220,.35);}
-  header::before{content:""; position:absolute; left:-70px; bottom:-160px; width:260px; height:260px; border-radius:50%; background:rgba(24,99,220,.22);}
-  .wrap{max-width:980px; margin:0 auto; position:relative; z-index:2;}
-  .kicker{color:var(--amber); font-weight:700; letter-spacing:2.5px; font-size:.72rem; text-transform:uppercase;}
-  header h1{font-size:1.9rem; margin-top:6px; font-family:'Roboto Mono', 'Courier New', monospace; font-weight:700; letter-spacing:-1px;}
-  header p{color:#BFD9DC; margin-top:8px; max-width:640px; font-size:.95rem;}
-  main{max-width:980px; margin:0 auto; padding:26px 20px 60px;}
+  header{background:var(--bg); color:var(--ink); padding:0; position:relative;}
+  .wrap{max-width:1180px; margin:0 auto; position:relative; z-index:2;}
+  .kicker{color:var(--teal); font-weight:700; letter-spacing:2.5px; font-size:.72rem; text-transform:uppercase;}
+  header h1{font-size:2rem; color:var(--navy); margin-top:6px; font-family:'Roboto Mono', 'Courier New', monospace; font-weight:700; letter-spacing:-1px;}
+  header p{color:var(--muted); margin-top:10px; max-width:720px; font-size:1rem; line-height:1.55;}
+  main{max-width:1180px; margin:0 auto; padding:26px 20px 60px;}
+  main#exp{max-width:980px;}
   /* ---------- home cards ---------- */
   .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-top:8px;}
-  /* ---------- category tabs ---------- */
+  /* ---------- barra superior y bienvenida (estilo Tinkercad: simple y claro) ---------- */
+  .topbar{background:var(--teal);}
+  .topwrap{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:12px 20px;}
+  .topbar .monogram{box-shadow:none; height:36px;}
+  .herowrap{padding:0 20px;}
+  .hero{background:#fff; border:1px solid #E1E7EF; border-radius:16px; padding:26px 28px; margin:24px 0 0;}
+  body:has(#home[hidden]) .hero{display:none;}
+  body:has(#home[hidden]) header{padding-bottom:0;}
+  /* ---------- menú de áreas ---------- */
   .cattabs{display:flex; gap:8px; flex-wrap:wrap; margin:18px 0 4px;}
-  .cattab{display:flex; align-items:center; gap:7px; background:var(--card); border:2px solid transparent; border-radius:30px; padding:9px 16px 9px 12px; font-size:.85rem; font-weight:700; color:var(--muted); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.08); transition:border-color .15s, color .15s;}
-  .cattab .n{font-size:.72rem; font-weight:800; background:var(--bg); color:var(--muted); border-radius:20px; padding:1px 7px;}
-  .cattab:hover{border-color:#B9D4D8;}
-  .cattab.active{border-color:var(--teal); color:var(--navy);}
+  .cattab{display:flex; align-items:center; justify-content:space-between; gap:10px; background:transparent; border:2px solid transparent; border-radius:30px; padding:11px 18px; font-size:.98rem; font-weight:700; color:var(--navy); cursor:pointer; transition:background .15s, border-color .15s, color .15s;}
+  .cattab .n{font-size:.72rem; font-weight:800; background:#E6ECF5; color:var(--muted); border-radius:20px; padding:1px 8px;}
+  .cattab:hover{background:#E9EFF9;}
+  .cattab.active{border-color:var(--teal); color:var(--teal); background:#fff;}
   .cattab.active .n{background:var(--teal); color:#fff;}
-  .cat-hint{color:var(--muted); font-size:.85rem; margin:2px 0 4px;}
-  .card{background:var(--card); border-radius:14px; padding:20px; cursor:pointer; border:2px solid transparent;
-        box-shadow:0 1px 4px rgba(0,0,0,.08); transition:transform .15s, border-color .15s;}
-  .card:hover{transform:translateY(-3px); border-color:var(--teal);}
-  .card .icon{width:52px; height:52px; border-radius:50%; background:var(--teal-l); display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin-bottom:12px;}
-  .card h3{font-size:1.05rem; color:var(--navy); margin-bottom:6px;}
-  .card p{font-size:.85rem; color:var(--muted); line-height:1.45;}
-  .tags{margin-top:12px; display:flex; gap:6px; flex-wrap:wrap;}
+  .cat-hint{color:var(--muted); font-size:.92rem; margin:2px 0 14px;}
+  @media (min-width:900px){
+    main#home{display:grid; grid-template-columns:230px 1fr; column-gap:30px; align-items:start;}
+    #catTabs{flex-direction:column; flex-wrap:nowrap; grid-column:1; grid-row:1 / span 3; position:sticky; top:16px; margin-top:6px;}
+    #catHint{grid-column:2; grid-row:1; margin-top:12px;}
+    #cardGrid{grid-column:2; grid-row:2;}
+  }
+  @media (max-width:899px){
+    .cattabs{flex-wrap:nowrap; overflow-x:auto; padding-bottom:6px; -webkit-overflow-scrolling:touch;}
+    .cattab{flex-shrink:0; white-space:nowrap; background:#fff; border:1px solid #E1E7EF;}
+    .cattab.active{border:2px solid var(--teal);}
+    .hero{padding:20px 18px;} header h1{font-size:1.6rem;}
+  }
+  @media (max-width:560px){ .topbar .brand-tag{display:none;} .topbar .brand-name{font-size:.8rem;} .topwrap{padding:10px 16px;} }
+  /* ---------- tarjetas ---------- */
+  .card{background:var(--card); border-radius:12px; padding:0; overflow:hidden; display:flex; flex-direction:column; cursor:pointer; border:1px solid #E1E7EF; transition:box-shadow .15s, border-color .15s;}
+  .card:hover{border-color:var(--teal); box-shadow:0 6px 18px rgba(24,99,220,.14);}
+  .card .icon{width:100%; height:120px; border-radius:0; background:#E8F0FF; display:flex; align-items:center; justify-content:center; font-size:3rem; margin:0;}
+  .card.cat-fisica .icon{background:#E3EEFF;} .card.cat-quimica .icon{background:#EEE6FF;} .card.cat-salud .icon{background:#FFE6EB;}
+  .card.cat-ambiente .icon{background:#E2F5E8;} .card.cat-electronica .icon{background:#FFF1D2;}
+  .card .cbody{padding:16px 18px 18px; display:flex; flex-direction:column; flex:1;}
+  .card h3{font-size:1.05rem; color:var(--navy); margin-bottom:6px; line-height:1.3;}
+  .card p{font-size:.86rem; color:var(--muted); line-height:1.5;}
+  .card .go{margin-top:auto; padding-top:12px; font-weight:700; font-size:.88rem; color:var(--teal);}
+  .tags{margin:12px 0 0; display:flex; gap:6px; flex-wrap:wrap;}
   .tag{font-size:.68rem; font-weight:700; color:var(--teal); background:var(--teal-l); padding:3px 9px; border-radius:20px;}
-  .tag.amber{color:#8a5a00; background:#FDEBC8;}
+  .tag.amber{color:#6B4A00; background:#FDEBC8;}
   /* ---------- experiment view ---------- */
   .back{background:none; border:none; color:var(--teal); font-weight:700; font-size:.9rem; cursor:pointer; padding:6px 0; margin-bottom:6px;}
   .exp-title{font-family:'Roboto Mono', 'Courier New', monospace; font-weight:700; letter-spacing:-.5px; color:var(--navy); font-size:1.6rem;}
@@ -144,7 +168,7 @@
   .ph-nums{display:flex; justify-content:space-between; font-size:.7rem; color:var(--muted); margin-top:4px;}
   @media (max-width:560px){ header h1{font-size:1.4rem;} .exp-title{font-size:1.25rem;} }
   /* ---------- brand ---------- */
-  .brandbar{display:flex; align-items:center; gap:12px; margin-bottom:22px;}
+  .brandbar{display:flex; align-items:center; gap:12px; margin-bottom:0;}
   .monogram{height:38px; padding:7px 12px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,.25); background:#fff;}
   .monogram img{height:100%; width:auto; display:block; border-radius:0;}
   .brand-text{line-height:1.25;}
@@ -165,20 +189,20 @@
   #gsiButton{display:flex; justify-content:center; margin-bottom:18px; min-height:44px;}
   .login-privacy{font-size:.74rem !important; color:var(--muted); line-height:1.5; margin-bottom:0 !important;}
   .login-privacy a{color:var(--teal); font-weight:600;}
-  .user-badge{display:none; align-items:center; gap:8px; position:absolute; top:20px; right:20px; background:rgba(255,255,255,.12); border-radius:30px; padding:5px 14px 5px 5px; z-index:3;}
+  .user-badge{display:none; align-items:center; gap:8px; position:static; background:rgba(255,255,255,.16); border-radius:30px; padding:5px 14px 5px 5px; z-index:3;}
   .user-badge.show{display:flex;}
   .user-badge img{width:26px; height:26px; border-radius:50%; background:#fff;}
   .user-badge span{color:#fff; font-size:.78rem; font-weight:600; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .user-badge button{background:none; border:none; color:var(--amber); font-size:.72rem; font-weight:700; cursor:pointer; text-decoration:underline; padding:0;}
   .user-badge{flex-wrap:wrap; border-radius:22px;}
   .user-badge .teacher-top{background:var(--amber); color:#000; text-decoration:none; font-weight:800; font-size:.78rem; padding:6px 12px; border-radius:18px;}
-  @media (max-width:900px){ .user-badge{position:relative; top:auto; right:auto; margin:0 0 16px auto; width:fit-content; max-width:100%;} }
+  @media (max-width:900px){ .user-badge{margin:0 0 0 auto; width:fit-content; max-width:100%;} }
   @media (max-width:560px){ .user-badge span{max-width:90px;} }
 
   /* ---------- comunidad de docentes ---------- */
-  .teacher-cta{background:linear-gradient(135deg,var(--navy),#1A1A1A); color:#fff; border-radius:14px; padding:30px 26px; margin:0 0 18px; text-align:center;}
-  .teacher-cta h3{font-family:'Roboto Mono','Courier New',monospace; font-weight:700; font-size:1.2rem; margin-bottom:10px; color:#fff;}
-  .teacher-cta p{color:#CFCFCF; font-size:.9rem; max-width:560px; margin:0 auto 18px; line-height:1.55;}
+  .teacher-cta{background:#fff; border:1px solid #E1E7EF; color:var(--ink); border-radius:14px; padding:30px 26px; margin:0 0 18px; text-align:center;}
+  .teacher-cta h3{font-family:'Roboto Mono','Courier New',monospace; font-weight:700; font-size:1.2rem; margin-bottom:10px; color:var(--navy);}
+  .teacher-cta p{color:var(--muted); font-size:.9rem; max-width:560px; margin:0 auto 18px; line-height:1.55;}
   .teacher-cta .btn.amber{background:var(--amber); color:var(--navy);}
   .teacher-form-card{background:#fff; border-radius:16px; padding:32px 30px; max-width:460px; width:100%; text-align:left; box-shadow:0 12px 40px rgba(0,0,0,.35); max-height:88vh; overflow-y:auto; position:relative;}
   .teacher-form-card h2{font-family:'Roboto Mono','Courier New',monospace; font-weight:700; letter-spacing:-.5px; color:var(--navy); font-size:1.15rem; margin-bottom:6px;}
@@ -319,14 +343,7 @@
   </div>
 </div>
 <header>
-  <div class="user-badge" id="userBadge">
-    <img id="userAvatar" src="" alt="">
-    <span id="userName"></span>
-    <button id="teacherTop" class="teacher-top" title="Panel del docente">🎓 Maestro</button>
-    <button id="classBtn" class="class-btn" title="Cambiar el código de tu clase">Clase</button>
-    <button id="logoutBtn" title="Cerrar sesión">Salir</button>
-  </div>
-  <div class="wrap">
+  <div class="topbar"><div class="wrap topwrap">
     <div class="brandbar">
       <div class="monogram" aria-hidden="true">
         <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAAfCAYAAAAFvjTyAAANI0lEQVR4AeycV7AlRRnHz12QjKAISM6hREQBXTJIhlJAJAcpyjJRPqgPPOgDSIlVSBnAEgTLQAYJFiCSM0uGRVyUJS67KC7Cuqy4COiuv9/c6XP7zumemXPvueuWUNX/+3V/qXtmevrrMOdOGhoaemFoaGheDV7pdDofANmE7f1AH3OhAa+Rlzdv0qRJF2eN3xX8X96BSVzVMmDFGqyCbClQl9ZDqI+VoAHvJS9vxYULF65D/t30DroDdqy5La53tQadJRrkKzfIh5DngGhMSX9LY+mLI40hL35Z1JUX66Tyy+KvTdK2yZ++4vvms2iy0W8/0J9+bbPP0Bc9Z2971GsDdVN+rG9NHCw1idHkfDI3gxsjWA54iJB2HZgOnqngacpPY/c6uLUGy6Gn7bPQ58DzEWaQz8Ew/RTyewmnl+D/m2Br0CZtht0sMDMB+Q/gxA4F6WyJjjyR0penbBbKXwV1aXLpS5s66Ov4yNGOpZ311Nm1lenHOj5R1rE1/p2ayE/5kP9YqZsl+LgDvAhSPl6C/1uMl7Q3n0rn2hvsG8FywCEo2gs3hW5UwcaUN8bZhdjumQPyy9DTdkPoBmD9CIbRdSmnYAjdBNn2+D4CP6eCR8Dj8L4A6pJvz6ooCN/WGM4ZN0MWkrryUrrBTtkq1H1oMEpRXoDD4asrgm2KOsUQqBdpBf42tSHlJ8ezfv0tj1/TDfy5E8hP2diWrWj/D9DJpa8h2BW8H6R8rMxz+hay+XYsaG3ywdcqILRTQLLpfVnJ2ASOMOfykKdgbieF9KR/93BGM1yUBE6TbtCTfpQ/S4Jk4sZunxSkmfMj9ltRfpDZrl/atjeO3wTZhM7XEaae59Lc79OQZRNyF2nXq2DHOhSGIc1QV8WTyAxBd6Bsj78JKgyTt5Avwh+N2Qo9w5zhTl+GL31p/wRyw5cV6iMFZeIZfPaTdqDeaRh8DCyq5KJk50xlyhZlWzLNSLCHWW/xLJpG+g739Oxh9ZG/jGQ/oRTPSymOSvMXLFjQDe12LOcZhjRDXRWGi7VozO5gP7BPCcPkXuSL8EdDrqUKw5zhTl+GL31p/yHkN6G7P9BHCsqEdn/AVz9pefzfi4HhGjLxiZvsm5+qaA+YTmohi226gJY5UECyaX8k8ci7Bc/u8/CyCbmdqjs62rH+mtUeETgvGin15oy3vdwRzn9GsrU5Q0zdW5EzXobO5eiZkw+Uz038VMohHW7fFP9/zFuuWj/t/0yVVy1zP41UBZu8c+Qin/lzN/xfg26yY82k5KTuLmiAigHTcHwT+D14HEgfgwZMpaH7Yet8Rzh6BBRl5Meifx94ELjKFA+TdyIuHiUv/oYfRzlI32lzLI4DiyJ9mEp6RkiucyI7lttCV1OvuAbaBkYSV4aoj0pzaes3RnF6C86tPw7b57EFNJvwdVhVaMeagWA3sGuEXcgH2LsNcR/BeEsg3Qoa4GR2Jvo7ldgRGiBvR3RddW0HtaHbQsU2UOdewnmJaNrvwiSf6JzfyUsHLqmGQzt2atI7qIqncV8PKnEgtA0OoPI/glT6IUxX15B04n5eDW5PS4e5tMNVYE/Us2MNa+T/2iny0mGJ87ThXPpvkzxt1T93bUyc50A6E1onYW+ylUSodrRINJDsWKYItRXTKQ6sVeh01kAuIMn0LNzvgp5UdCxukkt3Q5LhSZg3NImLsDIsGibvIS+NcRs8J9Dqiqn08oCijHwOuB88WMLNSctScR/8GIZSw6gwH+q1jGo+cS1HltIFJZ0QwkMx/Hd9U2882e3yB5h5Y4C+gis3pr8dCv1S7sFBOZuiY6EQwpJUxOFpU+SGRUPlzuSlMfaA58TNUCYMjQFFGfnpwE3OyVCxHdSyVOxAOYah1DAqzId6d+JCrgDZhB9DrvJ/+WcA8IGm9n6cg7jytYolqHcvMxXYhn9UeGWxb7IJnffkNsCzJxRtIk2HLYKT0X8e9JUYPH6OgVs9kN5UdCzYPTESXkjdJWRgVCkX69lRlR2XF8aF8eR5gD9usF+rlMebjyVrTORPWD0MUimMWs4Z3bmu6jhCP1RljrG8Jtd+Uhvw0E+ljp7VILxkwufBSUGe+Tod8oS8uNMpOhaODW1TUYzxKOVHwBwaeie4HXhOVMVt2B+FnrpCO2G+6NHYnQRuAfoICH70HXAXOuJu6D0RppAPOJ266lJYAKRGmTq7nMzrT+770KZ9SqPk/Ar5A+ClUmdREs9u227x2C5X+KeYaQE3Wb3u2gGn6Fg4O43OsXUF21DeFjhC7ILObsBzoio+Cb+DnrpCO2HeeYejlZunTqr1ERD86DvAHW1hyHM1GbADdQSEQ1VY2eREt58bm3WEYAXeTg/oyfYk29eh8zh96BFi52lCuMc98sWJQVsvbdke76vz3lr1NhfdJqS8lqnFN2coI5tItnXaoQdRh5u/hsLpCWce4XwWvlsNkFHJ+zaFF077UYLFscDL4Ty5TdOWRde9tFrd0LE2V7nENVBxLdR9DLfqX8DLjBJO9J4jL1xuer7nqjDYaCcse67oBp262gnz2gnz2lfhpzgxnqI+4cN9knxTcpiOv3Vq0q+T++HiG9yLXDj0YNaJfNWH0wvbkZp7VXUHXV4Bh/1cv5ulbvpi1iq5P1a7GRw6ljdPZfFpXAuPLSy/ylu3PtigxIbQjUpsDN0EXBjZaCf04XniAcjV106Y106Y174KV6IxNsOH2BzadIjqSOFoZTikWeNOxT0iVHjwnnLm5nHPCox2hiOm96SMxsB7mc59NvhpA85Bfgb+Xc1CGtN66H+/UauigI3f8VW4I8XiplF8GSQTDv6cFIxmuk81mjNSamM/ot2QYwXq9051WrNLYdNKtVTrklzGTqosN89SloLzK/nB3vx4MJ3OfQL4SgO+jNzvplp1LJ5v0zlgrs2r8izcvU/KQ8f6O1LDkZ3gRfLCEOZRzZ5U7oruZqhnhuJG8jeU8OtSL8T5lHs2+vLMz866EB3DqTq/I389CHb6CdB/wK3oiNugAa4kzd/BSND0BWf4CnJQHYvbUSSvr25bplAq//hQnyjzgyI9o+IAHB+Nj+oJAqx2iWfhc/cssccgdCwPJQ1Ha6O8Tol1oc4dXC67otsTazcBhctrl5zCTyyWR/eDYHWwBnDPxRDhwakrQ3Xc8zEuayP0E6D/gN2pR7jaDHAlad6VJOJ8ou7rSqlfSpTZcZMirNrRW3ryNKGlamu1t1trtlN0XvzLBlUn6T7DrBr3xJOZHnnoWD2CiJFb8UUqHUe4f8LwTXX/yC8yfcMHPWpQRW2y3jC0DyoEWWExTyLEuBixXAs6tx8z1uqMQeiG5+rY9QPP+Zw/YzY60SEuh1NcFzSV5nAdB6H3s5Qw4rnV8sWoXGTjjnUYMfMScBGQXgp1b8MTe8OiYTKGnUn42c1KNOAq8BsgvRJ6JTU431FHO2mA/mLow5XnuM73qPNH1GmHhgw0hU7qV7NtHIeJexvdtjp+pZv6AUMtj2eYmpgbcYwg2brpVMUiiZfpe1mlUsB9P4esvwCCDKdux6IBntUdgcOjgPRwqDgTalg0TMYIIXM95D5QP6/xUFLqEcHB8I8E6mknDdBfDH248vQ4xi2J4db19/dtbsJJ/Zn0re0L0rTd8Spe3feCDDS5N2dI7gdOB9xrixvij5TDqB7z47wnMFeVjFfoOGeW+Syh/5wbC7sdi4fiiBHLQr7NJNT9qKAf06aHEOuad3Ls5N98X6ADu8XhVkNfdv0qc5Nrwxxyv/bo1+1E6jtF6fqnA5xFIRx7ke1N3MtRnyHTN05EywN1SDphcwQST00gneGzwiLX6ThJN4y4shPOrdwYPIObZYgThrkrKF9OAy8DhsvzKXvoacXBXltXhIbVX6D3K3AeOB9cAC4Eyi6GdsMufnzT/bKiaFLbP1zUMei2mv+gN67ETa7tOMhrO964Kh+/sUdtX6pzwzPwk2RHrFjtTe6xm6gxryePbffLk+6IhdblGPvDiQDDl43wQRvihGHOI4xD0D0MGCqPxdZzQcOZNtq7mnT08YcTx6N3HPgcOBYcA44GhlxDZTfs4seJIKR1moUfV6vJlUlrL/0pNn2t4BcN/XmcWO2h4J4H77w3FFOU92JBz0S8VPSXOw4+ZTFJVmOg8DOcUSOWh4vzUHe0Eo4+bcOSE3H3rRyptJWGH0ricuDJX9yeQqfyjC43UXZ+UVexP9wM8rrVkT/O7D4cDHxhciHe+1d80YFeSP5oNOSr1JVe4Dl3CvmBUe5RManmgbsb7wuf9Y2uH/353JM6yBtHLXSc506OR6yUM5fv/rDTDU9pCu66+5lM1d45m51MeMOFHc59kUDtuJal+gnUCbCQ9xcc+yDdID2Lhrso2JBXywuom1MZmu0EOcRzR/3k9Pwea9RqlTacR5tc8cY2sxkRUktz2x7rhbz23ldcFckHGmSDorNpqyOs/5jFL2tzfm2L05CmT2fcJfBoS/2cL//L0In/BQAA///Nl77BAAAABklEQVQDAFZei1MUM3lkAAAAAElFTkSuQmCC" alt="Logo de Dimex Ideas">
@@ -336,10 +353,19 @@
         <div class="brand-tag">Desarrollado para el aprendizaje</div>
       </div>
     </div>
+    <div class="user-badge" id="userBadge">
+    <img id="userAvatar" src="" alt="">
+    <span id="userName"></span>
+    <button id="teacherTop" class="teacher-top" title="Panel del docente">🎓 Maestro</button>
+    <button id="classBtn" class="class-btn" title="Cambiar el código de tu clase">Clase</button>
+    <button id="logoutBtn" title="Cerrar sesión">Salir</button>
+  </div>
+  </div></div>
+  <div class="wrap herowrap"><div class="hero">
     <div class="kicker">Ciencia: de la Teoría a la Práctica</div>
     <h1 id="hTitle">Laboratorio Virtual</h1>
-    <p id="hSub">Cincuenta experimentos en cinco áreas —Física, Química, Salud, Medio ambiente y Electrónica— para hacer en pantalla cuando no hay materiales a la mano. La regla es la misma que en la mesa: <b style="color:#fff">primero predices, luego experimentas, y al final explicas.</b></p>
-  </div>
+    <p id="hSub">Cincuenta experimentos en cinco áreas —Física, Química, Salud, Medio ambiente y Electrónica— para hacer en pantalla cuando no hay materiales a la mano. La regla es la misma que en la mesa: <b style="color:var(--navy)">primero predices, luego experimentas, y al final explicas.</b></p>
+  </div></div>
 </header>
 
 <main id="home">
@@ -9976,7 +10002,7 @@ const CATS = [
   {id:"electronica", label:"Electrónica", icon:"🔌"},
 ];
 const catHints = {
-  todos:"Elige un experimento de cualquier área, o filtra por sección con las pestañas de arriba.",
+  todos:"Elige un experimento de cualquier área, o filtra por área con el menú.",
   fisica:"Mecánica, ondas y energía: mide, empuja y predice.",
   quimica:"Reacciones, mezclas y cambios de estado en el vaso de precipitados virtual.",
   salud:"Tu propio cuerpo como laboratorio: reflejos, pulmones, sentidos.",
@@ -10001,9 +10027,10 @@ function renderGrid(){
   grid.innerHTML = "";
   const list = filterCat==="todos" ? EXPS : EXPS.filter(e=>e.cat===filterCat);
   list.forEach(e=>{
-    const c = document.createElement("div"); c.className="card";
-    c.innerHTML = `<div class="icon">${e.icon}</div><h3>${e.name}</h3><p>${e.cardDesc}</p>
-      <div class="tags"><span class="tag">${e.sub.split("—")[0].trim()}</span><span class="tag amber">${e.time}</span></div>`;
+    const c = document.createElement("div"); c.className="card cat-"+e.cat;
+    c.innerHTML = `<div class="icon">${e.icon}</div><div class="cbody"><h3>${e.name}</h3><p>${e.cardDesc}</p>
+      <div class="tags"><span class="tag">${e.sub.split("—")[0].trim()}</span><span class="tag amber">${e.time}</span></div>
+      <div class="go">Empezar ›</div></div>`;
     c.onclick = ()=>openExp(e);
     grid.appendChild(c);
   });
