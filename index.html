@@ -204,6 +204,7 @@
   .teacher-cta h3{font-family:'Roboto Mono','Courier New',monospace; font-weight:700; font-size:1.2rem; margin-bottom:10px; color:var(--navy);}
   .teacher-cta p{color:var(--muted); font-size:.9rem; max-width:560px; margin:0 auto 18px; line-height:1.55;}
   .teacher-cta .btn.amber{background:var(--amber); color:var(--navy);}
+  .topbar .brand-tag{color:#DCE8FF;} .user-badge #logoutBtn{color:#fff;}
   .teacher-form-card{background:#fff; border-radius:16px; padding:32px 30px; max-width:460px; width:100%; text-align:left; box-shadow:0 12px 40px rgba(0,0,0,.35); max-height:88vh; overflow-y:auto; position:relative;}
   .teacher-form-card h2{font-family:'Roboto Mono','Courier New',monospace; font-weight:700; letter-spacing:-.5px; color:var(--navy); font-size:1.15rem; margin-bottom:6px;}
   .teacher-form-card > p{color:var(--muted); font-size:.85rem; margin-bottom:4px;}
@@ -241,7 +242,7 @@
   .panel-bar i{display:block; height:100%; background:var(--teal); border-radius:8px;}
   .panel-bar.low i{background:#c92a2a;}
   .panel-msg{font-size:.9rem; color:var(--muted); padding:14px 0;}
-  .panel-link{background:none; border:none; color:var(--amber); font-weight:700; text-decoration:underline; cursor:pointer; font-size:.85rem; margin-top:12px; font-family:inherit;}
+  .panel-link{background:none; border:none; color:var(--teal); font-weight:700; text-decoration:underline; cursor:pointer; font-size:.85rem; margin-top:12px; font-family:inherit;}
   .pd-lbl{font-size:.85rem; font-weight:700;}
   .pd-tabs{display:flex; gap:2px; margin:6px 0 16px; border-bottom:2px solid #DCE7EA; overflow-x:auto; -webkit-overflow-scrolling:touch;}
   .pd-tabs button{flex:0 0 auto; border:none; background:transparent; padding:12px 14px; font-size:.9rem; font-weight:700; color:var(--muted); cursor:pointer; font-family:inherit; border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap;}
@@ -289,6 +290,20 @@
   .pd-feed:first-of-type{border-top:none;}
   .pd-feed-tx{flex:1; min-width:0;} .pd-feed-tx b{display:block; font-size:.88rem;} .pd-feed-tx small{color:var(--muted); font-size:.76rem;}
   .pd-who{display:flex; align-items:center; gap:10px; min-width:0;}
+  .pd-guia{background:#fff; border:1px solid #E1E7EF; border-radius:12px; padding:14px 18px; margin-bottom:14px; font-size:.9rem; line-height:1.55;}
+  .pd-guia h5{font-size:.95rem; color:var(--navy); margin-bottom:6px;}
+  .pd-guia ol{margin:0; padding-left:20px;} .pd-guia li{margin:3px 0;} .pd-guia b{color:var(--navy);}
+  .pd-find{margin-bottom:12px;}
+  .pd-mat summary .pd-row{align-items:center;}
+  .pd-mat .pd-ttl{display:flex; align-items:center; gap:10px; min-width:0;} .pd-mat .pd-ttl .ic{font-size:1.5rem; flex-shrink:0;}
+  .pd-mat .pd-chev{color:var(--teal); font-weight:800; transition:transform .15s;} .pd-mat[open] .pd-chev{transform:rotate(180deg);}
+  .pd-mat-body{padding:4px 2px 4px; font-size:.9rem; line-height:1.6; color:var(--ink);}
+  .pd-mat-body h6{font-size:.72rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--teal); margin:16px 0 5px;}
+  .pd-mat-body ul{list-style:none; margin:6px 0 0; padding:0;} .pd-mat-body li{padding:5px 10px; border-radius:8px; margin:3px 0; border-top:none; background:#F4F7FB;}
+  .pd-mat-body li.ok{background:#E6F4EA; color:var(--ok); font-weight:700;}
+  .pd-mat-body .pd-sci{background:#F4F7FB; border-radius:10px; padding:10px 14px;} .pd-mat-body .pd-sci p{margin:6px 0;}
+  .pd-mat-body .pd-aula{background:#FFF7E0; border-radius:10px; padding:10px 14px; color:#4A3500;}
+  .pd-mat-body .btn{margin-top:14px;}
   .pd-toast{position:fixed; left:50%; transform:translateX(-50%); bottom:24px; background:var(--navy); color:#fff; padding:12px 18px; border-radius:12px; z-index:1005; max-width:90vw; font-size:.9rem; font-weight:700;}
   .pd-manual{display:block; width:100%; margin-top:8px; padding:8px; font-size:14px; border-radius:6px; border:none;}
   .pd-modal-card{background:var(--navy); color:#fff; border-radius:18px; padding:28px 22px; max-width:680px; width:100%; text-align:center; max-height:92vh; overflow:auto;}
@@ -458,6 +473,7 @@
         <button role="tab" data-tab="alumnos">Alumnos</button>
         <button role="tab" data-tab="experimentos">Experimentos</button>
         <button role="tab" data-tab="explicaciones">Explicaciones</button>
+        <button role="tab" data-tab="material">Material de apoyo</button>
       </div>
       <div class="cattabs" id="pdAreas" aria-label="Filtrar por área" hidden></div>
       <div id="pdContent"></div>
@@ -3342,6 +3358,7 @@ function pdVerClases(){
     card.onclick = ()=>pdAbrir(c); grid.appendChild(card);
   });
   box.appendChild(grid);
+  if(lista.length){ const mat = pe("button","btn ghost mt","📚 Material de apoyo para dar tu clase"); mat.onclick = ()=>{ pdAbrir(lista[0]); pdTab = "material"; pdRender(); }; box.appendChild(mat); }
   box.appendChild(pe("p","pd-note","¿Necesitas otra clase? Comparte un código nuevo con tus alumnos y pide a Dimex que lo agregue a tu cuenta."));
 }
 /* ---- nivel 2: una clase ---- */
@@ -3362,10 +3379,10 @@ function pdCodeCard(){
 }
 function pdRender(){
   $("pdTitle").textContent = pdSel === PD_TODAS ? "Todas mis clases" : "Clase " + pdSel;
-  $("pdSub").textContent = "Resumen, alumnos, experimentos y explicaciones de esta clase.";
+  $("pdSub").textContent = "Resumen, alumnos, experimentos, explicaciones y material de apoyo para dar tu clase.";
   pdCodeCard();
   [...$("pdTabs").children].forEach(b=>{ b.className = b.dataset.tab === pdTab ? "active" : ""; b.setAttribute("aria-selected", b.dataset.tab === pdTab); });
-  const ar = $("pdAreas"); ar.innerHTML = ""; ar.hidden = !(pdTab === "experimentos" || pdTab === "explicaciones");
+  const ar = $("pdAreas"); ar.innerHTML = ""; ar.hidden = !(pdTab === "experimentos" || pdTab === "explicaciones" || pdTab === "material");
   if(!ar.hidden) CATS.forEach(c=>{
     const b = pe("button","cattab" + (pdArea === c.id ? " active" : "")); b.append(pe("span","",c.icon + " " + c.label));
     b.onclick = ()=>{ pdArea = c.id; pdExplN = 30; pdRender(); }; ar.appendChild(b);
@@ -3373,7 +3390,7 @@ function pdRender(){
   const box = $("pdContent"); box.innerHTML = "";
   const D = pdDatos(pdSel);
   if(pdTab === "inicio") pdInicio(box, D); else if(pdTab === "alumnos") pdAlumnos(box, D);
-  else if(pdTab === "experimentos") pdExperimentos(box, D); else pdExplicaciones(box, D);
+  else if(pdTab === "experimentos") pdExperimentos(box, D); else if(pdTab === "material") pdMaterial(box); else pdExplicaciones(box, D);
 }
 function pdInicio(box, D){
   const t = pdPct(D.intentos), alum = new Set(D.intentos.map(x=>x.m)).size, nExp = new Set(D.intentos.map(x=>x.e)).size;
@@ -3464,6 +3481,40 @@ function pdExplicaciones(box, D){
     it.appendChild(pe("div","pd-quote", x.x)); box.appendChild(it);
   });
   if(lista.length > pdExplN){ const m = pe("button","btn ghost mt","Ver más explicaciones"); m.onclick = ()=>{ pdExplN += 30; pdRender(); }; box.appendChild(m); }
+}
+const sinAcento = s=>String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+function pdMaterial(box){
+  const guia = pe("div","pd-guia");
+  guia.innerHTML = '<h5>Cómo usar un experimento en tu clase (10 a 15 minutos)</h5><ol>'
+    + '<li><b>Predice (3 min).</b> Lee la pregunta en voz alta. Cada alumno elige una opción y la defiende con un compañero antes de ver nada.</li>'
+    + '<li><b>Observa (5 a 8 min).</b> Cada quien prueba el experimento. Los retos con estrellas son opcionales: sirven para que observen con más atención.</li>'
+    + '<li><b>Explica (3 min).</b> Escriben con sus propias palabras lo que vieron. Después comparan con la explicación de la ciencia.</li></ol>'
+    + '<p style="margin-top:8px">Abre cada experimento para ver la respuesta correcta, la explicación y la actividad para hacer en el salón.</p>';
+  box.appendChild(guia);
+  const buscar = pe("input","pd-sel2 pd-find"); buscar.type = "search"; buscar.placeholder = "Buscar un experimento…"; buscar.setAttribute("aria-label","Buscar un experimento"); box.appendChild(buscar);
+  const nombres = {}; CATS.forEach(c=>{ nombres[c.id] = c.label; });
+  const lista = EXPS.filter(e=>pdArea === "todos" || e.cat === pdArea);
+  const items = lista.map(e=>{
+    const d = pe("details","panel-item pd-det pd-mat"), sm = pe("summary"), row = pe("div","pd-row"), ttl = pe("div","pd-ttl");
+    ttl.append(pe("span","ic",e.icon), pe("h5","",e.name));
+    const der = pe("div","pd-row"); der.style.gap = "8px"; der.append(pe("span","pd-chip gris", nombres[e.cat] || e.cat), pe("span","pd-chip gris", e.time), pe("span","pd-chev","▾"));
+    row.append(ttl, der); sm.appendChild(row); sm.appendChild(pe("small","", e.sub)); d.appendChild(sm);
+    const b = pe("div","pd-mat-body");
+    b.appendChild(pe("h6","","De qué trata")); b.appendChild(pe("p","",e.cardDesc));
+    b.appendChild(pe("h6","","Pregunta para predecir")); b.appendChild(pe("p","",e.pred.q));
+    if(e.pred.options){ const ul = pe("ul"); e.pred.options.forEach((o,i)=>{ ul.appendChild(pe("li", i === e.pred.correct ? "ok" : "", "ABCDE"[i] + ". " + o + (i === e.pred.correct ? "  ✔ correcta" : ""))); }); b.appendChild(ul); }
+    let porque = e.pred.okText || ""; if(!porque && typeof e.pred.verdict === "function"){ try{ porque = e.pred.verdict(); }catch(err){} }
+    if(porque){ b.appendChild(pe("h6","", e.pred.correct === null ? "Qué esperar" : "Por qué es la correcta")); b.appendChild(pe("p","",porque)); }
+    b.appendChild(pe("h6","","La ciencia detrás")); const sci = pe("div","pd-sci"); sci.innerHTML = (e.ciencia || "").replace(/<h5>[^<]*<\/h5>/, ""); b.appendChild(sci);
+    b.appendChild(pe("h6","","Para hacer en el salón")); b.appendChild(pe("div","pd-aula", e.clase || ""));
+    const go = pe("button","btn small","▶ Abrir este experimento"); go.onclick = ()=>{ $("panelMaestro").hidden = true; openExp(e); };
+    b.appendChild(go); d.appendChild(b);
+    d.dataset.n = sinAcento(e.name + " " + e.sub);
+    return d;
+  });
+  items.forEach(d=>box.appendChild(d));
+  const vacio = pe("div","panel-msg","No hay experimentos que coincidan."); vacio.hidden = true; box.appendChild(vacio);
+  buscar.oninput = ()=>{ const q = sinAcento(buscar.value.trim()); let n = 0; items.forEach(d=>{ const ok = !q || d.dataset.n.includes(q); d.hidden = !ok; if(ok) n++; }); vacio.hidden = n > 0; };
 }
 $("pdTabs").onclick = ev=>{ const b = ev.target.closest("button"); if(!b) return; pdTab = b.dataset.tab; pdExplN = 30; pdRender(); };
 $("pdBackClases").onclick = pdVerClases;
