@@ -380,13 +380,13 @@
     <h2>Laboratorio Virtual</h2>
     <p>Inicia sesión con tu cuenta de Google para entrar al laboratorio. Solo se usa para saber quién lo está usando — no se pide contraseña y no se comparte con nadie más.</p>
     <div id="gsiButton"></div>
-    <p class="login-privacy">Al continuar aceptas que se registren tu nombre, correo, predicciones, explicaciones y código de clase con fines educativos. <a href="#" id="privacyLink">Ver aviso de privacidad</a>.</p>
+    <p class="login-privacy">Al continuar aceptas que se registren tu nombre, correo, predicciones, explicaciones, respuestas a las preguntas y código de clase con fines educativos. <a href="#" id="privacyLink">Ver aviso de privacidad</a>.</p>
   </div>
 </div>
 <div id="privacyModal" class="login-gate" style="display:none; z-index:1001;">
   <div class="login-card" style="max-width:520px; text-align:left;">
     <h2 style="text-align:center">Aviso de privacidad</h2>
-    <p style="text-align:left">Desarrollos de Ideas Mexicanas ("Dimex") usa el nombre y correo electrónico de tu cuenta de Google para llevar un registro de quién utiliza el Laboratorio Virtual y qué experimentos realiza. También guardamos lo que respondes en cada experimento: tus predicciones, las explicaciones que escribes con tus propias palabras, el tiempo que tardas y, si lo escribes, el código de tu clase. Todo se usa con fines educativos, para que tu maestro/a pueda acompañar tu aprendizaje. Esta información no se vende ni se comparte con terceros, y se usa solo con fines de seguimiento educativo. No escribas datos personales (teléfono, domicilio, etc.) en tus explicaciones. Si eres menor de edad, pide a tu maestro/a o a tu mamá, papá o tutor que te acompañe antes de iniciar sesión. Si quieres conocer, corregir o eliminar tus datos, escribe a <a href="mailto:cesar@dimexideas.com">cesar@dimexideas.com</a>.</p>
+    <p style="text-align:left">Desarrollos de Ideas Mexicanas ("Dimex") usa el nombre y correo electrónico de tu cuenta de Google para llevar un registro de quién utiliza el Laboratorio Virtual y qué experimentos realiza. También guardamos lo que respondes en cada experimento: tus predicciones, las explicaciones que escribes con tus propias palabras, las respuestas que eliges en las preguntas de opción múltiple (si acertaste o no), el tiempo que tardas y, si lo escribes, el código de tu clase. Todo se usa con fines educativos, para que tu maestro/a pueda acompañar tu aprendizaje. Esta información no se vende ni se comparte con terceros, y se usa solo con fines de seguimiento educativo. No escribas datos personales (teléfono, domicilio, etc.) en tus explicaciones. Si eres menor de edad, pide a tu maestro/a o a tu mamá, papá o tutor que te acompañe antes de iniciar sesión. Si quieres conocer, corregir o eliminar tus datos, escribe a <a href="mailto:cesar@dimexideas.com">cesar@dimexideas.com</a>.</p>
     <div class="mt" style="text-align:center; margin-top:16px;">
       <button class="btn small" id="closePrivacy">Cerrar</button>
     </div>
@@ -513,6 +513,7 @@
         <button role="tab" data-tab="alumnos">Alumnos</button>
         <button role="tab" data-tab="experimentos">Experimentos</button>
         <button role="tab" data-tab="explicaciones">Explicaciones</button>
+        <button role="tab" data-tab="preguntas">Preguntas</button>
         <button role="tab" data-tab="material">Material de apoyo</button>
       </div>
       <div class="cattabs" id="pdAreas" aria-label="Filtrar por área" hidden></div>
@@ -3595,7 +3596,7 @@ function cargarNivelClase(){
     }).catch(()=>{});
 }
 const Preg = {
-  _elegir:false, est:{},
+  _elegir:false, est:{}, vez:{},
   mezclar(n){ const a = [...Array(n).keys()]; for(let i = n - 1; i > 0; i--){ const j = Math.floor(Math.random()*(i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; },
   quitar(){ const b = $("preguntas"); if(b) b.remove(); },
   render(e){
@@ -3619,7 +3620,7 @@ const Preg = {
       const est = this.est[k], pts = document.createElement("span"); pts.className = "preg-pts"; h.appendChild(pts);
       const fin = document.createElement("div"); fin.className = "preg-fin"; fin.hidden = true;
       const marcador = ()=>{ const resp = est.filter(x=>x.sel >= 0).length, ok = est.filter(x=>x.sel === 0).length; pts.textContent = "Aciertos: " + ok + " de " + lista.length;
-        fin.hidden = resp < lista.length; if(!fin.hidden){ fin.innerHTML = ""; const t = document.createElement("span"); t.textContent = (ok === lista.length ? "🌟 ¡Perfecto! " : ok >= 2 ? "👏 ¡Muy bien! " : "💪 ¡Sigue practicando! ") + ok + " de " + lista.length + " correctas."; const b2 = document.createElement("button"); b2.className = "btn ghost small"; b2.textContent = "Intentar de nuevo"; b2.onclick = ()=>{ delete this.est[k]; this.render(e); }; fin.append(t, b2); } };
+        fin.hidden = resp < lista.length; if(!fin.hidden){ fin.innerHTML = ""; const t = document.createElement("span"); t.textContent = (ok === lista.length ? "🌟 ¡Perfecto! " : ok >= 2 ? "👏 ¡Muy bien! " : "💪 ¡Sigue practicando! ") + ok + " de " + lista.length + " correctas."; const b2 = document.createElement("button"); b2.className = "btn ghost small"; b2.textContent = "Intentar de nuevo"; b2.onclick = ()=>{ this.vez[k] = (this.vez[k] || 1) + 1; delete this.est[k]; this.render(e); }; fin.append(t, b2); } };
       sm.textContent = "Elige la respuesta correcta · " + (niv.f === "clase" ? "Nivel de tu clase: " : "Tu nivel: ") + nv.grado;
       lista.forEach(([q, ops, exp], i)=>{
         const fila = document.createElement("div"), n = document.createElement("div"), tx = document.createElement("div"), t = document.createElement("div"), og = document.createElement("div"), fb = document.createElement("div");
@@ -3628,7 +3629,7 @@ const Preg = {
         const pintar = ()=>{ const sel = est[i].sel; if(sel < 0) return;
           botones.forEach(bt=>{ const idx = +bt.dataset.idx; bt.disabled = true; if(idx === 0) bt.classList.add("ok"); else if(idx === sel) bt.classList.add("mal"); else bt.classList.add("dim"); });
           fb.hidden = false; fb.className = "preg-fb " + (sel === 0 ? "ok" : "mal"); fb.textContent = (sel === 0 ? "✔ ¡Correcto! " : "✗ La respuesta correcta es la marcada en verde. ") + (exp || ""); };
-        botones.forEach(bt=>{ bt.onclick = ()=>{ if(est[i].sel >= 0) return; est[i].sel = +bt.dataset.idx; pintar(); marcador(); FX.sound(est[i].sel === 0 ? "ding" : "thud"); Hud.vibrar(est[i].sel === 0 ? 12 : 30); }; });
+        botones.forEach(bt=>{ bt.onclick = ()=>{ if(est[i].sel >= 0) return; est[i].sel = +bt.dataset.idx; logEvent("pregunta", e, {nivel:niv.n, pregunta:i + 1, eleccion:est[i].sel, intento:this.vez[k] || 1}); pintar(); marcador(); FX.sound(est[i].sel === 0 ? "ding" : "thud"); Hud.vibrar(est[i].sel === 0 ? 12 : 30); }; });
         pintar(); tx.append(t, og, fb); fila.append(n, tx); box.appendChild(fila);
       });
       box.appendChild(fin); marcador();
@@ -3672,7 +3673,9 @@ const pdVinculo = c => location.origin + location.pathname + "?clase=" + encodeU
 function pdDatos(sel){ // aplica la clase elegida y el filtro de área
   const en = x => sel === PD_TODAS || x.c === sel;
   const intentos = PD.intentos.filter(en);
-  return { alumnos: PD.alumnos.filter(en), intentos: intentos, filtrados: pdArea === "todos" ? intentos : intentos.filter(x=>x.t === pdArea) };
+  const catDe = id => { const x = EXPS.find(q=>q.id === id); return x ? x.cat : ""; };
+  const preguntas = PD.preguntas.filter(en);
+  return { preguntas: preguntas, pfilt: pdArea === "todos" ? preguntas : preguntas.filter(x=>catDe(x.e) === pdArea), alumnos: PD.alumnos.filter(en), intentos: intentos, filtrados: pdArea === "todos" ? intentos : intentos.filter(x=>x.t === pdArea) };
 }
 function pdPorExperimento(arr){
   const por = {};
@@ -3747,7 +3750,7 @@ function abrirPanel(){
         : "No se pudo cargar el panel. Intenta de nuevo en un momento.";
       return;
     }
-    r.alumnos = r.alumnos || []; r.intentos = r.intentos || []; r.clases = r.clases || []; r.permitidos = r.permitidos || [];
+    r.alumnos = r.alumnos || []; r.intentos = r.intentos || []; r.preguntas = r.preguntas || []; r.clases = r.clases || []; r.permitidos = r.permitidos || [];
     r.niveles = r.niveles || {};
     PD = r;
     const codigos = pdCodigos();
@@ -3825,10 +3828,10 @@ function pdGuardarNivel(codigo, nivel, sel, nota, antes){
 }
 function pdRender(){
   $("pdTitle").textContent = pdSel === PD_TODAS ? "Todas mis clases" : "Clase " + pdSel;
-  $("pdSub").textContent = "Resumen, alumnos, experimentos, explicaciones y material de apoyo para dar tu clase.";
+  $("pdSub").textContent = "Resumen, alumnos, experimentos, explicaciones, preguntas y material de apoyo para dar tu clase.";
   pdCodeCard(); pdNivelCard();
   [...$("pdTabs").children].forEach(b=>{ b.className = b.dataset.tab === pdTab ? "active" : ""; b.setAttribute("aria-selected", b.dataset.tab === pdTab); });
-  const ar = $("pdAreas"); ar.innerHTML = ""; ar.hidden = !(pdTab === "experimentos" || pdTab === "explicaciones" || pdTab === "material");
+  const ar = $("pdAreas"); ar.innerHTML = ""; ar.hidden = !(pdTab === "experimentos" || pdTab === "explicaciones" || pdTab === "material" || pdTab === "preguntas");
   if(!ar.hidden) CATS.forEach(c=>{
     const b = pe("button","cattab" + (pdArea === c.id ? " active" : "")); b.append(pe("span","",c.icon + " " + c.label));
     b.onclick = ()=>{ pdArea = c.id; pdExplN = 30; pdRender(); }; ar.appendChild(b);
@@ -3836,7 +3839,7 @@ function pdRender(){
   const box = $("pdContent"); box.innerHTML = "";
   const D = pdDatos(pdSel);
   if(pdTab === "inicio") pdInicio(box, D); else if(pdTab === "alumnos") pdAlumnos(box, D);
-  else if(pdTab === "experimentos") pdExperimentos(box, D); else if(pdTab === "material") pdMaterial(box); else pdExplicaciones(box, D);
+  else if(pdTab === "experimentos") pdExperimentos(box, D); else if(pdTab === "material") pdMaterial(box); else if(pdTab === "preguntas") pdPreguntas(box, D); else pdExplicaciones(box, D);
 }
 function pdInicio(box, D){
   const t = pdPct(D.intentos), alum = new Set(D.intentos.map(x=>x.m)).size, nExp = new Set(D.intentos.map(x=>x.e)).size;
@@ -3927,6 +3930,53 @@ function pdExplicaciones(box, D){
     it.appendChild(pe("div","pd-quote", x.x)); box.appendChild(it);
   });
   if(lista.length > pdExplN){ const m = pe("button","btn ghost mt","Ver más explicaciones"); m.onclick = ()=>{ pdExplN += 30; pdRender(); }; box.appendChild(m); }
+}
+function pdPreguntas(box, D){
+  // Solo cuenta el PRIMER intento de cada alumno en cada pregunta (los reintentos no inflan el resultado)
+  const primero = {};
+  D.pfilt.slice().sort((p,q)=>Date.parse(p.f)-Date.parse(q.f)).forEach(x=>{
+    const k = [x.m, x.e, x.v, x.q].join("|"); if(!primero[k]) primero[k] = x;
+  });
+  const arr = Object.keys(primero).map(k=>primero[k]);
+  if(!arr.length){ box.appendChild(pe("div","panel-msg","Aún no hay respuestas a las preguntas. Aparecerán cuando tus alumnos contesten las preguntas de opción múltiple debajo de los retos.")); return; }
+  const tot = Math.round(100*arr.filter(x=>x.ok).length/arr.length), sm = pdSemaforo(tot, arr.length);
+  const stats = pe("div","panel-stats");
+  [["📝","azul", arr.length, "preguntas contestadas (1.er intento)"],["🎯","lima", tot + "%", "de aciertos"],["👥","verde", new Set(arr.map(x=>x.m)).size, "alumnos que contestaron"]].forEach(p=>{
+    const d = pe("div","panel-stat ic"), tx = pe("div"); tx.append(pe("b","",String(p[2])), pe("span","",p[3]));
+    d.append(tx, pe("div","pd-ic " + p[1], p[0])); stats.appendChild(d);
+  });
+  box.appendChild(stats);
+  box.appendChild(pe("small","","Se cuenta solo el primer intento de cada alumno en cada pregunta; si la repite, no cambia su resultado."));
+  /* por experimento */
+  box.appendChild(pe("div","pd-h","Por experimento (los que más cuestan, primero)"));
+  const por = {}; arr.forEach(x=>{ (por[x.e] = por[x.e] || {n:x.n, arr:[]}).arr.push(x); });
+  const lista = Object.keys(por).map(id=>{ const o = por[id], pc = Math.round(100*o.arr.filter(x=>x.ok).length/o.arr.length); return {id, n:o.n, arr:o.arr, pct:pc, sem:pdSemaforo(pc, o.arr.length)}; }).sort((a,b)=>a.pct - b.pct);
+  lista.forEach(x=>{
+    const d = pe("details","panel-item pd-det"), su = pe("summary"), row = pe("div","pd-row");
+    row.append(pe("h5","",x.n), pe("span","pd-chip " + x.sem.c, x.sem.t)); su.append(row, pdBar(x.pct, x.sem.c));
+    su.appendChild(pe("small","", x.pct + "% de aciertos · " + pdPl(x.arr.length,"respuesta","respuestas") + " · " + pdPl(new Set(x.arr.map(q=>q.m)).size,"alumno","alumnos"))); d.appendChild(su);
+    const ul = pe("ul"), preg = {}; x.arr.forEach(q=>{ const k = q.v + "." + q.q; (preg[k] = preg[k] || {v:q.v, q:q.q, a:[]}).a.push(q); });
+    Object.keys(preg).sort().forEach(k=>{
+      const o = preg[k], ok = o.a.filter(q=>q.ok).length, def = (typeof PREG !== "undefined" && PREG[x.id] && PREG[x.id][o.v - 1] || [])[o.q - 1];
+      let txt = def ? def[0] : "Pregunta " + o.q;
+      const li = pe("li"); li.appendChild(pe("b","", "Nivel " + o.v + " · P" + o.q + " — " + Math.round(100*ok/o.a.length) + "% (" + ok + " de " + o.a.length + ")"));
+      li.appendChild(pe("div","", txt));
+      const mal = {}; o.a.filter(q=>!q.ok).forEach(q=>{ mal[q.s] = (mal[q.s] || 0) + 1; });
+      const top = Object.keys(mal).sort((a,b)=>mal[b] - mal[a])[0];
+      if(top !== undefined && def && def[1][top]) li.appendChild(pe("small","", "Error más frecuente (" + mal[top] + "): «" + def[1][top] + "»"));
+      ul.appendChild(li);
+    });
+    d.appendChild(ul); box.appendChild(d);
+  });
+  /* por alumno */
+  box.appendChild(pe("div","pd-h","Por alumno"));
+  const al = {}; arr.forEach(x=>{ (al[x.m] = al[x.m] || {a:x.a, arr:[]}).arr.push(x); });
+  Object.keys(al).map(m=>{ const o = al[m], pc = Math.round(100*o.arr.filter(x=>x.ok).length/o.arr.length); return {a:o.a, n:o.arr.length, pct:pc, sem:pdSemaforo(pc, o.arr.length)}; })
+    .sort((p,q)=>p.pct - q.pct || p.a.localeCompare(q.a,"es")).forEach(x=>{
+      const it = pe("div","panel-item"), row = pe("div","pd-row"), izq = pe("div","pd-who");
+      izq.append(pe("div","pd-av", pdIni(x.a)), pe("h5","",x.a)); row.append(izq, pe("span","pd-chip " + x.sem.c, x.sem.t));
+      it.append(row, pdBar(x.pct, x.sem.c), pe("small","", x.pct + "% de aciertos · " + pdPl(x.n,"pregunta","preguntas"))); box.appendChild(it);
+    });
 }
 const GUIA = {
   dens:{
